@@ -10,7 +10,9 @@ dependencies:
 # Task 04: Build User Registration Frontend
 
 ## Overview
-Create the resident-facing registration page with form fields for personal data and file upload inputs for the required documents. 
+
+Create the resident-facing registration page with form fields for personal data
+and file upload inputs for the required documents.
 
 <critical>
 - ALWAYS READ the PRD and TechSpec before starting
@@ -27,6 +29,7 @@ Create the resident-facing registration page with form fields for personal data 
 </requirements>
 
 ## Subtasks
+
 - [ ] 4.1 Create the registration page route.
 - [ ] 4.2 Build the interactive form Island using Preact.
 - [ ] 4.3 Add frontend validation for CPF and file types (images/PDF).
@@ -34,25 +37,32 @@ Create the resident-facing registration page with form fields for personal data 
 - [ ] 4.5 Implement loading states and the final success message.
 
 ## Implementation Details
-Leverage existing `components/ui/input.tsx` and `button.tsx`. Ensure the form degrades gracefully on mobile browsers.
+
+Leverage existing `components/ui/input.tsx` and `button.tsx`. Ensure the form
+degrades gracefully on mobile browsers.
 
 ### Relevant Files
+
 - `routes/register.tsx` — To be created.
 - `islands/RegistrationForm.tsx` — To be created.
 
 ### Dependent Files
+
 - None.
 
 ### Related ADRs
+
 - None.
 
 ## Deliverables
+
 - Interactive Preact form component.
 - Success view state.
 - Unit tests with 80%+ coverage **(REQUIRED)**
 - Integration tests for form submission **(REQUIRED)**
 
 ## Tests
+
 - Unit tests:
   - [ ] Form validates empty inputs before submission.
   - [ ] CPF formatting/validation works.
@@ -62,6 +72,7 @@ Leverage existing `components/ui/input.tsx` and `button.tsx`. Ensure the form de
 - All tests must pass
 
 ## Success Criteria
+
 - All tests passing
 - Test coverage >=80%
 - User can complete registration smoothly on a mobile device.

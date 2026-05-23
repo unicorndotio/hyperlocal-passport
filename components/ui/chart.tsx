@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'preact'
+import { useContext, useId, useMemo } from 'preact/hooks'
 import * as RechartsPrimitive from 'recharts'
 
 import { cn } from '@/lib/utils'
@@ -11,7 +12,7 @@ const THEMES = { light: '', dark: '.dark' } as const
 export type ChartConfig = {
   [k in string]:
     & {
-      label?: React.PreactNode
+      label?: React.ComponentChildren
       icon?: React.ComponentType
     }
     & (
@@ -27,7 +28,7 @@ type ChartContextProps = {
 const ChartContext = React.createContext<ChartContextProps | null>(null)
 
 function useChart() {
-  const context = React.useContext(ChartContext)
+  const context = useContext(ChartContext)
 
   if (!context) {
     throw new Error('useChart must be used within a <ChartContainer />')
@@ -48,7 +49,7 @@ function ChartContainer({
     typeof RechartsPrimitive.ResponsiveContainer
   >['children']
 }) {
-  const uniqueId = React.useId()
+  const uniqueId = useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
 
   return (
@@ -126,6 +127,10 @@ function ChartTooltipContent({
   & React.ComponentProps<typeof RechartsPrimitive.Tooltip>
   & React.ComponentProps<'div'>
   & {
+    active?: boolean
+    payload?: any[]
+    label?: any
+    color?: string
     hideLabel?: boolean
     hideIndicator?: boolean
     indicator?: 'line' | 'dot' | 'dashed'
@@ -134,7 +139,7 @@ function ChartTooltipContent({
   }) {
   const { config } = useChart()
 
-  const tooltipLabel = React.useMemo(() => {
+  const tooltipLabel = useMemo(() => {
     if (hideLabel || !payload?.length) {
       return null
     }
@@ -185,8 +190,8 @@ function ChartTooltipContent({
       {!nestLabel ? tooltipLabel : null}
       <div className='grid gap-1.5'>
         {payload
-          .filter((item) => item.type !== 'none')
-          .map((item, index) => {
+          .filter((item: any) => item.type !== 'none')
+          .map((item: any, index: number) => {
             const key = `${nameKey || item.name || item.dataKey || 'value'}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
             const indicatorColor = color || item.payload.fill || item.color
@@ -283,8 +288,8 @@ function ChartLegendContent({
       )}
     >
       {payload
-        .filter((item) => item.type !== 'none')
-        .map((item) => {
+        .filter((item: any) => item.type !== 'none')
+        .map((item: any) => {
           const key = `${nameKey || item.dataKey || 'value'}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
 

@@ -1,5 +1,5 @@
-import { define } from "@/utils.ts";
-import { Countdown } from "@/islands/Countdown.tsx";
+import { define } from '@/utils.ts'
+import { Countdown } from '@/islands/Countdown.tsx'
 
 export default define.page(() => {
   return (
@@ -8,5 +8,5 @@ export default define.page(() => {
       <p>This is the about page.</p>
       <Countdown />
     </main>
-  );
-});
+  )
+})

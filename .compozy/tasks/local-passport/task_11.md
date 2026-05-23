@@ -10,7 +10,10 @@ dependencies:
 # Task 11: Build Mobile Catalog & Redemption UI
 
 ## Overview
-Develop the primary resident-facing web app experience where they can browse local businesses, view available discounts, and click to "redeem" a coupon, generating the code they will use at the cashier.
+
+Develop the primary resident-facing web app experience where they can browse
+local businesses, view available discounts, and click to "redeem" a coupon,
+generating the code they will use at the cashier.
 
 <critical>
 - ALWAYS READ the PRD and TechSpec before starting
@@ -30,16 +33,24 @@ Develop the primary resident-facing web app experience where they can browse loc
 </requirements>
 
 ## Subtasks
+
 - [ ] 11.1 Build the Catalog listing page with category filters.
 - [ ] 11.2 Build the Business Detail page to list available coupons.
 - [ ] 11.3 Build the interactive Redeem button handling success/error states.
-- [ ] 11.4 Build the "Passaporte" screen showing the active alphanumeric codes and generating the QR Code visually (e.g., using `qrcode.react` or similar).
-- [ ] 11.5 Implement `GET /api/users/me/redemptions` logic to fetch the active codes.
+- [ ] 11.4 Build the "Passaporte" screen showing the active alphanumeric codes
+      and generating the QR Code visually (e.g., using `qrcode.react` or
+      similar).
+- [ ] 11.5 Implement `GET /api/users/me/redemptions` logic to fetch the active
+      codes.
 
 ## Implementation Details
-Focus heavily on mobile-first design using Tailwind. The QR code generation happens purely on the frontend, simply encoding the alphanumeric string returned by the redemption API.
+
+Focus heavily on mobile-first design using Tailwind. The QR code generation
+happens purely on the frontend, simply encoding the alphanumeric string returned
+by the redemption API.
 
 ### Relevant Files
+
 - `routes/catalog.tsx`
 - `routes/business/[id].tsx`
 - `routes/passaporte.tsx`
@@ -47,27 +58,35 @@ Focus heavily on mobile-first design using Tailwind. The QR code generation happ
 - `islands/QRCodeDisplay.tsx`
 
 ### Dependent Files
+
 - None.
 
 ### Related ADRs
+
 - [ADR-004: Coupon-Based Validation System](../adrs/adr-004.md)
 
 ## Deliverables
+
 - Mobile Catalog and Business Detail views.
 - Active "Passaporte" view with QR Code generation.
 - Unit tests with 80%+ coverage **(REQUIRED)**
 - Integration tests for redemption flow **(REQUIRED)**
 
 ## Tests
+
 - Unit tests:
-  - [ ] QR Code component successfully renders a valid barcode based on a string.
-  - [ ] Redeem button handles API error responses (e.g., out of stock) correctly.
+  - [ ] QR Code component successfully renders a valid barcode based on a
+        string.
+  - [ ] Redeem button handles API error responses (e.g., out of stock)
+        correctly.
 - Integration tests:
-  - [ ] User navigates to business, redeems coupon, and sees the new code in their Passaporte.
+  - [ ] User navigates to business, redeems coupon, and sees the new code in
+        their Passaporte.
 - Test coverage target: >=80%
 - All tests must pass
 
 ## Success Criteria
+
 - All tests passing
 - Test coverage >=80%
 - Residents have a seamless discovery and redemption experience.

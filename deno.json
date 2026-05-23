@@ -28,6 +28,7 @@
     "@radix-ui/react-accordion": "npm:@radix-ui/react-accordion@^1.2.12",
     "@radix-ui/react-alert-dialog": "npm:@radix-ui/react-alert-dialog@^1.1.15",
     "@radix-ui/react-slot": "npm:@radix-ui/react-slot@^1.2.4",
+    "better-auth": "npm:better-auth@^1.6.11",
     "class-variance-authority": "npm:class-variance-authority@^0.7.1",
     "clsx": "npm:clsx@^2.1.1",
     "embla-carousel-react": "npm:embla-carousel-react@^8.6.0",
@@ -50,7 +51,8 @@
       "dom",
       "dom.asynciterable",
       "dom.iterable",
-      "deno.ns"
+      "deno.ns",
+      "deno.unstable"
     ],
     "jsx": "precompile",
     "jsxImportSource": "preact",

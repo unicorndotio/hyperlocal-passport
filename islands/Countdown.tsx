@@ -1,24 +1,24 @@
-import { useSignal } from "@preact/signals";
-import { useEffect } from "preact/hooks";
+import { useSignal } from '@preact/signals'
+import { useEffect } from 'preact/hooks'
 
 export function Countdown(_props: { target?: string }) {
-  const count = useSignal(10);
+  const count = useSignal(10)
 
   useEffect(() => {
     const timer = setInterval(() => {
       if (count.value <= 0) {
-        clearInterval(timer);
+        clearInterval(timer)
       }
 
-      count.value -= 1;
-    }, 1000);
+      count.value -= 1
+    }, 1000)
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearInterval(timer)
+  }, [])
 
   if (count.value <= 0) {
-    return <p>Countdown: 🎉</p>;
+    return <p>Countdown: 🎉</p>
   }
 
-  return <p>Countdown: {count}</p>;
+  return <p>Countdown: {count}</p>
 }

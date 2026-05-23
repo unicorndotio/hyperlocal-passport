@@ -10,7 +10,10 @@ dependencies:
 # Task 08: Build Business Profile Admin UI
 
 ## Overview
-Develop the administrative frontend interface for creating and editing the profiles of local businesses and service providers that participate in the benefits club.
+
+Develop the administrative frontend interface for creating and editing the
+profiles of local businesses and service providers that participate in the
+benefits club.
 
 <critical>
 - ALWAYS READ the PRD and TechSpec before starting
@@ -26,38 +29,48 @@ Develop the administrative frontend interface for creating and editing the profi
 </requirements>
 
 ## Subtasks
+
 - [ ] 8.1 Create the admin business management route.
 - [ ] 8.2 Build a list/table displaying current businesses.
 - [ ] 8.3 Build the creation/edit form in an Island.
 - [ ] 8.4 Integrate the UI with the `GET` and `POST /api/businesses` endpoints.
 
 ## Implementation Details
-Use shadcn/ui components. Keep the form simple. The `category` should probably be a dropdown (Casa, Corpo, Alimentação, Esporte, etc) based on the PRD.
+
+Use shadcn/ui components. Keep the form simple. The `category` should probably
+be a dropdown (Casa, Corpo, Alimentação, Esporte, etc) based on the PRD.
 
 ### Relevant Files
+
 - `routes/admin/businesses.tsx`
 - `islands/BusinessManager.tsx`
 
 ### Dependent Files
+
 - None.
 
 ### Related ADRs
+
 - None.
 
 ## Deliverables
+
 - Working admin business management UI.
 - Unit tests with 80%+ coverage **(REQUIRED)**
 - Integration tests for UI rendering **(REQUIRED)**
 
 ## Tests
+
 - Unit tests:
   - [ ] Form validates required fields (CNPJ, Name, Category).
 - Integration tests:
-  - [ ] Form submission triggers the correct API endpoint and refreshes the list.
+  - [ ] Form submission triggers the correct API endpoint and refreshes the
+        list.
 - Test coverage target: >=80%
 - All tests must pass
 
 ## Success Criteria
+
 - All tests passing
 - Test coverage >=80%
 - Business catalog can be populated without using raw API requests.

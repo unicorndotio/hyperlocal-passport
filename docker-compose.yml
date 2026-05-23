@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    ports:
+      - '8000:8000'
+    environment:
+      - UPLOADS_DIR=/app/uploads
+      - DENO_KV_PATH=/app/data/passport.db
+      - APP_BASE_URL=http://localhost:8000
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+    restart: unless-stopped

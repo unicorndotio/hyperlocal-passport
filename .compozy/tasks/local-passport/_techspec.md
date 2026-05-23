@@ -29,8 +29,10 @@ The application is a monolithic full-stack application built entirely on Deno.
   redemptions, and transactions).
 - **Authentication:** Better Auth library, handling session management, secure
   cookies, and password hashing.
-- **Object Storage:** DigitalOcean Spaces (S3 API compatible) for storing user
-  uploaded identity documents and business logos.
+- **Local Volume Storage:** Local filesystem storage (with mounted Docker
+  volumes) for storing user uploaded identity documents and business logos.
+- **Containerization:** Docker container with docker-compose setup, mounting
+  persistent volumes for both file uploads and Deno KV database.
 
 The core flow involves a resident browsing the business catalog, selecting a
 specific offer (a basic monthly limit discount or a special limited-time event
@@ -155,10 +157,10 @@ The backend will expose RESTful endpoints consumed by the Preact frontend
 ### Resident Flow
 
 - `POST /api/users/register`
-  - Multipart form handling docs to Spaces containing the user fields and two
-    file uploads (CNH, Proof of residence).
-  - Uploads files to DigitalOcean Spaces, saves URLs to KV, and sets status to
-    `pending`.
+  - Multipart form handling containing the user fields and two file uploads
+    (CNH, Proof of residence).
+  - Saves files locally using storage client, stores file paths/URLs in KV, and
+    sets status to `pending`.
 - `GET /api/catalog` - Lists businesses.
 - `GET /api/businesses/:id/coupons` - Lists active coupons for a business.
 - `POST /api/coupons/:id/redeem`
@@ -183,14 +185,24 @@ The backend will expose RESTful endpoints consumed by the Preact frontend
 - `GET /api/admin/approvals/pending` - Lists pending user verifications.
 - `POST /api/admin/approvals/:userId` - Approves/rejects user.
 
+### Media Storage / Delivery
+
+- `GET /api/uploads/:filename`
+  - Serves uploaded user documents and business logos.
+  - Implements authorization checks: public files (like business logos) are
+    accessible to anyone; sensitive files (documents) are restricted to
+    authorized administrators and the respective user owner.
+
 ## Development Sequencing
 
 1. **Phase 1: Foundation and Authentication**
    - Configure Better Auth middleware in Deno Fresh.
    - Implement the Deno KV database adapter for Better Auth.
-2. **Phase 2: Storage Integration**
-   - Implement S3 client utility (`lib/storage.ts`) connecting to DigitalOcean
-     Spaces.
+2. **Phase 2: Storage Integration & Containerization**
+   - Implement local filesystem storage utility (`lib/storage.ts`).
+   - Implement custom API uploads endpoint (`routes/api/uploads/[filename].ts`).
+   - Create `Dockerfile` and `docker-compose.yml` for application runtime and
+     volume persistence.
    - _(Depends on Phase 1)_
 3. **Phase 3: Registration and Onboarding**
    - Build Resident Registration Form (UI Island) with file upload.
@@ -218,8 +230,15 @@ The backend will expose RESTful endpoints consumed by the Preact frontend
 
 ## Architecture Decision Records
 
-- [ADR-001: Foco no Clube de Benefícios via Web App](adrs/adr-001.md)
-- [ADR-002: Backend API and Database Infrastructure](adrs/adr-002.md)
-- [ADR-003: Document Upload Storage](adrs/adr-003.md)
-- [ADR-004: Coupon-Based Validation System](adrs/adr-004.md)
-- [ADR-005: Authentication Strategy](adrs/adr-005.md)
+- [ADR-001: Foco no Clube de Benefícios via Web App](adrs/adr-001.md) — Foco
+  inicial no clube de benefícios sem gateway de pagamento.
+- [ADR-002: Backend API and Database Infrastructure](adrs/adr-002.md) — Escolha
+  de Deno Fresh API e Deno KV.
+- [ADR-003: Document Upload Storage](adrs/adr-003.md) — (Superseded by ADR-006)
+  Escolha de DigitalOcean Spaces.
+- [ADR-004: Coupon-Based Validation System](adrs/adr-004.md) — Validação por
+  cupom alfanumérico descartável.
+- [ADR-005: Authentication Strategy](adrs/adr-005.md) — Autenticação via Better
+  Auth com Deno KV.
+- [ADR-006: Docker Containerization and Local File Storage](adrs/adr-006.md) —
+  Uso de Docker e volume local para armazenamento de arquivos.

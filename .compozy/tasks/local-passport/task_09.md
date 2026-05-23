@@ -10,7 +10,10 @@ dependencies:
 # Task 09: Build Coupon Engine API & Redemption Logic
 
 ## Overview
-Implement the core promotional logic of the application: the Coupon Engine. This enables businesses to create basic and special offers, and allows residents to securely redeem them while respecting strict usage limits to prevent abuse.
+
+Implement the core promotional logic of the application: the Coupon Engine. This
+enables businesses to create basic and special offers, and allows residents to
+securely redeem them while respecting strict usage limits to prevent abuse.
 
 <critical>
 - ALWAYS READ the PRD and TechSpec before starting
@@ -30,25 +33,37 @@ Implement the core promotional logic of the application: the Coupon Engine. This
 </requirements>
 
 ## Subtasks
-- [ ] 9.1 Create endpoints for Coupon CRUD (`routes/api/businesses/:id/coupons.ts`).
-- [ ] 9.2 Implement the atomic redeem logic in `routes/api/coupons/[id]/redeem.ts`.
-- [ ] 9.3 Write a utility to generate clean, short alphanumeric codes (excluding ambiguous chars like 0, O, I, l).
-- [ ] 9.4 Ensure atomic operations rollback correctly if limits are reached concurrently.
+
+- [ ] 9.1 Create endpoints for Coupon CRUD
+      (`routes/api/businesses/:id/coupons.ts`).
+- [ ] 9.2 Implement the atomic redeem logic in
+      `routes/api/coupons/[id]/redeem.ts`.
+- [ ] 9.3 Write a utility to generate clean, short alphanumeric codes (excluding
+      ambiguous chars like 0, O, I, l).
+- [ ] 9.4 Ensure atomic operations rollback correctly if limits are reached
+      concurrently.
 
 ## Implementation Details
-The `kv.atomic().check()` method is crucial here. When a user redeems a coupon with `globalLimit: 10`, you must read `globalClaimedCount`, ensure it is `< 10`, and atomic check the versionstamp when incrementing it. 
+
+The `kv.atomic().check()` method is crucial here. When a user redeems a coupon
+with `globalLimit: 10`, you must read `globalClaimedCount`, ensure it is `< 10`,
+and atomic check the versionstamp when incrementing it.
 
 ### Relevant Files
+
 - `routes/api/businesses/[id]/coupons.ts`
 - `routes/api/coupons/[id]/redeem.ts`
 
 ### Dependent Files
+
 - None.
 
 ### Related ADRs
+
 - [ADR-004: Coupon-Based Validation System](../adrs/adr-004.md)
 
 ## Deliverables
+
 - Coupon CRUD API.
 - Atomic redemption API endpoint.
 - Code generator utility.
@@ -56,16 +71,19 @@ The `kv.atomic().check()` method is crucial here. When a user redeems a coupon w
 - Integration tests for concurrent redemptions **(REQUIRED)**
 
 ## Tests
+
 - Unit tests:
   - [ ] Alphanumeric code generator outputs correct format.
   - [ ] Rejects redemption if `userMonthlyLimit` is reached.
   - [ ] Rejects redemption if `validUntil` timestamp has passed.
 - Integration tests:
-  - [ ] Concurrent requests to redeem the last available global coupon only grant it to one user.
+  - [ ] Concurrent requests to redeem the last available global coupon only
+        grant it to one user.
 - Test coverage target: >=80%
 - All tests must pass
 
 ## Success Criteria
+
 - All tests passing
 - Test coverage >=80%
 - Atomic checks prevent any limits from being exceeded under heavy load.
