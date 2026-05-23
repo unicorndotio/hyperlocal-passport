@@ -123,6 +123,8 @@ Deno.test('validateForm returns error for empty name', () => {
     name: '',
     cpf: '52998224725',
     email: 'a@b.com',
+    whatsappDial: '+55',
+    whatsappNumber: '48912345678',
     idPhoto: makeFile(),
     residenceProof: makeFile(),
   })
@@ -134,6 +136,8 @@ Deno.test('validateForm returns error for invalid CPF', () => {
     name: 'Test',
     cpf: '123',
     email: 'a@b.com',
+    whatsappDial: '+55',
+    whatsappNumber: '48912345678',
     idPhoto: makeFile(),
     residenceProof: makeFile(),
   })
@@ -145,6 +149,8 @@ Deno.test('validateForm returns error for invalid email', () => {
     name: 'Test',
     cpf: '52998224725',
     email: 'not-an-email',
+    whatsappDial: '+55',
+    whatsappNumber: '48912345678',
     idPhoto: makeFile(),
     residenceProof: makeFile(),
   })
@@ -156,6 +162,8 @@ Deno.test('validateForm returns error for missing idPhoto', () => {
     name: 'Test',
     cpf: '52998224725',
     email: 'a@b.com',
+    whatsappDial: '+55',
+    whatsappNumber: '48912345678',
     idPhoto: null,
     residenceProof: makeFile(),
   })
@@ -167,6 +175,8 @@ Deno.test('validateForm returns error for invalid idPhoto type', () => {
     name: 'Test',
     cpf: '52998224725',
     email: 'a@b.com',
+    whatsappDial: '+55',
+    whatsappNumber: '48912345678',
     idPhoto: makeFile('image/gif'),
     residenceProof: makeFile(),
   })
@@ -178,6 +188,8 @@ Deno.test('validateForm returns error for missing residenceProof', () => {
     name: 'Test',
     cpf: '52998224725',
     email: 'a@b.com',
+    whatsappDial: '+55',
+    whatsappNumber: '48912345678',
     idPhoto: makeFile(),
     residenceProof: null,
   })
@@ -189,6 +201,8 @@ Deno.test('validateForm returns error for invalid residenceProof type', () => {
     name: 'Test',
     cpf: '52998224725',
     email: 'a@b.com',
+    whatsappDial: '+55',
+    whatsappNumber: '48912345678',
     idPhoto: makeFile(),
     residenceProof: makeFile('text/plain'),
   })
@@ -200,6 +214,8 @@ Deno.test('validateForm returns no errors for valid input', () => {
     name: 'João Silva',
     cpf: '52998224725',
     email: 'joao@example.com',
+    whatsappDial: '+55',
+    whatsappNumber: '48912345678',
     idPhoto: makeFile('image/jpeg'),
     residenceProof: makeFile('application/pdf'),
   })

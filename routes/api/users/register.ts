@@ -1,5 +1,6 @@
 import { define } from '../../../utils.ts'
 import { uploadFile } from '../../../lib/storage.ts'
+import { isValidCpf, isValidPhone, formatWhatsApp, normalizeCpf } from '../../../lib/registration.ts'
 
 const kv = await Deno.openKv()
 
@@ -8,6 +9,7 @@ interface User {
   name: string
   cpf: string
   email: string
+  whatsapp: string
   role: 'resident' | 'business' | 'admin'
   status: 'pending' | 'approved' | 'rejected'
   documents: {
@@ -15,14 +17,6 @@ interface User {
     residenceProofUrl: string
   }
   createdAt: number
-}
-
-function normalizeCpf(cpf: string): string {
-  return cpf.replace(/\D/g, '')
-}
-
-function isValidCpfFormat(cpf: string): boolean {
-  return /^\d{11}$/.test(cpf)
 }
 
 function json(body: unknown, status: number) {
@@ -43,6 +37,8 @@ export async function handleRegister(req: Request): Promise<Response> {
   const name = formData.get('name')
   const cpfRaw = formData.get('cpf')
   const email = formData.get('email')
+  const whatsappDial = formData.get('whatsappDial')
+  const whatsappNumber = formData.get('whatsappNumber')
   const idPhoto = formData.get('idPhoto')
   const residenceProof = formData.get('residenceProof')
 
@@ -55,6 +51,12 @@ export async function handleRegister(req: Request): Promise<Response> {
   if (!email || typeof email !== 'string' || !email.trim()) {
     return json({ error: 'Missing required field: email' }, 400)
   }
+  if (!whatsappDial || typeof whatsappDial !== 'string') {
+    return json({ error: 'Missing required field: whatsappDial' }, 400)
+  }
+  if (!whatsappNumber || typeof whatsappNumber !== 'string') {
+    return json({ error: 'Missing required field: whatsappNumber' }, 400)
+  }
   if (!idPhoto || !(idPhoto instanceof File)) {
     return json({ error: 'Missing required file: idPhoto' }, 400)
   }
@@ -63,8 +65,11 @@ export async function handleRegister(req: Request): Promise<Response> {
   }
 
   const cpf = normalizeCpf(cpfRaw)
-  if (!isValidCpfFormat(cpf)) {
-    return json({ error: 'Invalid CPF format' }, 400)
+  if (!isValidCpf(cpf)) {
+    return json({ error: 'Invalid CPF' }, 400)
+  }
+  if (!isValidPhone(whatsappDial, whatsappNumber)) {
+    return json({ error: 'Invalid WhatsApp number' }, 400)
   }
 
   const existing = await kv.get(['users_by_cpf', cpf])
@@ -89,6 +94,7 @@ export async function handleRegister(req: Request): Promise<Response> {
     name: name.trim(),
     cpf,
     email: email.trim(),
+    whatsapp: formatWhatsApp(whatsappDial, whatsappNumber),
     role: 'resident',
     status: 'pending',
     documents: {
@@ -111,7 +117,6 @@ export async function handleRegister(req: Request): Promise<Response> {
   return json(user, 201)
 }
 
-// Fresh v2 route handler (single ctx argument)
 export const handler = define.handlers({
   POST(ctx) {
     return handleRegister(ctx.req)

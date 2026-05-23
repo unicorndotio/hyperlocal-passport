@@ -55,6 +55,8 @@ Deno.test('POST /api/users/register', async (t) => {
     const req = makeRegisterRequest({
       cpf: '12345678901',
       email: 'test@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
@@ -68,6 +70,8 @@ Deno.test('POST /api/users/register', async (t) => {
     const req = makeRegisterRequest({
       name: 'João Silva',
       email: 'test@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
@@ -81,6 +85,8 @@ Deno.test('POST /api/users/register', async (t) => {
     const req = makeRegisterRequest({
       name: 'João Silva',
       cpf: '12345678901',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
@@ -95,6 +101,8 @@ Deno.test('POST /api/users/register', async (t) => {
       name: 'João Silva',
       cpf: '12345678901',
       email: 'test@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       residenceProof: makeFile('proof.jpg'),
     })
     const res = await handleRegister(req)
@@ -108,6 +116,8 @@ Deno.test('POST /api/users/register', async (t) => {
       name: 'João Silva',
       cpf: '12345678901',
       email: 'test@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
     })
     const res = await handleRegister(req)
@@ -121,6 +131,8 @@ Deno.test('POST /api/users/register', async (t) => {
       name: 'João Silva',
       cpf: '1234',
       email: 'test@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
@@ -140,6 +152,8 @@ Deno.test('POST /api/users/register', async (t) => {
       name: 'Maria Souza',
       cpf: cpfWithPunctuation,
       email: 'maria@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
@@ -153,7 +167,7 @@ Deno.test('POST /api/users/register', async (t) => {
   })
 
   await t.step('rejects duplicate CPF with 409', async () => {
-    const cpf = '11122233344'
+    const cpf = '98765432100'
     await cleanupCpf(cpf)
 
     // First registration
@@ -161,6 +175,8 @@ Deno.test('POST /api/users/register', async (t) => {
       name: 'First User',
       cpf,
       email: 'first@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
@@ -172,6 +188,8 @@ Deno.test('POST /api/users/register', async (t) => {
       name: 'Second User',
       cpf,
       email: 'second@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
@@ -196,6 +214,8 @@ Deno.test('POST /api/users/register', async (t) => {
         name: 'Carlos Oliveira',
         cpf: integrationCpf,
         email: 'carlos@example.com',
+        whatsappDial: '+55',
+        whatsappNumber: '48912345678',
         idPhoto: new File([idPhotoContent], 'id.jpg', { type: 'image/jpeg' }),
         residenceProof: new File([proofContent], 'proof.pdf', {
           type: 'application/pdf',
