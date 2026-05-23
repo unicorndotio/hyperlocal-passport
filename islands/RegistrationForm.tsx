@@ -9,6 +9,16 @@ import {
 
 export { formatCpfDisplay, isValidCpf, isValidFileType, normalizeCpf } from '../lib/registration.ts'
 
+// --- Bento design tokens (inline for island isolation) ---
+const colors = {
+  primary: '#FAD4C0',
+  secondary: '#80A1C1',
+  danger: '#DC2626',
+  success: '#16A34A',
+  surface: '#FFF5E6',
+  text: '#111827',
+}
+
 export default function RegistrationForm() {
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
@@ -28,22 +38,24 @@ export default function RegistrationForm() {
     })
   }
 
-  function validateName(value: string) {
-    setFieldError('name', value.trim() ? undefined : 'Nome é obrigatório.')
+  function validateName(v: string) {
+    setFieldError('name', v.trim() ? undefined : 'Nome é obrigatório.')
   }
-
-  function validateCpf(value: string) {
-    setFieldError('cpf', isValidCpf(value) ? undefined : 'CPF inválido. Informe 11 dígitos.')
+  function validateCpf(v: string) {
+    setFieldError('cpf', isValidCpf(v) ? undefined : 'CPF inválido.')
   }
-
-  function validateEmail(value: string) {
-    const ok = value.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-    setFieldError('email', ok ? undefined : 'E-mail inválido.')
+  function validateEmail(v: string) {
+    setFieldError(
+      'email',
+      v.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? undefined : 'E-mail inválido.',
+    )
   }
-
   function validateFile(field: string, file: File | null) {
     if (!file) {
-      setFieldError(field, field === 'idPhoto' ? 'Foto do documento é obrigatória.' : 'Comprovante de residência é obrigatório.')
+      setFieldError(
+        field,
+        field === 'idPhoto' ? 'Foto do documento é obrigatória.' : 'Comprovante é obrigatório.',
+      )
     } else if (!isValidFileType(file)) {
       setFieldError(field, 'Formato inválido. Use JPG, PNG ou PDF.')
     } else {
@@ -60,14 +72,12 @@ export default function RegistrationForm() {
     }
     setErrors({})
     setLoading(true)
-
     const form = new FormData()
     form.append('name', name.trim())
     form.append('cpf', normalizeCpf(cpf))
     form.append('email', email.trim())
     form.append('idPhoto', idPhoto!)
     form.append('residenceProof', residenceProof!)
-
     try {
       const res = await fetch('/api/users/register', { method: 'POST', body: form })
       if (res.ok) {
@@ -83,25 +93,39 @@ export default function RegistrationForm() {
     }
   }
 
+  // --- Success state ---
   if (success) {
     return (
-      <div class='bg-white rounded-xl shadow p-8 text-center space-y-4'>
-        <div class='text-5xl'>✅</div>
-        <h2 class='text-xl font-semibold'>Cadastro enviado!</h2>
-        <p class='text-gray-600'>
+      <div
+        class='rounded-[8px] p-8 text-center'
+        style={{ background: 'white', border: `2px solid ${colors.primary}` }}
+      >
+        <div class='text-5xl mb-4'>✅</div>
+        <h2 class='font-sans text-xl font-600 text-[#111827] mb-2'>Cadastro enviado!</h2>
+        <p class='text-base text-[#374151]'>
           Seus dados foram recebidos. A análise será concluída em até{' '}
-          <strong>1 dia útil</strong>. Você receberá uma confirmação por e-mail.
+          <strong class='font-600'>1 dia útil</strong>. Você receberá uma confirmação por e-mail.
         </p>
       </div>
     )
   }
 
+  // --- Form ---
   return (
-    <form onSubmit={handleSubmit} noValidate class='bg-white rounded-xl shadow p-6 space-y-5'>
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      class='rounded-[8px] p-6 space-y-5'
+      style={{ background: 'white', boxShadow: '0 1px 4px 0 rgba(17,24,39,0.06)' }}
+    >
       {errors.global && (
-        <p role='alert' class='text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3'>
+        <div
+          role='alert'
+          class='rounded-[4px] px-4 py-3 text-sm font-500'
+          style={{ background: '#FEF2F2', color: colors.danger, border: `1px solid #FECACA` }}
+        >
           {errors.global}
-        </p>
+        </div>
       )}
 
       <Field label='Nome completo' error={errors.name}>
@@ -146,37 +170,76 @@ export default function RegistrationForm() {
       </Field>
 
       <Field label='Foto do documento (RG ou CNH)' error={errors.idPhoto}>
-        <input
-          type='file'
-          accept='image/jpeg,image/png,image/webp,application/pdf'
-          onChange={(e) => {
-            const file = (e.target as HTMLInputElement).files?.[0] ?? null
-            setIdPhoto(file)
-            validateFile('idPhoto', file)
+        <label
+          class='flex items-center gap-3 rounded-[8px] border px-3 py-2 cursor-pointer text-sm transition'
+          style={{
+            borderColor: errors.idPhoto ? colors.danger : '#E5E7EB',
+            background: idPhoto ? '#F0FDF4' : 'white',
           }}
-          class='block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200'
-          aria-invalid={!!errors.idPhoto}
-        />
+        >
+          <span
+            class='shrink-0 rounded-[4px] px-2 py-1 text-xs font-mono font-500 uppercase tracking-wide'
+            style={{ background: colors.primary, color: colors.text }}
+          >
+            Escolher
+          </span>
+          <span class='truncate text-[#6B7280]'>
+            {idPhoto ? idPhoto.name : 'JPG, PNG ou PDF'}
+          </span>
+          <input
+            type='file'
+            accept='image/jpeg,image/png,image/webp,application/pdf'
+            class='sr-only'
+            onChange={(e) => {
+              const file = (e.target as HTMLInputElement).files?.[0] ?? null
+              setIdPhoto(file)
+              validateFile('idPhoto', file)
+            }}
+            aria-invalid={!!errors.idPhoto}
+          />
+        </label>
       </Field>
 
       <Field label='Comprovante de residência' error={errors.residenceProof}>
-        <input
-          type='file'
-          accept='image/jpeg,image/png,image/webp,application/pdf'
-          onChange={(e) => {
-            const file = (e.target as HTMLInputElement).files?.[0] ?? null
-            setResidenceProof(file)
-            validateFile('residenceProof', file)
+        <label
+          class='flex items-center gap-3 rounded-[8px] border px-3 py-2 cursor-pointer text-sm transition'
+          style={{
+            borderColor: errors.residenceProof ? colors.danger : '#E5E7EB',
+            background: residenceProof ? '#F0FDF4' : 'white',
           }}
-          class='block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200'
-          aria-invalid={!!errors.residenceProof}
-        />
+        >
+          <span
+            class='shrink-0 rounded-[4px] px-2 py-1 text-xs font-mono font-500 uppercase tracking-wide'
+            style={{ background: colors.primary, color: colors.text }}
+          >
+            Escolher
+          </span>
+          <span class='truncate text-[#6B7280]'>
+            {residenceProof ? residenceProof.name : 'JPG, PNG ou PDF'}
+          </span>
+          <input
+            type='file'
+            accept='image/jpeg,image/png,image/webp,application/pdf'
+            class='sr-only'
+            onChange={(e) => {
+              const file = (e.target as HTMLInputElement).files?.[0] ?? null
+              setResidenceProof(file)
+              validateFile('residenceProof', file)
+            }}
+            aria-invalid={!!errors.residenceProof}
+          />
+        </label>
       </Field>
 
       <button
         type='submit'
         disabled={loading}
-        class='w-full h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium transition-opacity disabled:opacity-50'
+        class='w-full rounded-[8px] py-2.5 text-sm font-600 transition-opacity disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'
+        style={{
+          background: colors.primary,
+          color: colors.text,
+          outlineColor: colors.secondary,
+        }}
       >
         {loading ? 'Enviando…' : 'Cadastrar'}
       </button>
@@ -193,15 +256,24 @@ function Field(
 ) {
   return (
     <div class='space-y-1'>
-      <label class='block text-sm font-medium text-gray-700'>{label}</label>
+      <label class='block text-xs font-mono font-500 uppercase tracking-wide text-[#6B7280]'>
+        {label}
+      </label>
       {children}
-      {error && <p class='text-xs text-red-600'>{error}</p>}
+      {error && (
+        <p class='text-xs font-500' style={{ color: '#DC2626' }}>
+          {error}
+        </p>
+      )}
     </div>
   )
 }
 
 function inputClass(hasError: boolean) {
-  return `block w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-primary/50 ${
-    hasError ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:border-primary'
-  }`
+  return [
+    'block w-full rounded-[8px] border px-3 py-2 text-sm text-[#111827] bg-white',
+    'outline-none transition',
+    'focus:ring-2 focus:ring-[#FAD4C0] focus:border-[#FAD4C0]',
+    hasError ? 'border-[#DC2626]' : 'border-[#E5E7EB]',
+  ].join(' ')
 }

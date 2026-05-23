@@ -1,10 +1,7 @@
 @import 'tailwindcss';
-.fresh-gradient {
-  background-color: rgb(134, 239, 172);
-  background-image: linear-gradient(
-    to right bottom,
-    rgb(219, 234, 254),
-    rgb(187, 247, 208),
-    rgb(254, 249, 195)
-  );
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  color: #111827;
+  background-color: #FFF5E6;
 }

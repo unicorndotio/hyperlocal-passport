@@ -3,11 +3,19 @@ import RegistrationForm from '../islands/RegistrationForm.tsx'
 
 export default define.page(function RegisterPage() {
   return (
-    <div class='min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8'>
+    <main class='min-h-screen bg-[#FFF5E6] flex items-center justify-center px-4 py-8'>
       <div class='w-full max-w-md'>
-        <h1 class='text-2xl font-bold text-center mb-6'>Cadastro de Morador</h1>
+        {/* Header */}
+        <div class='mb-8 text-center'>
+          <p class='font-mono text-xs font-500 tracking-widest uppercase text-[#80A1C1] mb-2'>
+            Passaporte Local
+          </p>
+          <h1 class='font-sans text-[2rem] font-700 leading-tight text-[#111827]'>
+            Cadastro de Morador
+          </h1>
+        </div>
         <RegistrationForm />
       </div>
-    </div>
+    </main>
   )
 })
