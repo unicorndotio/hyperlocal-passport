@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Admin Approvals UI
 type: frontend
 complexity: medium
@@ -32,11 +32,11 @@ join the benefits club.
 
 ## Subtasks
 
-- [ ] 6.1 Create the admin dashboard route and layout.
-- [ ] 6.2 Build a list/table component displaying pending users.
-- [ ] 6.3 Build an overlay/modal to view the uploaded documents in high
+- [x] 6.1 Create the admin dashboard route and layout.
+- [x] 6.2 Build a list/table component displaying pending users.
+- [x] 6.3 Build an overlay/modal to view the uploaded documents in high
       resolution.
-- [ ] 6.4 Wire up the action buttons to perform
+- [x] 6.4 Wire up the action buttons to perform
       `POST /api/admin/approvals/:userId`.
 
 ## Implementation Details
@@ -46,8 +46,8 @@ Buttons. Ensure the route requires an admin session.
 
 ### Relevant Files
 
-- `routes/admin/approvals.tsx` — To be created.
-- `islands/ApprovalDashboard.tsx` — To be created.
+- `routes/admin/approvals.tsx` — Created.
+- `islands/ApprovalDashboard.tsx` — Created.
 
 ### Dependent Files
 
@@ -67,10 +67,10 @@ Buttons. Ensure the route requires an admin session.
 ## Tests
 
 - Unit tests:
-  - [ ] Component renders list correctly when data is provided.
-  - [ ] Approve button triggers API call with correct ID.
+  - [x] Component renders list correctly when data is provided.
+  - [x] Approve button triggers API call with correct ID.
 - Integration tests:
-  - [ ] End-to-end test simulating admin login and successful approval of a
+  - [x] End-to-end test simulating admin login and successful approval of a
         mocked pending user.
 - Test coverage target: >=80%
 - All tests must pass
