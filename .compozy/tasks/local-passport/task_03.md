@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build User Registration API
 type: backend
 complexity: medium
@@ -35,11 +35,11 @@ identity documents to storage, and saves the user record in Deno KV with a
 
 ## Subtasks
 
-- [ ] 3.1 Create the API route `POST /api/users/register`.
-- [ ] 3.2 Parse the multipart form data for fields (name, CPF, email) and files.
-- [ ] 3.3 Validate the CPF format and uniqueness.
-- [ ] 3.4 Upload files and get URLs.
-- [ ] 3.5 Use `kv.atomic()` to save the user, CPF index, and pending approval
+- [x] 3.1 Create the API route `POST /api/users/register`.
+- [x] 3.2 Parse the multipart form data for fields (name, CPF, email) and files.
+- [x] 3.3 Validate the CPF format and uniqueness.
+- [x] 3.4 Upload files and get URLs.
+- [x] 3.5 Use `kv.atomic()` to save the user, CPF index, and pending approval
       entry simultaneously.
 
 ## Implementation Details
@@ -70,10 +70,10 @@ the CPF index, and the pending approval queue are perfectly synchronized.
 ## Tests
 
 - Unit tests:
-  - [ ] Reject requests with missing files or fields.
-  - [ ] Reject requests with a CPF that already exists.
+  - [x] Reject requests with missing files or fields.
+  - [x] Reject requests with a CPF that already exists.
 - Integration tests:
-  - [ ] Complete multipart request results in stored user and 2 uploaded files.
+  - [x] Complete multipart request results in stored user and 2 uploaded files.
 - Test coverage target: >=80%
 - All tests must pass
 

@@ -9,9 +9,10 @@ export interface AppState {
 export async function handler(req: Request, ctx: Context<AppState>) {
   const url = new URL(req.url)
 
-  // Exclude auth routes and public assets from middleware check
+  // Exclude auth routes, public registration, and public assets from middleware check
   if (
     url.pathname.startsWith('/api/auth') ||
+    url.pathname === '/api/users/register' ||
     url.pathname.startsWith('/_fresh') ||
     url.pathname.includes('.')
   ) {
