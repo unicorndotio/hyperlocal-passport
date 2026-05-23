@@ -16,9 +16,9 @@ Bugs affecting correctness, performance bottlenecks visible to users, or
 anti-patterns that significantly impair scalability, reliability, or usability.
 These need fixing before merge.
 
-Examples: logic error returning wrong results, O(n^2) loop over unbounded input,
-missing transaction rollback, error silently swallowed in a critical path,
-missing input validation at a system boundary.
+Examples: logic error returning wrong results, O(n^2) loop over unbounded
+input, missing transaction rollback, error silently swallowed in a critical
+path, missing input validation at a system boundary.
 
 ### medium
 

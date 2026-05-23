@@ -1,7 +1,6 @@
 # Task File Template
 
-Use this structure for every individual task file. The file must start with YAML
-frontmatter containing the parseable metadata.
+Use this structure for every individual task file. The file must start with YAML frontmatter containing the parseable metadata.
 
 ```markdown
 ---
@@ -17,9 +16,7 @@ dependencies:
 # Task N: [Title]
 
 ## Overview
-
-[2-3 sentences: what the task accomplishes and why it matters in the context of
-the project.]
+[2-3 sentences: what the task accomplishes and why it matters in the context of the project.]
 
 <critical>
 - ALWAYS READ the PRD and TechSpec before starting
@@ -36,41 +33,33 @@ the project.]
 </requirements>
 
 ## Subtasks
-
 - [ ] N.1 [Subtask description — WHAT to accomplish]
 - [ ] N.2 [Subtask description]
 - [ ] N.3 [Subtask description]
 
 ## Implementation Details
-
-[File paths to create or modify, integration points, and dependencies. Reference
-the TechSpec implementation section for code patterns and interface designs.]
+[File paths to create or modify, integration points, and dependencies.
+Reference the TechSpec implementation section for code patterns and interface designs.]
 
 ### Relevant Files
-
 - `path/to/file` — [brief reason this file is relevant]
 
 ### Dependent Files
-
 - `path/to/dependency` — [brief reason this file is affected]
 
 ### Related ADRs
-
 - [ADR-NNN: Title](../adrs/adr-NNN.md) — Relevance to this task
 
 ## Deliverables
-
 - [Concrete output 1]
 - [Concrete output 2]
 - Unit tests with 80%+ coverage **(REQUIRED)**
 - Integration tests for [feature] **(REQUIRED)**
 
 ## Tests
-
 - Unit tests:
   - [ ] [Test case 1 — e.g., "Happy path: valid input returns expected output"]
-  - [ ] [Test case 2 — e.g., "Error path: invalid input returns descriptive
-        error"]
+  - [ ] [Test case 2 — e.g., "Error path: invalid input returns descriptive error"]
   - [ ] [Edge cases and boundary conditions]
 - Integration tests:
   - [ ] [Test case — e.g., "End-to-end flow from request to response"]
@@ -78,7 +67,6 @@ the TechSpec implementation section for code patterns and interface designs.]
 - All tests must pass
 
 ## Success Criteria
-
 - All tests passing
 - Test coverage >=80%
 - [Measurable outcome 1]
@@ -91,7 +79,5 @@ the TechSpec implementation section for code patterns and interface designs.]
 - Every task MUST include a Tests section and test items in Deliverables.
 - Never create separate tasks dedicated solely to testing.
 - Subtasks describe WHAT needs to happen, not HOW to implement it.
-- Minimize code in tasks. Show code only to illustrate current structure or
-  problem areas.
-- Implementation details should reference the TechSpec for patterns rather than
-  duplicating them.
+- Minimize code in tasks. Show code only to illustrate current structure or problem areas.
+- Implementation details should reference the TechSpec for patterns rather than duplicating them.

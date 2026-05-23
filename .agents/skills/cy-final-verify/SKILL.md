@@ -19,8 +19,7 @@ Claiming work is complete without verification is dishonesty, not efficiency.
 NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 ```
 
-If the verification command has not been run in the current message, the result
-cannot be claimed.
+If the verification command has not been run in the current message, the result cannot be claimed.
 
 ## The Gate Function
 
@@ -43,23 +42,13 @@ Skip any step = lying, not verifying
 Match the verification scope to the claim scope:
 
 - **Narrow claim** (e.g., "this test passes"): Run the specific test.
-- **Broad claim** (e.g., "task complete", "ready to commit"): Run the **full
-  verification pipeline** — formatting, linting, all tests, and build. If the
-  project defines a single gate command (e.g., `make verify`), run that.
+- **Broad claim** (e.g., "task complete", "ready to commit"): Run the **full verification pipeline** — formatting, linting, all tests, and build. If the project defines a single gate command (e.g., `make verify`), run that.
 
-A narrow verification does not support a broad claim. Running `make test` alone
-does not justify "task complete." Running the linter alone does not justify
-"ready to commit." The verification scope must be equal to or broader than the
-claim scope.
+A narrow verification does not support a broad claim. Running `make test` alone does not justify "task complete." Running the linter alone does not justify "ready to commit." The verification scope must be equal to or broader than the claim scope.
 
-**If in doubt, run the full pipeline.** Over-verification wastes minutes.
-Under-verification wastes hours.
+**If in doubt, run the full pipeline.** Over-verification wastes minutes. Under-verification wastes hours.
 
-**Passing pipeline != meeting requirements.** A green build proves the code
-compiles, lints, and passes existing tests. It does not prove the implementation
-matches the requirements. For "task complete" or "requirements met" claims, also
-verify the deliverables against the original specification — line by line, not
-by assumption.
+**Passing pipeline != meeting requirements.** A green build proves the code compiles, lints, and passes existing tests. It does not prove the implementation matches the requirements. For "task complete" or "requirements met" claims, also verify the deliverables against the original specification — line by line, not by assumption.
 
 ## Common Failures
 
@@ -108,31 +97,24 @@ Apply this skill before:
 
 ## Pre-Commit and Pre-PR Gate
 
-Commits and PRs are permanent artifacts. They require the highest verification
-standard.
+Commits and PRs are permanent artifacts. They require the highest verification standard.
 
 **Before `git commit`:**
-
-1. Run the full verification pipeline (e.g., `make verify`). Not a subset. The
-   full pipeline.
+1. Run the full verification pipeline (e.g., `make verify`). Not a subset. The full pipeline.
 2. Confirm zero errors, zero warnings, zero test failures in the output.
 3. Produce a Verification Report (see template below) with verdict PASS.
 4. Only then run `git commit`.
 
 **Before creating a PR:**
-
 1. All of the above, plus:
 2. Verify the diff matches the intended changes (`git diff` review).
 3. Confirm no unrelated files are staged.
 
-If the full pipeline has not passed in this session after the last code change,
-the commit or PR must not proceed.
+If the full pipeline has not passed in this session after the last code change, the commit or PR must not proceed.
 
 ## Verification Report Template
 
-Verification is not complete until the agent **cites actual command output** in
-their response. "I ran it and it passed" is not evidence. If the verification
-output is not shown, the verification did not happen.
+Verification is not complete until the agent **cites actual command output** in their response. "I ran it and it passed" is not evidence. If the verification output is not shown, the verification did not happen.
 
 Every verification must be reported using this structure. Do not deviate.
 
@@ -149,35 +131,24 @@ Errors: [Any errors, or "none"]
 Verdict: PASS or FAIL
 ```
 
-If the verdict is FAIL, do not use completion language. State what failed and
-what remains.
+If the verdict is FAIL, do not use completion language. State what failed and what remains.
 
-If the verdict is PASS, the claim may proceed — but only the specific claim
-supported by the evidence. "Tests pass" does not mean "build succeeds."
+If the verdict is PASS, the claim may proceed — but only the specific claim supported by the evidence. "Tests pass" does not mean "build succeeds."
 
 ## When Verification Fails
 
 Verification failure is not a dead end. It is information. Follow this protocol:
 
-1. **Read the failure.** Identify the exact error: which command failed, which
-   test, which lint rule, which build error. Quote the relevant output lines.
-2. **Diagnose the root cause.** Do not guess. Read the error message. Trace it
-   to the source. If multiple things failed, address them one at a time starting
-   with the first failure.
-3. **Fix the root cause.** Apply the minimal change that addresses the actual
-   error. Do not apply workarounds, suppress warnings, or skip checks.
-4. **Re-verify from scratch.** Run the full verification command again. Do not
-   assume the fix worked. Do not run only the previously-failing subset.
-5. **Report with evidence.** Use the Verification Report Template. If it passes
-   now, the claim may proceed. If it fails again, return to step 1.
+1. **Read the failure.** Identify the exact error: which command failed, which test, which lint rule, which build error. Quote the relevant output lines.
+2. **Diagnose the root cause.** Do not guess. Read the error message. Trace it to the source. If multiple things failed, address them one at a time starting with the first failure.
+3. **Fix the root cause.** Apply the minimal change that addresses the actual error. Do not apply workarounds, suppress warnings, or skip checks.
+4. **Re-verify from scratch.** Run the full verification command again. Do not assume the fix worked. Do not run only the previously-failing subset.
+5. **Report with evidence.** Use the Verification Report Template. If it passes now, the claim may proceed. If it fails again, return to step 1.
 
 **Never:**
-
 - Claim partial success ("3 of 4 checks pass, close enough")
 - Skip re-verification after a fix ("I fixed the error, so it should pass now")
 - Blame the tooling ("the linter is wrong") without evidence of a false positive
 - Move on to the next task while verification is still failing
 
-If the correct verification command is unclear, identify it before making any
-completion claim. If only partial verification is available, state that
-limitation explicitly and avoid completion language.
+If the correct verification command is unclear, identify it before making any completion claim. If only partial verification is available, state that limitation explicitly and avoid completion language.
