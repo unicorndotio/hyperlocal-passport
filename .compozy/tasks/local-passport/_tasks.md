@@ -8,7 +8,7 @@
 | 02 | Implement Local Storage Client & Docker Setup | completed | medium     | []                 |
 | 03 | Build User Registration API                   | completed | medium     | [task_01, task_02] |
 | 04 | Build User Registration Frontend              | completed | medium     | [task_03]          |
-| 05 | Build Admin Approvals API                     | pending   | medium     | [task_01]          |
+| 05 | Build Admin Approvals API                     | completed | medium     | [task_01]          |
 | 06 | Build Admin Approvals UI                      | pending   | medium     | [task_05]          |
 | 07 | Build Business Profile CRUD API               | pending   | medium     | [task_01, task_02] |
 | 08 | Build Business Profile Admin UI               | pending   | low        | [task_07]          |

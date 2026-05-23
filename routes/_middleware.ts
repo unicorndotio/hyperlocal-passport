@@ -30,6 +30,14 @@ export async function applyMiddleware(
         headers: { 'Content-Type': 'application/json' },
       })
     }
+    if (url.pathname.startsWith('/api/admin/')) {
+      if (session.user.role !== 'admin') {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    }
   }
 
   if (
@@ -39,6 +47,9 @@ export async function applyMiddleware(
   ) {
     if (!session) {
       return new Response(null, { status: 302, headers: { Location: '/login' } })
+    }
+    if (url.pathname.startsWith('/admin') && session.user.role !== 'admin') {
+      return new Response('Forbidden', { status: 403 })
     }
   }
 

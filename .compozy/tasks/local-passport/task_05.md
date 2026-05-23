@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Admin Approvals API
 type: backend
 complexity: medium
@@ -31,10 +31,10 @@ queue of pending resident registrations and approve or reject them.
 
 ## Subtasks
 
-- [ ] 5.1 Create the GET route to list pending approvals.
-- [ ] 5.2 Create the POST route to handle the approval/rejection action.
-- [ ] 5.3 Implement atomic KV operations to resolve the pending state.
-- [ ] 5.4 Ensure middleware protects the routes for admin access only.
+- [x] 5.1 Create the GET route to list pending approvals.
+- [x] 5.2 Create the POST route to handle the approval/rejection action.
+- [x] 5.3 Implement atomic KV operations to resolve the pending state.
+- [x] 5.4 Ensure middleware protects the routes for admin access only.
 
 ## Implementation Details
 
@@ -64,12 +64,12 @@ entry, fetch the user details to return in the API response.
 ## Tests
 
 - Unit tests:
-  - [ ] Approving a user updates their status and removes them from the pending
+  - [x] Approving a user updates their status and removes them from the pending
         list.
-  - [ ] Rejecting a user updates their status and removes them from the pending
+  - [x] Rejecting a user updates their status and removes them from the pending
         list.
 - Integration tests:
-  - [ ] Non-admin requests to these endpoints return 403 Forbidden.
+  - [x] Non-admin requests to these endpoints return 403 Forbidden.
 - Test coverage target: >=80%
 - All tests must pass
 
