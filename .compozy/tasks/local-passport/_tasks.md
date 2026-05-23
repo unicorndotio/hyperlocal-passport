@@ -7,7 +7,7 @@
 | 01 | Setup Better Auth and Deno KV Adapter         | completed | medium     | []                 |
 | 02 | Implement Local Storage Client & Docker Setup | completed | medium     | []                 |
 | 03 | Build User Registration API                   | completed | medium     | [task_01, task_02] |
-| 04 | Build User Registration Frontend              | pending   | medium     | [task_03]          |
+| 04 | Build User Registration Frontend              | completed | medium     | [task_03]          |
 | 05 | Build Admin Approvals API                     | pending   | medium     | [task_01]          |
 | 06 | Build Admin Approvals UI                      | pending   | medium     | [task_05]          |
 | 07 | Build Business Profile CRUD API               | pending   | medium     | [task_01, task_02] |

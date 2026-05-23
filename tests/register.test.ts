@@ -2,8 +2,7 @@ import {
   assertEquals,
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
-import { Context } from 'fresh'
-import { handler } from '../routes/api/users/register.ts'
+import { handleRegister } from '../routes/api/users/register.ts'
 
 // Helper to build a multipart FormData request
 function makeRegisterRequest(fields: Record<string, string | File>): Request {
@@ -21,7 +20,6 @@ function makeFile(name: string, content = 'data', type = 'image/jpeg'): File {
   return new File([content], name, { type })
 }
 
-const ctx = {} as unknown as Context<unknown>
 
 Deno.test('POST /api/users/register', async (t) => {
   // Use a temp uploads dir to avoid polluting the project
@@ -60,7 +58,7 @@ Deno.test('POST /api/users/register', async (t) => {
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
-    const res = await handler.POST(req, ctx)
+    const res = await handleRegister(req)
     assertEquals(res.status, 400)
     const body = await res.json()
     assertExists(body.error)
@@ -73,7 +71,7 @@ Deno.test('POST /api/users/register', async (t) => {
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
-    const res = await handler.POST(req, ctx)
+    const res = await handleRegister(req)
     assertEquals(res.status, 400)
     const body = await res.json()
     assertExists(body.error)
@@ -86,7 +84,7 @@ Deno.test('POST /api/users/register', async (t) => {
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
-    const res = await handler.POST(req, ctx)
+    const res = await handleRegister(req)
     assertEquals(res.status, 400)
     const body = await res.json()
     assertExists(body.error)
@@ -99,7 +97,7 @@ Deno.test('POST /api/users/register', async (t) => {
       email: 'test@example.com',
       residenceProof: makeFile('proof.jpg'),
     })
-    const res = await handler.POST(req, ctx)
+    const res = await handleRegister(req)
     assertEquals(res.status, 400)
     const body = await res.json()
     assertExists(body.error)
@@ -112,7 +110,7 @@ Deno.test('POST /api/users/register', async (t) => {
       email: 'test@example.com',
       idPhoto: makeFile('id.jpg'),
     })
-    const res = await handler.POST(req, ctx)
+    const res = await handleRegister(req)
     assertEquals(res.status, 400)
     const body = await res.json()
     assertExists(body.error)
@@ -126,7 +124,7 @@ Deno.test('POST /api/users/register', async (t) => {
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
-    const res = await handler.POST(req, ctx)
+    const res = await handleRegister(req)
     assertEquals(res.status, 400)
     const body = await res.json()
     assertExists(body.error)
@@ -145,7 +143,7 @@ Deno.test('POST /api/users/register', async (t) => {
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
-    const res = await handler.POST(req, ctx)
+    const res = await handleRegister(req)
     assertEquals(res.status, 201)
     const body = await res.json()
     assertEquals(body.cpf, normalizedCpf)
@@ -166,7 +164,7 @@ Deno.test('POST /api/users/register', async (t) => {
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
-    const res1 = await handler.POST(req1, ctx)
+    const res1 = await handleRegister(req1)
     assertEquals(res1.status, 201)
 
     // Second registration with same CPF
@@ -177,7 +175,7 @@ Deno.test('POST /api/users/register', async (t) => {
       idPhoto: makeFile('id.jpg'),
       residenceProof: makeFile('proof.jpg'),
     })
-    const res2 = await handler.POST(req2, ctx)
+    const res2 = await handleRegister(req2)
     assertEquals(res2.status, 409)
     const body = await res2.json()
     assertExists(body.error)
@@ -204,7 +202,7 @@ Deno.test('POST /api/users/register', async (t) => {
         }),
       })
 
-      const res = await handler.POST(req, ctx)
+      const res = await handleRegister(req)
       assertEquals(res.status, 201)
 
       const user = await res.json()

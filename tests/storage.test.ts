@@ -4,9 +4,8 @@ import {
   assertRejects,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { join } from 'https://deno.land/std@0.224.0/path/mod.ts'
-import { Context } from 'fresh'
 import { uploadFile } from '../lib/storage.ts'
-import { handler as uploadsHandler } from '../routes/api/uploads/[filename].ts'
+import { handleGetUpload } from '../routes/api/uploads/[filename].ts'
 import { auth } from '../lib/auth.ts'
 
 Deno.test('Storage and Upload API Tests', async (t) => {
@@ -167,12 +166,8 @@ Deno.test('Storage and Upload API Tests', async (t) => {
     const filename = await uploadFile(logoFile, { isPublic: true })
 
     const req = new Request(`http://localhost:8000/api/uploads/${filename}`)
-    const ctx = {
-      params: { filename },
-      state: {},
-    } as unknown as Context<unknown>
 
-    const res = await uploadsHandler.GET(req, ctx)
+    const res = await handleGetUpload(req, filename)
     assertEquals(res.status, 200)
     assertEquals(res.headers.get('Content-Type'), 'image/webp')
 
@@ -194,16 +189,11 @@ Deno.test('Storage and Upload API Tests', async (t) => {
         isPublic: false,
       })
 
-      const ctx = {
-        params: { filename },
-        state: {},
-      } as unknown as Context<unknown>
-
       // 1. Unauthenticated request -> 401 Unauthorized
       const reqUnauth = new Request(
         `http://localhost:8000/api/uploads/${filename}`,
       )
-      const resUnauth = await uploadsHandler.GET(reqUnauth, ctx)
+      const resUnauth = await handleGetUpload(reqUnauth, filename)
       assertEquals(resUnauth.status, 401)
 
       // 2. Request by other user (not owner, not admin) -> 403 Forbidden
@@ -213,7 +203,7 @@ Deno.test('Storage and Upload API Tests', async (t) => {
           headers: { cookie: otherCookie || '' },
         },
       )
-      const resOther = await uploadsHandler.GET(reqOther, ctx)
+      const resOther = await handleGetUpload(reqOther, filename)
       assertEquals(resOther.status, 403)
 
       // 3. Request by owner -> 200 OK and correct stream
@@ -223,7 +213,7 @@ Deno.test('Storage and Upload API Tests', async (t) => {
           headers: { cookie: ownerCookie || '' },
         },
       )
-      const resOwner = await uploadsHandler.GET(reqOwner, ctx)
+      const resOwner = await handleGetUpload(reqOwner, filename)
       assertEquals(resOwner.status, 200)
       assertEquals(resOwner.headers.get('Content-Type'), 'application/pdf')
       const ownerBodyText = await resOwner.text()
@@ -236,7 +226,7 @@ Deno.test('Storage and Upload API Tests', async (t) => {
           headers: { cookie: adminCookie || '' },
         },
       )
-      const resAdmin = await uploadsHandler.GET(reqAdmin, ctx)
+      const resAdmin = await handleGetUpload(reqAdmin, filename)
       assertEquals(resAdmin.status, 200)
       assertEquals(resAdmin.headers.get('Content-Type'), 'application/pdf')
       const adminBodyText = await resAdmin.text()

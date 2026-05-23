@@ -6,9 +6,8 @@ import { betterAuth } from 'better-auth'
 import { denoKvAdapter, getDenoKvAdapterRaw } from '../lib/kv-adapter.ts'
 import {
   AppState,
-  handler as middlewareHandler,
+  applyMiddleware,
 } from '../routes/_middleware.ts'
-import { Context } from 'fresh'
 
 Deno.test('Deno KV Adapter - Core CRUD operations', async (t) => {
   const kv = await Deno.openKv(':memory:')
@@ -180,15 +179,11 @@ Deno.test('Fresh Auth Middleware Protection', async (t) => {
   await t.step('Allow public routes', async () => {
     const req = new Request('http://localhost/api/auth/session')
     let nextCalled = false
-    const mockCtx = {
-      state: {},
-      next: () => {
-        nextCalled = true
-        return Promise.resolve(new Response('OK'))
-      },
-    } as unknown as Context<AppState>
 
-    const res = await middlewareHandler(req, mockCtx)
+    const res = await applyMiddleware(req, () => {
+      nextCalled = true
+      return Promise.resolve(new Response('OK'))
+    })
     assertEquals(nextCalled, true)
     assertEquals(res.status, 200)
   })
@@ -196,15 +191,11 @@ Deno.test('Fresh Auth Middleware Protection', async (t) => {
   await t.step('Reject protected route without session', async () => {
     const req = new Request('http://localhost/api/protected')
     let nextCalled = false
-    const mockCtx = {
-      state: {},
-      next: () => {
-        nextCalled = true
-        return Promise.resolve(new Response('OK'))
-      },
-    } as unknown as Context<AppState>
 
-    const res = await middlewareHandler(req, mockCtx)
+    const res = await applyMiddleware(req, () => {
+      nextCalled = true
+      return Promise.resolve(new Response('OK'))
+    })
     assertEquals(nextCalled, false)
     assertEquals(res.status, 401)
   })

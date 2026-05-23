@@ -1,28 +1,21 @@
-FROM denoland/deno:alpine-2.7.7
+FROM denoland/deno:latest
 
-# Set the working directory
+ARG GIT_REVISION
+ENV DENO_DEPLOYMENT_ID=${GIT_REVISION}
+
 WORKDIR /app
 
-# Copy dependency definition files first to optimize layer caching
-COPY deno.json deno.lock ./
-
-# Install and cache dependencies
-RUN deno install
-
-# Copy the rest of the application source code
 COPY . .
-
-# Build the production assets
+RUN deno install --allow-scripts
 RUN deno task build
+# Cache all remote imports as root so the deno user can access them at runtime
+RUN deno cache --unstable-kv routes/**/*.ts lib/*.ts
 
-# Expose the default application port
 EXPOSE 8000
 
-# Create persistence directories and set correct owner permissions for deno user
+# Create persistence directories
 RUN mkdir -p /app/uploads /app/data && chown -R deno:deno /app
 
-# Run as non-root user
 USER deno
 
-# Start the application using deno serve with unstable Deno KV API enabled
-CMD ["serve", "--unstable-kv", "-A", "_fresh/server.js"]
+CMD ["deno", "serve", "--unstable-kv", "-A", "_fresh/server.js"]

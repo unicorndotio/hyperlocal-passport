@@ -1,13 +1,22 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_REVISION: ${GIT_REVISION:-dev}
     ports:
       - '8000:8000'
     environment:
       - UPLOADS_DIR=/app/uploads
       - DENO_KV_PATH=/app/data/passport.db
       - APP_BASE_URL=http://localhost:8000
+      - BETTER_AUTH_URL=http://localhost:8000
+      - BETTER_AUTH_SECRET=change-me-in-production
     volumes:
-      - ./uploads:/app/uploads
-      - ./data:/app/data
+      - passport_uploads:/app/uploads
+      - passport_data:/app/data
     restart: unless-stopped
+
+volumes:
+  passport_uploads:
+  passport_data:

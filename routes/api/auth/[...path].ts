@@ -1,11 +1,11 @@
+import { define } from '../../../utils.ts'
 import { auth } from '../../../lib/auth.ts'
-import { Context } from 'fresh'
 
-export const handler = {
-  async GET(req: Request, ctx: Context<unknown>) {
-    return auth.handler(req)
+export const handler = define.handlers({
+  GET(ctx) {
+    return auth.handler(ctx.req)
   },
-  async POST(req: Request, ctx: Context<unknown>) {
-    return auth.handler(req)
+  POST(ctx) {
+    return auth.handler(ctx.req)
   },
-}
+})
