@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Business Profile CRUD API
 type: backend
 complexity: medium
