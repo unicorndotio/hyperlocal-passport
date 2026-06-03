@@ -11,7 +11,7 @@ services:
       - DENO_KV_PATH=/app/data/passport.db
       - APP_BASE_URL=http://localhost:8000
       - BETTER_AUTH_URL=http://localhost:8000
-      - BETTER_AUTH_SECRET=change-me-in-production
+      - BETTER_AUTH_SECRET=c94a90989040561858f261455d0e7fde0d905f7a2c39633d17d68b3712edf756
     volumes:
       - passport_uploads:/app/uploads
       - passport_data:/app/data

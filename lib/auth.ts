@@ -1,7 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { denoKvAdapter } from './kv-adapter.ts'
-
-const kv = await Deno.openKv()
+import { kv } from './kv.ts'
 
 export const auth = betterAuth({
   database: denoKvAdapter(kv),
