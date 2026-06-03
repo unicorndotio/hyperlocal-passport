@@ -1,5 +1,5 @@
 import { define } from '../../utils.ts'
-import ApprovalDashboard from '../../islands/ApprovalDashboard.tsx'
+import BusinessManager from '../../islands/BusinessManager.tsx'
 import {
   Card,
   CardContent,
@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from '../../components/ui/card.tsx'
 
-export default define.page(function AdminApprovalsPage() {
+export default define.page(function AdminBusinessesPage() {
   return (
     <div className='min-h-screen bg-slate-50'>
       <header className='bg-white border-b sticky top-0 z-10'>
@@ -20,14 +20,14 @@ export default define.page(function AdminApprovalsPage() {
             <nav className='flex items-center gap-4'>
               <a
                 href='/admin/approvals'
-                className='text-sm font-semibold text-blue-600 transition-colors'
+                className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
               >
                 Aprovações
               </a>
               <span className='text-slate-300'>|</span>
               <a
                 href='/admin/businesses'
-                className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
+                className='text-sm font-semibold text-blue-600 transition-colors'
               >
                 Empresas Parceiras
               </a>
@@ -47,14 +47,14 @@ export default define.page(function AdminApprovalsPage() {
       <main className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <Card>
           <CardHeader>
-            <CardTitle>Novos Cadastros</CardTitle>
+            <CardTitle>Credenciamento de Parceiros</CardTitle>
             <CardDescription>
-              Analise os documentos enviados pelos moradores para aprovar ou
-              rejeitar o acesso ao Passaporte Local.
+              Cadastre e gerencie as lojas parceiras da plataforma e associe
+              suas contas.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ApprovalDashboard />
+            <BusinessManager />
           </CardContent>
         </Card>
       </main>

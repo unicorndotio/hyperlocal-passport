@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Business Profile Admin UI
 type: frontend
 complexity: low
@@ -30,10 +30,10 @@ benefits club.
 
 ## Subtasks
 
-- [ ] 8.1 Create the admin business management route.
-- [ ] 8.2 Build a list/table displaying current businesses.
-- [ ] 8.3 Build the creation/edit form in an Island.
-- [ ] 8.4 Integrate the UI with the `GET` and `POST /api/businesses` endpoints.
+- [x] 8.1 Create the admin business management route.
+- [x] 8.2 Build a list/table displaying current businesses.
+- [x] 8.3 Build the creation/edit form in an Island.
+- [x] 8.4 Integrate the UI with the `GET` and `POST /api/businesses` endpoints.
 
 ## Implementation Details
 
@@ -62,9 +62,9 @@ be a dropdown (Casa, Corpo, Alimentação, Esporte, etc) based on the PRD.
 ## Tests
 
 - Unit tests:
-  - [ ] Form validates required fields (CNPJ, Name, Category).
+  - [x] Form validates required fields (CNPJ, Name, Category).
 - Integration tests:
-  - [ ] Form submission triggers the correct API endpoint and refreshes the
+  - [x] Form submission triggers the correct API endpoint and refreshes the
         list.
 - Test coverage target: >=80%
 - All tests must pass
