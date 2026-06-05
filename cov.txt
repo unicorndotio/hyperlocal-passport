@@ -1,0 +1,2 @@
+DENO_DIR=.deno_cache deno test -A --unstable-kv --coverage=cov_profile tests/coupon_engine.test.ts           │ │
+│ │ tests/coupon_api.test.ts tests/coupon_redeem_api.test.ts && DENO_DIR=.deno_cache deno coverage cov_profile

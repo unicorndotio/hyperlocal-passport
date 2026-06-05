@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Coupon Engine API & Redemption Logic
 type: backend
 complexity: high
@@ -24,23 +24,23 @@ securely redeem them while respecting strict usage limits to prevent abuse.
 </critical>
 
 <requirements>
-- MUST provide CRUD API for creating `Coupon` records (basic or special types).
-- MUST implement `POST /api/coupons/:id/redeem` to handle user redemptions.
-- MUST enforce `globalLimit` using Deno KV atomic transactions to prevent race conditions when a coupon runs out.
-- MUST enforce `userMonthlyLimit` by checking previous redemptions for that user.
-- MUST generate a short, easily typable alphanumeric `Redemption` code upon successful redeem.
-- MUST save the generated code in KV for fast lookup during checkout validation.
+- [x] MUST provide CRUD API for creating `Coupon` records (basic or special types).
+- [x] MUST implement `POST /api/coupons/:id/redeem` to handle user redemptions.
+- [x] MUST enforce `globalLimit` using Deno KV atomic transactions to prevent race conditions when a coupon runs out.
+- [x] MUST enforce `userMonthlyLimit` by checking previous redemptions for that user.
+- [x] MUST generate a short, easily typable alphanumeric `Redemption` code upon successful redeem.
+- [x] MUST save the generated code in KV for fast lookup during checkout validation.
 </requirements>
 
 ## Subtasks
 
-- [ ] 9.1 Create endpoints for Coupon CRUD
+- [x] 9.1 Create endpoints for Coupon CRUD
       (`routes/api/businesses/:id/coupons.ts`).
-- [ ] 9.2 Implement the atomic redeem logic in
+- [x] 9.2 Implement the atomic redeem logic in
       `routes/api/coupons/[id]/redeem.ts`.
-- [ ] 9.3 Write a utility to generate clean, short alphanumeric codes (excluding
+- [x] 9.3 Write a utility to generate clean, short alphanumeric codes (excluding
       ambiguous chars like 0, O, I, l).
-- [ ] 9.4 Ensure atomic operations rollback correctly if limits are reached
+- [x] 9.4 Ensure atomic operations rollback correctly if limits are reached
       concurrently.
 
 ## Implementation Details
