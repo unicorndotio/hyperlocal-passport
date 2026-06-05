@@ -10,7 +10,7 @@ Deno.test('Business API CRUD Operations', async (t) => {
     const adapter = getDenoKvAdapterRaw(kv)
 
     await t.step('create business', async () => {
-      const business = await adapter.create({
+      const business = (await adapter.create({
         model: 'businesses',
         data: {
           name: 'Test Business',
@@ -18,7 +18,7 @@ Deno.test('Business API CRUD Operations', async (t) => {
           logoUrl: 'http://localhost/logo.png',
           userId: 'user_123',
         },
-      }) as any
+      })) as { id: string; name: string }
       assertExists(business.id)
       assertEquals(business.name, 'Test Business')
     })

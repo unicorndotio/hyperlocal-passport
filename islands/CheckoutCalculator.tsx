@@ -1,6 +1,7 @@
 import { useSignal } from '@preact/signals'
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useRef } from 'preact/hooks'
 import { cn, formatBRL } from '@/lib/utils.ts'
+import type { Transaction } from '@/lib/coupon.ts'
 import {
   LucideCheckCircle2,
   LucideLoader2,
@@ -13,26 +14,28 @@ interface CheckoutCalculatorProps {
 }
 
 export default function CheckoutCalculator(
-  { businessId }: CheckoutCalculatorProps,
+  { _businessId }: CheckoutCalculatorProps,
 ) {
   const code = useSignal('')
   const amountStr = useSignal('') // For display, e.g., "R$ 0,00"
   const amountCents = useSignal(0)
   const loading = useSignal(false)
   const result = useSignal<
-    { success: boolean; data?: any; error?: string } | null
+    | { success: boolean; data?: { transaction: Transaction }; error?: string }
+    | null
   >(null)
   const scannerVisible = useSignal(false)
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
+  // deno-lint-ignore no-explicit-any
+  const scannerRef = useRef<any>(null)
 
-  const handleAmountChange = (e: any) => {
+  const handleAmountChange = (e: { target: { value: string } }) => {
     const value = e.target.value.replace(/\D/g, '')
     const cents = parseInt(value || '0', 10)
     amountCents.value = cents
     amountStr.value = formatBRL(cents)
   }
 
-  const handleCodeChange = (e: any) => {
+  const handleCodeChange = (e: { target: { value: string } }) => {
     code.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
   }
 
@@ -50,8 +53,7 @@ export default function CheckoutCalculator(
           scanner.render(onScanSuccess, onScanFailure)
           scannerRef.current = scanner
         }, 100)
-      } catch (err) {
-        console.error('Failed to load QR scanner', err)
+      } catch (_err) {
         result.value = {
           success: false,
           error: 'Não foi possível carregar o scanner',
@@ -75,7 +77,7 @@ export default function CheckoutCalculator(
     }
   }
 
-  function onScanFailure(error: any) {
+  function onScanFailure(_error: unknown) {
     // console.warn(`Code scan error = ${error}`);
   }
 
@@ -106,7 +108,7 @@ export default function CheckoutCalculator(
           error: errorText || 'Erro ao validar código',
         }
       }
-    } catch (err) {
+    } catch (_err) {
       result.value = { success: false, error: 'Erro de conexão com o servidor' }
     } finally {
       loading.value = false
@@ -149,6 +151,7 @@ export default function CheckoutCalculator(
           </div>
         </div>
         <button
+          type='button'
           onClick={reset}
           class='w-full max-w-sm py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors'
         >

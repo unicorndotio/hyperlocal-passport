@@ -63,7 +63,7 @@ Deno.test('Checkout Validation API', async (t) => {
         userId: currentUserId,
         expiresAt: new Date(Date.now() + 3600000),
       },
-    } as any)
+    } as unknown)
   })
 
   try {
@@ -76,7 +76,9 @@ Deno.test('Checkout Validation API', async (t) => {
           body: JSON.stringify({ code, amountCents }),
         },
       )
-      const res = await (validateHandler as any).POST({ req })
+      const res = await (validateHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({ req })
 
       assertEquals(res.status, 200)
       const body = await res.json()
@@ -108,7 +110,9 @@ Deno.test('Checkout Validation API', async (t) => {
           body: JSON.stringify({ code, amountCents }),
         },
       )
-      const res = await (validateHandler as any).POST({ req })
+      const res = await (validateHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({ req })
 
       assertEquals(res.status, 400)
       const text = await res.text()
@@ -141,7 +145,9 @@ Deno.test('Checkout Validation API', async (t) => {
             body: JSON.stringify({ code: newCode, amountCents: 5000 }),
           },
         )
-        const res = await (validateHandler as any).POST({ req })
+        const res = await (validateHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req })
 
         assertEquals(res.status, 403)
         const text = await res.text()
@@ -175,7 +181,9 @@ Deno.test('Checkout Validation API', async (t) => {
             body: JSON.stringify({ code: expCode, amountCents: 5000 }),
           },
         )
-        const res = await (validateHandler as any).POST({ req })
+        const res = await (validateHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req })
 
         assertEquals(res.status, 400)
         const text = await res.text()
@@ -197,7 +205,9 @@ Deno.test('Checkout Validation API', async (t) => {
             body: JSON.stringify({ code, amountCents: 5000 }),
           },
         )
-        const res = await (validateHandler as any).POST({ req })
+        const res = await (validateHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req })
 
         assertEquals(res.status, 403)
       },
@@ -214,7 +224,9 @@ Deno.test('Checkout Validation API', async (t) => {
             body: JSON.stringify({ amountCents: 100 }), // missing code
           },
         )
-        const res = await (validateHandler as any).POST({ req })
+        const res = await (validateHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req })
         assertEquals(res.status, 400)
         assertEquals(await res.text(), 'Missing redemption code')
 
@@ -225,7 +237,9 @@ Deno.test('Checkout Validation API', async (t) => {
             body: JSON.stringify({ code: 'ABC' }), // missing amountCents
           },
         )
-        const res2 = await (validateHandler as any).POST({ req: req2 })
+        const res2 = await (validateHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req: req2 })
         assertEquals(res2.status, 400)
         assertEquals(
           await res2.text(),
@@ -242,7 +256,9 @@ Deno.test('Checkout Validation API', async (t) => {
           body: 'not json',
         },
       )
-      const res = await (validateHandler as any).POST({ req })
+      const res = await (validateHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({ req })
       assertEquals(res.status, 400)
       assertEquals(await res.text(), 'Invalid JSON body')
     })
@@ -257,7 +273,9 @@ Deno.test('Checkout Validation API', async (t) => {
             body: JSON.stringify({ code: 'MISSING_CODE', amountCents: 100 }),
           },
         )
-        const res = await (validateHandler as any).POST({ req })
+        const res = await (validateHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req })
         assertEquals(res.status, 404)
         assertEquals(await res.text(), 'Redemption code not found')
       },
@@ -274,7 +292,9 @@ Deno.test('Checkout Validation API', async (t) => {
             body: JSON.stringify({ code, amountCents: 100 }),
           },
         )
-        const res = await (validateHandler as any).POST({ req })
+        const res = await (validateHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req })
         assertEquals(res.status, 404)
         assertEquals(
           await res.text(),
@@ -307,7 +327,9 @@ Deno.test('Checkout Validation API', async (t) => {
             body: JSON.stringify({ code: inactCode, amountCents: 5000 }),
           },
         )
-        const res = await (validateHandler as any).POST({ req })
+        const res = await (validateHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req })
 
         assertEquals(res.status, 400)
         assertEquals(await res.text(), 'Coupon is no longer active')

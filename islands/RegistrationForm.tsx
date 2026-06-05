@@ -2,7 +2,6 @@ import { useState } from 'preact/hooks'
 import {
   COUNTRIES,
   formatCpfDisplay,
-  formatWhatsApp,
   isValidCpf,
   isValidFileType,
   isValidPhone,

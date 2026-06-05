@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
 import { Button } from '../components/ui/button.tsx'
-import { Badge } from '../components/ui/badge.tsx'
 
 interface PendingUser {
   id: string
@@ -173,6 +172,7 @@ export default function ApprovalDashboard() {
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm'>
           <div className='bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 relative shadow-2xl'>
             <button
+              type='button'
               onClick={() => setSelectedDocs(null)}
               className='absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl'
             >

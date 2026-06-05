@@ -42,30 +42,40 @@ Deno.test('Mobile Catalog & Redemption Integration', async (t) => {
         userId,
         expiresAt: new Date(Date.now() + 3600000),
       },
-    } as any)
+    } as unknown)
   })
 
   try {
     await t.step('Browse Catalog', async () => {
       const req = new Request('http://localhost:8000/catalog')
-      const res = await (catalogHandler as any).GET({
+      const res = await (catalogHandler as unknown as {
+        GET: (
+          ctx: unknown,
+        ) => Promise<{ businesses: { id: string; name: string }[] }>
+      }).GET({
         req,
-        render: (data: any) => data,
+        render: (data: unknown) => data,
       })
 
       assertExists(res.businesses)
       assertEquals(res.businesses.length >= 1, true)
-      const found = res.businesses.find((b: any) => b.id === businessId)
+      const found = res.businesses.find((b: { id: string }) =>
+        b.id === businessId
+      )
       assertExists(found)
       assertEquals(found.name, 'Test Shop')
     })
 
     await t.step('View Business Detail', async () => {
       const req = new Request(`http://localhost:8000/business/${businessId}`)
-      const res = await (businessDetailHandler as any).GET({
+      const res = await (businessDetailHandler as unknown as {
+        GET: (
+          ctx: unknown,
+        ) => Promise<{ business: { id: string }; coupons: { id: string }[] }>
+      }).GET({
         req,
         params: { id: businessId },
-        render: (data: any) => data,
+        render: (data: unknown) => data,
       })
 
       assertEquals(res.business.id, businessId)
@@ -80,7 +90,9 @@ Deno.test('Mobile Catalog & Redemption Integration', async (t) => {
           method: 'POST',
         },
       )
-      const res = await (redeemHandler as any).POST({
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({
         req,
         params: { id: couponId },
       })
@@ -91,7 +103,9 @@ Deno.test('Mobile Catalog & Redemption Integration', async (t) => {
 
       // Verify it appears in user's redemptions
       const req2 = new Request('http://localhost:8000/api/users/me/redemptions')
-      const res2 = await (redemptionsHandler as any).GET({ req: req2 })
+      const res2 = await (redemptionsHandler as unknown as {
+        GET: (ctx: unknown) => Promise<Response>
+      }).GET({ req: req2 })
       const redemptions = await res2.json()
 
       assertEquals(redemptions.length, 1)
@@ -107,7 +121,8 @@ Deno.test('Mobile Catalog & Redemption Integration', async (t) => {
     for await (const entry of iter) await kv.delete(entry.key)
     const iter2 = kv.list({ prefix: ['redemptions'] })
     for await (const entry of iter2) {
-      if ((entry.value as any).userId === userId) await kv.delete(entry.key)
+      const red = entry.value as { userId: string }
+      if (red.userId === userId) await kv.delete(entry.key)
     }
   }
 })

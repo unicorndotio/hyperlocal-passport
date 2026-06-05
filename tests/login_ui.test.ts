@@ -5,24 +5,27 @@ import {
 
 let capturedUrl = ''
 const originalFetch = globalThis.fetch
-globalThis.fetch = async (input: RequestInfo | URL) => {
+globalThis.fetch = (input: RequestInfo | URL) => {
   const url = typeof input === 'string'
     ? input
-    : (input as any).url || (input as any).href
+    : (input as unknown as { url?: string; href?: string }).url ||
+      (input as unknown as { url?: string; href?: string }).href || ''
   capturedUrl = url
-  return new Response(
-    JSON.stringify({
-      user: { id: 'u1', email: 'test@example.com', role: 'admin' },
-      session: {
-        id: 's1',
-        userId: 'u1',
-        expiresAt: new Date(Date.now() + 10000).toISOString(),
-        token: 't',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    }),
-    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  return Promise.resolve(
+    new Response(
+      JSON.stringify({
+        user: { id: 'u1', email: 'test@example.com', role: 'admin' },
+        session: {
+          id: 's1',
+          userId: 'u1',
+          expiresAt: new Date(Date.now() + 10000).toISOString(),
+          token: 't',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ),
   )
 }
 
@@ -48,7 +51,7 @@ Deno.test({
     const { signIn } = await import('../lib/auth-client.ts')
 
     await t.step('Successful login triggers sign-in request', async () => {
-      const res = await signIn.email({
+      await signIn.email({
         email: 'test@example.com',
         password: 'password',
       })
@@ -59,9 +62,3 @@ Deno.test({
   },
   ignore: true,
 })
-
-function assertExists(val: any) {
-  if (val === undefined || val === null) {
-    throw new Error('Expected value to exist')
-  }
-}

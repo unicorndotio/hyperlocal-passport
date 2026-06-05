@@ -250,17 +250,19 @@ Deno.test('fetch integration: 201 response returns success body', async () => {
   let capturedUrl = ''
   let capturedMethod = ''
 
-  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     capturedUrl = input.toString()
     capturedMethod = init?.method ?? 'GET'
-    return new Response(
-      JSON.stringify({
-        id: 'abc',
-        name: 'Test',
-        cpf: '52998224725',
-        status: 'pending',
-      }),
-      { status: 201, headers: { 'Content-Type': 'application/json' } },
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          id: 'abc',
+          name: 'Test',
+          cpf: '52998224725',
+          status: 'pending',
+        }),
+        { status: 201, headers: { 'Content-Type': 'application/json' } },
+      ),
     )
   }
 
@@ -288,10 +290,12 @@ Deno.test('fetch integration: 201 response returns success body', async () => {
 Deno.test('fetch integration: 409 response returns error body', async () => {
   const originalFetch = globalThis.fetch
 
-  globalThis.fetch = async () => {
-    return new Response(
-      JSON.stringify({ error: 'CPF already registered' }),
-      { status: 409, headers: { 'Content-Type': 'application/json' } },
+  globalThis.fetch = () => {
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({ error: 'CPF already registered' }),
+        { status: 409, headers: { 'Content-Type': 'application/json' } },
+      ),
     )
   }
 

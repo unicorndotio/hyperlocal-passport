@@ -15,12 +15,12 @@ export default function RedeemButton({ couponId }: { couponId: string }) {
 
       if (res.ok) {
         // Redirect to Passaporte on success
-        window.location.href = '/passaporte'
+        globalThis.location.href = '/passaporte'
       } else {
         const text = await res.text()
         error.value = text || 'Erro ao resgatar cupom.'
       }
-    } catch (err) {
+    } catch (_err) {
       error.value = 'Erro de conexão.'
     } finally {
       loading.value = false

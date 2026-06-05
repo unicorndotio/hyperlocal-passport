@@ -2,16 +2,27 @@ import {
   assertEquals,
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
+import { auth } from '../lib/auth.ts'
 import { handler as businessCouponsHandler } from '../routes/api/businesses/[id]/coupons.ts'
 import { handler as couponHandler } from '../routes/api/coupons/[id].ts'
 import { kv } from '../lib/kv.ts'
 
 Deno.test('Coupon API CRUD - Integration', async (t) => {
-  // We use the real KV but we should be careful.
-  // Actually, Deno.openKv() in the handlers will open the default KV.
-  // In tests, we might want to point it to a temp file.
+  // Stub Auth as Admin
+  const getSessionStub = stub(auth.api, 'getSession', () => {
+    return Promise.resolve({
+      user: { id: 'admin_user', role: 'admin' },
+      session: {
+        id: 'sess_admin',
+        userId: 'admin_user',
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    } as unknown)
+  })
 
-  const businessId = 'test_biz_' + Math.random().toString(36).slice(2)
+  try {
+    const businessId = 'test_biz_' + Math.random().toString(36).slice(2)
   let couponId: string
 
   await t.step('POST /api/businesses/:id/coupons - Create', async () => {
@@ -31,7 +42,9 @@ Deno.test('Coupon API CRUD - Integration', async (t) => {
     )
 
     // ctx for Fresh 2 handlers
-    const res = await (businessCouponsHandler as any).POST({
+    const res = await (businessCouponsHandler as unknown as {
+      POST: (ctx: unknown) => Promise<Response>
+    }).POST({
       req,
       params: { id: businessId },
     })
@@ -48,7 +61,9 @@ Deno.test('Coupon API CRUD - Integration', async (t) => {
     const req = new Request(
       `http://localhost:8000/api/businesses/${businessId}/coupons`,
     )
-    const res = await (businessCouponsHandler as any).GET({
+    const res = await (businessCouponsHandler as unknown as {
+      GET: (ctx: unknown) => Promise<Response>
+    }).GET({
       req,
       params: { id: businessId },
     })
@@ -62,7 +77,9 @@ Deno.test('Coupon API CRUD - Integration', async (t) => {
 
   await t.step('GET /api/coupons/:id - Get Single', async () => {
     const req = new Request(`http://localhost:8000/api/coupons/${couponId}`)
-    const res = await (couponHandler as any).GET({
+    const res = await (couponHandler as unknown as {
+      GET: (ctx: unknown) => Promise<Response>
+    }).GET({
       req,
       params: { id: couponId },
     })
@@ -80,7 +97,9 @@ Deno.test('Coupon API CRUD - Integration', async (t) => {
       }),
       headers: { 'Content-Type': 'application/json' },
     })
-    const res = await (couponHandler as any).PUT({
+    const res = await (couponHandler as unknown as {
+      PUT: (ctx: unknown) => Promise<Response>
+    }).PUT({
       req,
       params: { id: couponId },
     })
@@ -94,7 +113,9 @@ Deno.test('Coupon API CRUD - Integration', async (t) => {
     const req = new Request(`http://localhost:8000/api/coupons/${couponId}`, {
       method: 'DELETE',
     })
-    const res = await (couponHandler as any).DELETE({
+    const res = await (couponHandler as unknown as {
+      DELETE: (ctx: unknown) => Promise<Response>
+    }).DELETE({
       req,
       params: { id: couponId },
     })
@@ -105,13 +126,18 @@ Deno.test('Coupon API CRUD - Integration', async (t) => {
     const checkReq = new Request(
       `http://localhost:8000/api/coupons/${couponId}`,
     )
-    const checkRes = await (couponHandler as any).GET({
+    const checkRes = await (couponHandler as unknown as {
+      GET: (ctx: unknown) => Promise<Response>
+    }).GET({
       req: checkReq,
       params: { id: couponId },
     })
     assertEquals(checkRes.status, 404)
   })
 
-  // Cleanup
-  await kv.delete(['coupons', couponId!])
+    // Cleanup
+    await kv.delete(['coupons', couponId!])
+  } finally {
+    getSessionStub.restore()
+  }
 })

@@ -25,7 +25,7 @@ export default function LoginForm() {
       } else if (data) {
         // Successful login - Better Auth handles the redirect if callbackURL is provided
         // or we can manually redirect if needed.
-        window.location.href = '/admin/approvals'
+        globalThis.location.href = '/admin/approvals'
       }
     } catch (err) {
       setError('Erro ao tentar entrar. Tente novamente.')

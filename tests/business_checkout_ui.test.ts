@@ -50,15 +50,17 @@ Deno.test('CheckoutCalculator - API Integration (Mocked)', async (t) => {
       finalAmount: 8500,
     }
 
-    globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    globalThis.fetch = (_input: RequestInfo | URL, init?: RequestInit) => {
       const body = JSON.parse(init?.body as string)
       assertEquals(body.code, 'TESTCODE')
       assertEquals(body.amountCents, 10000)
 
-      return new Response(JSON.stringify({ transaction: mockTransaction }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return Promise.resolve(
+        new Response(JSON.stringify({ transaction: mockTransaction }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
     }
 
     // Simulate the handleSubmit logic
@@ -76,8 +78,10 @@ Deno.test('CheckoutCalculator - API Integration (Mocked)', async (t) => {
   })
 
   await t.step('Failed validation call (404)', async () => {
-    globalThis.fetch = async () => {
-      return new Response('Código não encontrado', { status: 404 })
+    globalThis.fetch = () => {
+      return Promise.resolve(
+        new Response('Código não encontrado', { status: 404 }),
+      )
     }
 
     const callApi = async (code: string, cents: number) => {

@@ -17,7 +17,7 @@ Deno.test('User Redemptions API', async (t) => {
         userId,
         expiresAt: new Date(Date.now() + 3600000),
       },
-    } as any)
+    } as unknown)
   })
 
   try {
@@ -28,7 +28,9 @@ Deno.test('User Redemptions API', async (t) => {
           method: 'GET',
         },
       )
-      const res = await (redemptionsHandler as any).GET({
+      const res = await (redemptionsHandler as unknown as {
+        GET: (ctx: unknown) => Promise<Response>
+      }).GET({
         req,
       })
 
@@ -66,7 +68,9 @@ Deno.test('User Redemptions API', async (t) => {
           method: 'GET',
         },
       )
-      const res = await (redemptionsHandler as any).GET({
+      const res = await (redemptionsHandler as unknown as {
+        GET: (ctx: unknown) => Promise<Response>
+      }).GET({
         req,
       })
 
@@ -87,7 +91,9 @@ Deno.test('User Redemptions API', async (t) => {
           method: 'GET',
         },
       )
-      const res = await (redemptionsHandler as any).GET({
+      const res = await (redemptionsHandler as unknown as {
+        GET: (ctx: unknown) => Promise<Response>
+      }).GET({
         req,
       })
 

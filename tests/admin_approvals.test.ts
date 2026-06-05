@@ -58,10 +58,12 @@ Deno.test('Admin Approvals API', async (t) => {
       )
       // define.handlers returns a function (ctx: Context) => Response | Promise<Response>
       // In Fresh 2, the context has a 'req' property.
-      const res = await (pendingHandler as any).GET({ req })
+      const res = await (pendingHandler as unknown as {
+        GET: (ctx: unknown) => Promise<Response>
+      }).GET({ req })
       assertEquals(res.status, 200)
       const users = await res.json()
-      const found = users.find((u: any) => u.id === userId)
+      const found = users.find((u: { id: string }) => u.id === userId)
       assertExists(found)
       assertEquals(found.status, 'pending')
 
@@ -82,7 +84,9 @@ Deno.test('Admin Approvals API', async (t) => {
           body: JSON.stringify({ status: 'approved' }),
         },
       )
-      const res = await (actionHandler as any).POST({ req, params: { userId } })
+      const res = await (actionHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({ req, params: { userId } })
       assertEquals(res.status, 200)
 
       const user = await res.json()
@@ -90,7 +94,7 @@ Deno.test('Admin Approvals API', async (t) => {
 
       // Verify KV
       const kvUser = await kv.get(['users', userId])
-      assertEquals((kvUser.value as any).status, 'approved')
+      assertEquals((kvUser.value as { status: string }).status, 'approved')
       const kvPending = await kv.get(['approvals', 'pending', userId])
       assertEquals(kvPending.value, null)
 
@@ -109,7 +113,9 @@ Deno.test('Admin Approvals API', async (t) => {
         body: JSON.stringify({ status: 'rejected' }),
       },
     )
-    const res = await (actionHandler as any).POST({ req, params: { userId } })
+    const res = await (actionHandler as unknown as {
+      POST: (ctx: unknown) => Promise<Response>
+    }).POST({ req, params: { userId } })
     assertEquals(res.status, 200)
 
     const user = await res.json()
@@ -117,7 +123,7 @@ Deno.test('Admin Approvals API', async (t) => {
 
     // Verify KV
     const kvUser = await kv.get(['users', userId])
-    assertEquals((kvUser.value as any).status, 'rejected')
+    assertEquals((kvUser.value as { status: string }).status, 'rejected')
     const kvPending = await kv.get(['approvals', 'pending', userId])
     assertEquals(kvPending.value, null)
 
@@ -137,7 +143,9 @@ Deno.test('Admin Approvals API', async (t) => {
           body: JSON.stringify({ status: 'invalid' }),
         },
       )
-      const res = await (actionHandler as any).POST({ req, params: { userId } })
+      const res = await (actionHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({ req, params: { userId } })
       assertEquals(res.status, 400)
 
       await cleanupTestUser(userId)
@@ -155,7 +163,9 @@ Deno.test('Admin Approvals API', async (t) => {
           body: 'not-json',
         },
       )
-      const res = await (actionHandler as any).POST({ req, params: { userId } })
+      const res = await (actionHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({ req, params: { userId } })
       assertEquals(res.status, 400)
       const body = await res.json()
       assertEquals(body.error, 'Invalid JSON')
@@ -173,7 +183,9 @@ Deno.test('Admin Approvals API', async (t) => {
           body: JSON.stringify({ status: 'approved' }),
         },
       )
-      const res = await (actionHandler as any).POST({ req, params: { userId } })
+      const res = await (actionHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({ req, params: { userId } })
       assertEquals(res.status, 404)
       const body = await res.json()
       assertEquals(body.error, 'User not found')
@@ -186,7 +198,8 @@ Deno.test('Admin Middleware', async (t) => {
 
   await t.step('blocks unauthorized from /api/*', async () => {
     // Mock no session
-    ;(auth.api as any).getSession = () => Promise.resolve(null)
+    ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
+      Promise.resolve(null)
 
     const req = new Request('http://localhost:8000/api/admin/approvals/pending')
     const res = await applyMiddleware(
@@ -201,7 +214,8 @@ Deno.test('Admin Middleware', async (t) => {
 
   await t.step('redirects unauthorized from /admin*', async () => {
     // Mock no session
-    ;(auth.api as any).getSession = () => Promise.resolve(null)
+    ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
+      Promise.resolve(null)
 
     const req = new Request('http://localhost:8000/admin/users')
     const res = await applyMiddleware(
@@ -215,11 +229,11 @@ Deno.test('Admin Middleware', async (t) => {
 
   await t.step('blocks non-admin from /admin*', async () => {
     // Mock resident
-    ;(auth.api as any).getSession = () =>
+    ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
       Promise.resolve({
         session: { id: 's1', userId: 'u1' },
         user: { id: 'u1', role: 'resident' },
-      } as any)
+      } as unknown)
 
     const req = new Request('http://localhost:8000/admin/users')
     const res = await applyMiddleware(
@@ -228,11 +242,12 @@ Deno.test('Admin Middleware', async (t) => {
     )
 
     assertEquals(res.status, 403)
-    assertEquals(await res.text(), 'Forbidden')
+    assertEquals(await res.text(), 'Forbidden: Admin access required')
   })
 
   await t.step('redirects unauthorized from /business*', async () => {
-    ;(auth.api as any).getSession = () => Promise.resolve(null)
+    ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
+      Promise.resolve(null)
     const req = new Request('http://localhost:8000/business/settings')
     const res = await applyMiddleware(
       req,
@@ -242,7 +257,8 @@ Deno.test('Admin Middleware', async (t) => {
   })
 
   await t.step('redirects unauthorized from /dashboard*', async () => {
-    ;(auth.api as any).getSession = () => Promise.resolve(null)
+    ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
+      Promise.resolve(null)
     const req = new Request('http://localhost:8000/dashboard')
     const res = await applyMiddleware(
       req,
@@ -253,7 +269,7 @@ Deno.test('Admin Middleware', async (t) => {
 
   await t.step('blocks non-admin from /api/admin/*', async () => {
     // Mock session for resident
-    ;(auth.api as any).getSession = () =>
+    ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
       Promise.resolve({
         session: {
           id: 's1',
@@ -272,7 +288,7 @@ Deno.test('Admin Middleware', async (t) => {
           createdAt: new Date(),
           updatedAt: new Date(),
         },
-      } as any)
+      } as unknown)
 
     const req = new Request('http://localhost:8000/api/admin/approvals/pending')
     const res = await applyMiddleware(
@@ -282,12 +298,12 @@ Deno.test('Admin Middleware', async (t) => {
 
     assertEquals(res.status, 403)
     const body = await res.json()
-    assertEquals(body.error, 'Forbidden')
+    assertEquals(body.error, 'Forbidden: Admin access required')
   })
 
   await t.step('allows admin to /api/admin/*', async () => {
     // Mock session for admin
-    ;(auth.api as any).getSession = () =>
+    ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
       Promise.resolve({
         session: {
           id: 's2',
@@ -306,7 +322,7 @@ Deno.test('Admin Middleware', async (t) => {
           createdAt: new Date(),
           updatedAt: new Date(),
         },
-      } as any)
+      } as unknown)
 
     const req = new Request('http://localhost:8000/api/admin/approvals/pending')
     const res = await applyMiddleware(

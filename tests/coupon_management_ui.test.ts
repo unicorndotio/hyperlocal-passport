@@ -26,7 +26,8 @@ async function cleanupTestBusiness(businessId: string) {
   await kv.delete(['businesses', businessId])
   const entries = kv.list({ prefix: ['coupons'] })
   for await (const entry of entries) {
-    if ((entry.value as any).businessId === businessId) {
+    const coupon = entry.value as { businessId: string }
+    if (coupon.businessId === businessId) {
       await kv.delete(entry.key)
     }
   }
@@ -59,7 +60,9 @@ Deno.test('Coupon Management API', async (t) => {
         },
       )
 
-      const res = await (couponsHandler as any).POST({
+      const res = await (couponsHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({
         req,
         params: { id: businessId },
       })
@@ -75,7 +78,10 @@ Deno.test('Coupon Management API', async (t) => {
       // Verify in KV
       const kvCoupon = await kv.get(['coupons', coupon.id])
       assertExists(kvCoupon.value)
-      assertEquals((kvCoupon.value as any).title, couponData.title)
+      assertEquals(
+        (kvCoupon.value as { title: string }).title,
+        couponData.title,
+      )
     },
   )
 
@@ -90,7 +96,9 @@ Deno.test('Coupon Management API', async (t) => {
         },
       )
 
-      const res = await (couponsHandler as any).POST({
+      const res = await (couponsHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({
         req,
         params: { id: businessId },
       })
@@ -104,7 +112,9 @@ Deno.test('Coupon Management API', async (t) => {
       const req = new Request(
         `http://localhost:8000/api/businesses/${businessId}/coupons`,
       )
-      const res = await (couponsHandler as any).GET({
+      const res = await (couponsHandler as unknown as {
+        GET: (ctx: unknown) => Promise<Response>
+      }).GET({
         req,
         params: { id: businessId },
       })
@@ -124,24 +134,26 @@ Deno.test('Coupon Management API', async (t) => {
 Deno.test('CouponManager UI Integration (Mocked)', async (t) => {
   const originalFetch = globalThis.fetch
 
-  await t.step('Successful coupon creation updates state', async () => {
-    let capturedBody: any = null
+  await t.step('Successful coupon creation updates state', () => {
+    let capturedBody: unknown = null
 
-    globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    globalThis.fetch = (_input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === 'POST') {
         capturedBody = JSON.parse(init.body as string)
-        return new Response(
-          JSON.stringify({
-            id: 'new-id',
-            ...capturedBody,
-            globalClaimedCount: 0,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-          }),
-          { status: 201, headers: { 'Content-Type': 'application/json' } },
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              id: 'new-id',
+              ...(capturedBody as Record<string, unknown>),
+              globalClaimedCount: 0,
+              isActive: true,
+              createdAt: new Date().toISOString(),
+            }),
+            { status: 201, headers: { 'Content-Type': 'application/json' } },
+          ),
         )
       }
-      return new Response('Not Found', { status: 404 })
+      return Promise.resolve(new Response('Not Found', { status: 404 }))
     }
 
     // Since we can't easily render the island in Deno, we test the logic

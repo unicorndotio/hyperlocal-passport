@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertExists,
-} from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { render } from 'npm:preact-render-to-string@^6.6.3'
 import { h } from 'npm:preact@^10.27.2'
 import ApprovalDashboard from '../islands/ApprovalDashboard.tsx'

@@ -35,7 +35,7 @@ Deno.test('Coupon Redemption API', async (t) => {
         userId,
         expiresAt: new Date(Date.now() + 3600000),
       },
-    } as any)
+    } as unknown)
   })
 
   try {
@@ -46,7 +46,9 @@ Deno.test('Coupon Redemption API', async (t) => {
           method: 'POST',
         },
       )
-      const res = await (redeemHandler as any).POST({
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({
         req,
         params: { id: couponId },
       })
@@ -76,11 +78,12 @@ Deno.test('Coupon Redemption API', async (t) => {
             method: 'POST',
           },
         )
-        const res = await (redeemHandler as any).POST({
+        const res = await (redeemHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({
           req,
           params: { id: couponId },
         })
-
         assertEquals(res.status, 400)
         const text = await res.text()
         assertEquals(text, 'Global limit reached')
@@ -100,7 +103,9 @@ Deno.test('Coupon Redemption API', async (t) => {
           method: 'POST',
         },
       )
-      const res = await (redeemHandler as any).POST({
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({
         req,
         params: { id: couponId },
       })
@@ -124,7 +129,9 @@ Deno.test('Coupon Redemption API', async (t) => {
           method: 'POST',
         },
       )
-      const res = await (redeemHandler as any).POST({
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({
         req,
         params: { id: couponId },
       })
@@ -141,7 +148,9 @@ Deno.test('Coupon Redemption API', async (t) => {
           method: 'POST',
         },
       )
-      const res = await (redeemHandler as any).POST({
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: unknown) => Promise<Response>
+      }).POST({
         req,
         params: { id: 'nonexistent' },
       })
@@ -176,11 +185,12 @@ Deno.test('Coupon Redemption API', async (t) => {
             method: 'POST',
           },
         )
-        const res = await (redeemHandler as any).POST({
+        const res = await (redeemHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({
           req,
           params: { id: couponId },
         })
-
         assertEquals(res.status, 400)
         const text = await res.text()
         assertEquals(text, 'User monthly limit reached')

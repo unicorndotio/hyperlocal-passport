@@ -3,23 +3,23 @@ import { createAdapterFactory } from 'better-auth/adapters'
 // Export raw implementation for unit testing without factory wrappers
 export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
   return {
-    async create<T extends Record<string, any> = Record<string, any>>(
+    async create<T extends Record<string, unknown> = Record<string, unknown>>(
       data: { model: string; data: T },
     ): Promise<T> {
       const { model, data: record } = data
       const id = record.id || crypto.randomUUID()
       const finalRecord = { ...record, id }
-      await kv.set([model, id], finalRecord)
-      return finalRecord as T
+      await kv.set([model, id as string], finalRecord)
+      return finalRecord as unknown as T
     },
 
-    async findOne<T = Record<string, any>>(
+    async findOne<T = Record<string, unknown>>(
       data: { model: string; where: { field: string; value: unknown }[] },
     ): Promise<T | null> {
       const { model, where } = data
       const entries = kv.list({ prefix: [model] })
       for await (const entry of entries) {
-        const val = entry.value as Record<string, any>
+        const val = entry.value as Record<string, unknown>
         let matches = true
         for (const { field, value } of where) {
           if (val[field] !== value) {
@@ -32,14 +32,14 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       return null
     },
 
-    async findMany<T = Record<string, any>>(
+    async findMany<T = Record<string, unknown>>(
       data: { model: string; where?: { field: string; value: unknown }[] },
     ): Promise<T[]> {
       const { model, where } = data
       const entries = kv.list({ prefix: [model] })
-      const results: Record<string, any>[] = []
+      const results: Record<string, unknown>[] = []
       for await (const entry of entries) {
-        const val = entry.value as Record<string, any>
+        const val = entry.value as Record<string, unknown>
         let matches = true
         if (where) {
           for (const { field, value } of where) {
@@ -54,7 +54,7 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       return results as unknown as T[]
     },
 
-    async update<T = Record<string, any>>(
+    async update<T = Record<string, unknown>>(
       data: {
         model: string
         where: { field: string; value: unknown }[]
@@ -64,7 +64,7 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       const { model, where, update } = data
       const entries = kv.list({ prefix: [model] })
       for await (const entry of entries) {
-        const val = entry.value as Record<string, any>
+        const val = entry.value as Record<string, unknown>
         let matches = true
         for (const { field, value } of where) {
           if (val[field] !== value) {
@@ -81,7 +81,7 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       return null
     },
 
-    async updateMany<T = Record<string, any>>(
+    async updateMany<T = Record<string, unknown>>(
       data: {
         model: string
         where: { field: string; value: unknown }[]
@@ -92,7 +92,7 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       const entries = kv.list({ prefix: [model] })
       let count = 0
       for await (const entry of entries) {
-        const val = entry.value as Record<string, any>
+        const val = entry.value as Record<string, unknown>
         let matches = true
         for (const { field, value } of where) {
           if (val[field] !== value) {
@@ -115,7 +115,7 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       const { model, where } = data
       const entries = kv.list({ prefix: [model] })
       for await (const entry of entries) {
-        const val = entry.value as Record<string, any>
+        const val = entry.value as Record<string, unknown>
         let matches = true
         for (const { field, value } of where) {
           if (val[field] !== value) {
@@ -137,7 +137,7 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       const entries = kv.list({ prefix: [model] })
       let count = 0
       for await (const entry of entries) {
-        const val = entry.value as Record<string, any>
+        const val = entry.value as Record<string, unknown>
         let matches = true
         if (where) {
           for (const { field, value } of where) {
@@ -162,7 +162,7 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       const entries = kv.list({ prefix: [model] })
       let count = 0
       for await (const entry of entries) {
-        const val = entry.value as Record<string, any>
+        const val = entry.value as Record<string, unknown>
         let matches = true
         if (where) {
           for (const { field, value } of where) {
@@ -186,7 +186,7 @@ export const denoKvAdapter = (kv: Deno.Kv) =>
     config: {
       adapterId: 'deno-kv',
     },
-    adapter: (options) => {
+    adapter: (_options) => {
       return getDenoKvAdapterRaw(kv)
     },
   })
