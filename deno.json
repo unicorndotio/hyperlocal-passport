@@ -1,5 +1,5 @@
 {
-  "nodeModulesDir": "manual",
+  "nodeModulesDir": "auto",
   "tasks": {
     "check": "deno fmt --check . && deno lint . && deno check",
     "lint": "deno lint",
@@ -9,7 +9,7 @@
     "test": "deno test -A --unstable-kv",
     "test:cov": "deno test -A --unstable-kv --coverage=cov_profile/",
     "coverage": "deno coverage cov_profile/",
-    "type-check": "deno check main.ts",
+    "type-check": "deno check",
     "update": "deno run -A -r jsr:@fresh/update .",
     "seed": "docker compose exec web deno run -A --unstable-kv seed.ts"
   },
@@ -30,7 +30,9 @@
     ]
   },
   "exclude": [
-    "**/_fresh/*"
+    "**/_fresh/*",
+    "node_modules/",
+    ".deno_cache/"
   ],
   "imports": {
     "@/": "./",
@@ -57,9 +59,11 @@
     "tailwindcss": "npm:tailwindcss@^4.1.10",
     "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.12",
     "qrcode": "npm:qrcode@^1.5.4",
-    "@types/qrcode": "npm:@types/qrcode@^1.5.5"
+    "@types/qrcode": "npm:@types/qrcode@^1.5.5",
+    "undici-types": "npm:undici-types@^6.19.8"
   },
   "compilerOptions": {
+    "skipLibCheck": true,
     "lib": [
       "dom",
       "dom.asynciterable",

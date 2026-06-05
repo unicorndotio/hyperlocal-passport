@@ -18,7 +18,10 @@ export default define.page(async function BusinessCouponsPage(ctx) {
   const session = await auth.api.getSession({ headers: ctx.req.headers })
 
   if (!session || session.user.role !== 'business') {
-    return ctx.redirect('/login')
+    return new Response(null, {
+      status: 302,
+      headers: { Location: '/login' },
+    })
   }
 
   // Find business for this user

@@ -129,7 +129,8 @@ function ChartTooltipContent({
   & React.ComponentProps<'div'>
   & {
     active?: boolean
-    payload?: Record<string, unknown>[]
+    // deno-lint-ignore no-explicit-any
+    payload?: any[]
     label?: unknown
     color?: string
     hideLabel?: boolean
@@ -191,15 +192,11 @@ function ChartTooltipContent({
       {!nestLabel ? tooltipLabel : null}
       <div className='grid gap-1.5'>
         {payload
-          .filter((item) => (item as Record<string, unknown>).type !== 'none')
+          // deno-lint-ignore no-explicit-any
+          .filter((item) => (item as any).type !== 'none')
           .map((item, index: number) => {
-            const typedItem = item as Record<string, unknown> & {
-              dataKey: string
-              name: string
-              value?: number
-              color: string
-              payload: { fill?: string }
-            }
+            // deno-lint-ignore no-explicit-any
+            const typedItem = item as any
             const key = `${
               nameKey || typedItem.name || typedItem.dataKey || 'value'
             }`
@@ -208,7 +205,7 @@ function ChartTooltipContent({
               typedItem,
               key,
             )
-            const indicatorColor = color || typedItem.payload.fill ||
+            const indicatorColor = color || typedItem.payload?.fill ||
               typedItem.color
 
             return (
@@ -226,7 +223,7 @@ function ChartTooltipContent({
                       typedItem.name,
                       typedItem,
                       index,
-                      typedItem.payload,
+                      payload,
                     )
                   )
                   : (
@@ -309,13 +306,11 @@ function ChartLegendContent({
       )}
     >
       {payload
-        .filter((item) => (item as Record<string, unknown>).type !== 'none')
+        // deno-lint-ignore no-explicit-any
+        .filter((item) => (item as any).type !== 'none')
         .map((item) => {
-          const typedItem = item as Record<string, unknown> & {
-            dataKey: string
-            value: string
-            color: string
-          }
+          // deno-lint-ignore no-explicit-any
+          const typedItem = item as any
           const key = `${nameKey || typedItem.dataKey || 'value'}`
           const itemConfig = getPayloadConfigFromPayload(config, typedItem, key)
 

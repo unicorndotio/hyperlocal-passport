@@ -21,7 +21,7 @@ export const handler = define.handlers({
     const entries = kv.list<Redemption>({
       prefix: ['user_redemptions', userId],
     }, { reverse: true })
-    const activeRedemptions = []
+    const activeRedemptions: (Redemption & { businessName: string })[] = []
 
     // We also need business names for display
     const businessMap = new Map<string, string>()
@@ -35,7 +35,7 @@ export const handler = define.handlers({
         }
         activeRedemptions.push({
           ...r,
-          businessName: businessMap.get(r.businessId),
+          businessName: businessMap.get(r.businessId) || 'Empresa',
         })
       }
     }
@@ -45,7 +45,9 @@ export const handler = define.handlers({
 })
 
 export default define.page<typeof handler>(function PassaportePage(ctx) {
-  const { redemptions } = ctx.data
+  const { redemptions } = ctx.data as {
+    redemptions: (Redemption & { businessName: string })[]
+  }
 
   return (
     <div class='px-4 py-6 max-w-md mx-auto min-h-screen bg-background'>

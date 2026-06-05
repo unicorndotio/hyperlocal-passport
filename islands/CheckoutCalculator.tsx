@@ -1,5 +1,6 @@
 import { useSignal } from '@preact/signals'
 import { useRef } from 'preact/hooks'
+import { JSX } from 'preact'
 import { cn, formatBRL } from '@/lib/utils.ts'
 import type { Transaction } from '@/lib/coupon.ts'
 import {
@@ -14,7 +15,7 @@ interface CheckoutCalculatorProps {
 }
 
 export default function CheckoutCalculator(
-  { _businessId }: CheckoutCalculatorProps,
+  { businessId }: CheckoutCalculatorProps,
 ) {
   const code = useSignal('')
   const amountStr = useSignal('') // For display, e.g., "R$ 0,00"
@@ -28,15 +29,17 @@ export default function CheckoutCalculator(
   // deno-lint-ignore no-explicit-any
   const scannerRef = useRef<any>(null)
 
-  const handleAmountChange = (e: { target: { value: string } }) => {
-    const value = e.target.value.replace(/\D/g, '')
+  const handleAmountChange = (
+    e: JSX.TargetedEvent<HTMLInputElement, Event>,
+  ) => {
+    const value = e.currentTarget.value.replace(/\D/g, '')
     const cents = parseInt(value || '0', 10)
     amountCents.value = cents
     amountStr.value = formatBRL(cents)
   }
 
-  const handleCodeChange = (e: { target: { value: string } }) => {
-    code.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  const handleCodeChange = (e: JSX.TargetedEvent<HTMLInputElement, Event>) => {
+    code.value = e.currentTarget.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
   }
 
   const toggleScanner = async () => {
@@ -95,6 +98,7 @@ export default function CheckoutCalculator(
         body: JSON.stringify({
           code: code.value,
           amountCents: amountCents.value,
+          businessId,
         }),
       })
 
@@ -122,7 +126,7 @@ export default function CheckoutCalculator(
     result.value = null
   }
 
-  if (result.value?.success) {
+  if (result.value?.success && result.value.data) {
     const { transaction } = result.value.data
     return (
       <div class='flex flex-col items-center justify-center py-8 animate-in fade-in zoom-in duration-300'>

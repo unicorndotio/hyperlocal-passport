@@ -21,7 +21,10 @@ export default define.page(async function BusinessCheckoutPage(ctx) {
     !session ||
     (session.user.role !== 'business' && session.user.role !== 'admin')
   ) {
-    return ctx.redirect('/login')
+    return new Response(null, {
+      status: 302,
+      headers: { Location: '/login' },
+    })
   }
 
   // Find business for this user

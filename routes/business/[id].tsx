@@ -36,7 +36,10 @@ export const handler = define.handlers({
 })
 
 export default define.page<typeof handler>(function BusinessDetailPage(ctx) {
-  const { business, coupons } = ctx.data
+  const { business, coupons } = ctx.data as {
+    business: Business
+    coupons: Coupon[]
+  }
 
   return (
     <div class='px-4 py-6 max-w-md mx-auto min-h-screen bg-background'>

@@ -44,7 +44,11 @@ export const handler = define.handlers({
 })
 
 export default define.page<typeof handler>(function CatalogPage(ctx) {
-  const { businesses, categories, selectedCategory } = ctx.data
+  const { businesses, categories, selectedCategory } = ctx.data as {
+    businesses: Business[]
+    categories: string[]
+    selectedCategory: string
+  }
 
   return (
     <div class='px-4 py-6 max-w-md mx-auto min-h-screen bg-background'>

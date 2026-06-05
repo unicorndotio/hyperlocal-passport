@@ -18,7 +18,7 @@ Deno.test('Business API CRUD Operations', async (t) => {
           logoUrl: 'http://localhost/logo.png',
           userId: 'user_123',
         },
-      })) as { id: string; name: string }
+      })) as unknown as { id: string; name: string }
       assertExists(business.id)
       assertEquals(business.name, 'Test Business')
     })

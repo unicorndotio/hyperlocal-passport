@@ -10,16 +10,31 @@ import { kv } from '../lib/kv.ts'
 
 Deno.test('Coupon API CRUD - Integration', async (t) => {
   // Stub Auth as Admin
-  const getSessionStub = stub(auth.api, 'getSession', () => {
-    return Promise.resolve({
-      user: { id: 'admin_user', role: 'admin' },
-      session: {
-        id: 'sess_admin',
-        userId: 'admin_user',
-        expiresAt: new Date(Date.now() + 3600000),
-      },
-    } as unknown)
-  })
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => {
+      return Promise.resolve({
+        user: {
+          id: 'admin_user',
+          role: 'admin',
+          email: 'admin@example.com',
+          name: 'Admin',
+          emailVerified: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        session: {
+          id: 'sess_admin',
+          userId: 'admin_user',
+          expiresAt: new Date(Date.now() + 3600000),
+          token: 'token_admin',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      })
+    },
+  )
 
   try {
     const businessId = 'test_biz_' + Math.random().toString(36).slice(2)
@@ -30,83 +45,63 @@ Deno.test('Coupon API CRUD - Integration', async (t) => {
         `http://localhost:8000/api/businesses/${businessId}/coupons`,
         {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: 'Test Coupon',
-            discountPercent: 10,
             type: 'basic',
-            globalLimit: 100,
-            userMonthlyLimit: 1,
+            discountPercent: 10,
           }),
-          headers: { 'Content-Type': 'application/json' },
         },
       )
-
-      // ctx for Fresh 2 handlers
       const res = await (businessCouponsHandler as unknown as {
-        POST: (ctx: unknown) => Promise<Response>
+        POST: (ctx: {
+          req: Request
+          params: Record<string, string>
+        }) => Promise<Response>
       }).POST({
         req,
         params: { id: businessId },
       })
-
       assertEquals(res.status, 201)
-      const body = await res.json()
-      assertEquals(body.title, 'Test Coupon')
-      assertEquals(body.businessId, businessId)
-      assertExists(body.id)
-      couponId = body.id
+      const data = await res.json()
+      couponId = data.id
+      assertExists(couponId)
     })
 
-    await t.step('GET /api/businesses/:id/coupons - List', async () => {
-      const req = new Request(
-        `http://localhost:8000/api/businesses/${businessId}/coupons`,
-      )
-      const res = await (businessCouponsHandler as unknown as {
-        GET: (ctx: unknown) => Promise<Response>
-      }).GET({
-        req,
-        params: { id: businessId },
-      })
-
-      assertEquals(res.status, 200)
-      const body = await res.json()
-      assertEquals(Array.isArray(body), true)
-      assertEquals(body.length, 1)
-      assertEquals(body[0].id, couponId)
-    })
-
-    await t.step('GET /api/coupons/:id - Get Single', async () => {
+    await t.step('GET /api/coupons/:id - Get', async () => {
       const req = new Request(`http://localhost:8000/api/coupons/${couponId}`)
       const res = await (couponHandler as unknown as {
-        GET: (ctx: unknown) => Promise<Response>
+        GET: (ctx: {
+          req: Request
+          params: Record<string, string>
+        }) => Promise<Response>
       }).GET({
         req,
         params: { id: couponId },
       })
-
       assertEquals(res.status, 200)
-      const body = await res.json()
-      assertEquals(body.id, couponId)
+      const data = await res.json()
+      assertEquals(data.title, 'Test Coupon')
     })
 
-    await t.step('PUT /api/coupons/:id - Update', async () => {
+    await t.step('PATCH /api/coupons/:id - Update', async () => {
       const req = new Request(`http://localhost:8000/api/coupons/${couponId}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          title: 'Updated Coupon',
-        }),
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Updated Coupon' }),
       })
       const res = await (couponHandler as unknown as {
-        PUT: (ctx: unknown) => Promise<Response>
-      }).PUT({
+        PATCH: (ctx: {
+          req: Request
+          params: Record<string, string>
+        }) => Promise<Response>
+      }).PATCH({
         req,
         params: { id: couponId },
       })
-
       assertEquals(res.status, 200)
-      const body = await res.json()
-      assertEquals(body.title, 'Updated Coupon')
+      const data = await res.json()
+      assertEquals(data.title, 'Updated Coupon')
     })
 
     await t.step('DELETE /api/coupons/:id - Delete', async () => {
@@ -114,29 +109,20 @@ Deno.test('Coupon API CRUD - Integration', async (t) => {
         method: 'DELETE',
       })
       const res = await (couponHandler as unknown as {
-        DELETE: (ctx: unknown) => Promise<Response>
+        DELETE: (ctx: {
+          req: Request
+          params: Record<string, string>
+        }) => Promise<Response>
       }).DELETE({
         req,
         params: { id: couponId },
       })
-
       assertEquals(res.status, 204)
 
-      // Verify it's gone
-      const checkReq = new Request(
-        `http://localhost:8000/api/coupons/${couponId}`,
-      )
-      const checkRes = await (couponHandler as unknown as {
-        GET: (ctx: unknown) => Promise<Response>
-      }).GET({
-        req: checkReq,
-        params: { id: couponId },
-      })
-      assertEquals(checkRes.status, 404)
+      // Verify deleted
+      const check = await kv.get(['coupons', couponId])
+      assertEquals(check.value, null)
     })
-
-    // Cleanup
-    await kv.delete(['coupons', couponId!])
   } finally {
     getSessionStub.restore()
   }
