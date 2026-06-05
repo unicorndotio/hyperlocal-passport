@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Checkout Validation API
 type: backend
 complexity: high
@@ -34,12 +34,12 @@ final price, and records the transaction atomically.
 
 ## Subtasks
 
-- [ ] 12.1 Create the validation endpoint route.
-- [ ] 12.2 Lookup the Redemption by the provided alphanumeric code.
-- [ ] 12.3 Fetch the associated Coupon to determine the discount math.
-- [ ] 12.4 Calculate the transaction math using cents to avoid float precision
+- [x] 12.1 Create the validation endpoint route.
+- [x] 12.2 Lookup the Redemption by the provided alphanumeric code.
+- [x] 12.3 Fetch the associated Coupon to determine the discount math.
+- [x] 12.4 Calculate the transaction math using cents to avoid float precision
       issues.
-- [ ] 12.5 Execute the atomic mutation in Deno KV.
+- [x] 12.5 Execute the atomic mutation in Deno KV.
 
 ## Implementation Details
 

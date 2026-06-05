@@ -7,8 +7,8 @@
     "build": "vite build",
     "start": "deno serve -A _fresh/server.js",
     "test": "deno test -A --unstable-kv",
-    "test:cov": "deno test -A --unstable-kv --coverage=cov/",
-    "coverage": "deno coverage cov/",
+    "test:cov": "deno test -A --unstable-kv --coverage=cov_profile/",
+    "coverage": "deno coverage cov_profile/",
     "type-check": "deno check main.ts",
     "update": "deno run -A -r jsr:@fresh/update .",
     "seed": "docker compose exec web deno run -A --unstable-kv seed.ts"

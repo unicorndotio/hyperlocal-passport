@@ -25,6 +25,18 @@ export interface Redemption {
   usedAt?: number
 }
 
+export interface Transaction {
+  id: string
+  redemptionId: string
+  couponId: string
+  businessId: string
+  userId: string
+  totalAmount: number // In cents
+  discountApplied: number // In cents
+  finalAmount: number // In cents
+  timestamp: number
+}
+
 /**
  * Generates a short, easily typable alphanumeric code.
  * Excludes ambiguous characters like 0, O, I, l.
