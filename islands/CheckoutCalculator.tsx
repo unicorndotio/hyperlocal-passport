@@ -1,6 +1,6 @@
 import { useSignal } from '@preact/signals'
 import { useState, useRef, useEffect } from 'preact/hooks'
-import { cn } from '@/lib/utils.ts'
+import { cn, formatBRL } from '@/lib/utils.ts'
 import { LucideQrCode, LucideLoader2, LucideCheckCircle2, LucideXCircle } from 'lucide-react'
 
 interface CheckoutCalculatorProps {
@@ -16,18 +16,11 @@ export default function CheckoutCalculator({ businessId }: CheckoutCalculatorPro
   const scannerVisible = useSignal(false)
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
 
-  const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
-  }
-
   const handleAmountChange = (e: any) => {
     const value = e.target.value.replace(/\D/g, '')
     const cents = parseInt(value || '0', 10)
     amountCents.value = cents
-    amountStr.value = formatCurrency(cents)
+    amountStr.value = formatBRL(cents)
   }
 
   const handleCodeChange = (e: any) => {
@@ -121,15 +114,15 @@ export default function CheckoutCalculator({ businessId }: CheckoutCalculatorPro
         <div class="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
           <div class="flex justify-between mb-2">
             <span class="text-slate-500">Valor Total:</span>
-            <span class="font-medium text-slate-900">{formatCurrency(transaction.totalAmount)}</span>
+            <span class="font-medium text-slate-900">{formatBRL(transaction.totalAmount)}</span>
           </div>
           <div class="flex justify-between mb-2">
             <span class="text-slate-500">Desconto Aplicado:</span>
-            <span class="font-bold text-green-600">-{formatCurrency(transaction.discountApplied)}</span>
+            <span class="font-bold text-green-600">-{formatBRL(transaction.discountApplied)}</span>
           </div>
           <div class="border-t border-dashed border-slate-200 my-4 pt-4 flex justify-between">
             <span class="text-lg font-bold text-slate-900">Total a Pagar:</span>
-            <span class="text-2xl font-black text-blue-600">{formatCurrency(transaction.finalAmount)}</span>
+            <span class="text-2xl font-black text-blue-600">{formatBRL(transaction.finalAmount)}</span>
           </div>
         </div>
         <button

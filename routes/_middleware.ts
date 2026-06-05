@@ -23,6 +23,7 @@ export async function applyMiddleware(
 
   const session = await auth.api.getSession({ headers: req.headers })
 
+  // 1. API Protections
   if (url.pathname.startsWith('/api/')) {
     if (!session) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -30,9 +31,27 @@ export async function applyMiddleware(
         headers: { 'Content-Type': 'application/json' },
       })
     }
-    if (url.pathname.startsWith('/api/admin/')) {
+
+    // Admin-only API paths
+    if (
+      url.pathname.startsWith('/api/admin/') ||
+      (url.pathname.startsWith('/api/businesses') && (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE'))
+    ) {
       if (session.user.role !== 'admin') {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    }
+
+    // Business or Admin API paths
+    if (
+      url.pathname.startsWith('/api/coupons') ||
+      url.pathname.startsWith('/api/transactions/')
+    ) {
+      if (session.user.role !== 'business' && session.user.role !== 'admin') {
+        return new Response(JSON.stringify({ error: 'Forbidden: Business or Admin access required' }), {
           status: 403,
           headers: { 'Content-Type': 'application/json' },
         })
@@ -40,6 +59,7 @@ export async function applyMiddleware(
     }
   }
 
+  // 2. Page Route Protections
   if (
     url.pathname.startsWith('/admin') ||
     url.pathname.startsWith('/business') ||
@@ -48,8 +68,15 @@ export async function applyMiddleware(
     if (!session) {
       return new Response(null, { status: 302, headers: { Location: '/login' } })
     }
+
+    // Admin routes
     if (url.pathname.startsWith('/admin') && session.user.role !== 'admin') {
-      return new Response('Forbidden', { status: 403 })
+      return new Response('Forbidden: Admin access required', { status: 403 })
+    }
+
+    // Business routes (Admin can also access)
+    if (url.pathname.startsWith('/business') && session.user.role !== 'business' && session.user.role !== 'admin') {
+      return new Response('Forbidden: Business access required', { status: 403 })
     }
   }
 
