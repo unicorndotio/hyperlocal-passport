@@ -48,6 +48,19 @@ export function isValidCnpj(value: string): boolean {
   return result === parseInt(digits.charAt(1))
 }
 
+export interface Business {
+  id: string
+  userId: string
+  name: string
+  companyName: string
+  cnpj: string
+  category: string
+  description?: string
+  logoUrl: string
+  isActive: boolean
+  createdAt: string
+}
+
 export interface BusinessFormErrors {
   name?: string
   cnpj?: string

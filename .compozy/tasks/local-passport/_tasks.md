@@ -13,7 +13,7 @@
 | 07 | Build Business Profile CRUD API               | completed | medium     | [task_01, task_02] |
 | 08 | Build Business Profile Admin UI               | completed | low        | [task_07]          |
 | 09 | Build Coupon Engine API & Redemption Logic    | completed | high       | [task_07]          |
-| 10 | Build Coupon Management UI                    | pending   | medium     | [task_09]          |
+| 10 | Build Coupon Management UI                    | completed | medium     | [task_09]          |
 | 11 | Build Mobile Catalog & Redemption UI          | pending   | high       | [task_09]          |
 | 12 | Build Checkout Validation API                 | pending   | high       | [task_09]          |
 | 13 | Build Business Validation Dashboard           | pending   | medium     | [task_12]          |

@@ -5,10 +5,11 @@
 - Starting Task 10: Build Coupon Management UI.
 
 ## Shared Decisions
-- (None yet)
+- **Hybrid Persistence (KV):** Use `kv-adapter.ts` for simple CRUD but direct `Deno.Kv` atomic operations for complex logic (like redemptions) to ensure strict consistency.
 
 ## Shared Learnings
-- (None yet)
+- **Deno Testing & Seatbelt:** Set `DENO_DIR` to a local path (e.g., `.deno_cache`) to avoid "Operation not permitted" errors in macOS Seatbelt environments.
+- **Fresh 2 Handler Testing:** `define.handlers` can be tested by invoking the handler methods directly with a mock context object.
 
 ## Open Risks
 - (None yet)

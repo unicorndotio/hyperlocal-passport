@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Coupon Management UI
 type: frontend
 complexity: medium
@@ -31,11 +31,11 @@ within the platform.
 
 ## Subtasks
 
-- [ ] 10.1 Create the business dashboard routes.
-- [ ] 10.2 Build the Coupon list component displaying usage metrics.
-- [ ] 10.3 Build the Coupon creation form (Island) handling optional limit
+- [x] 10.1 Create the business dashboard routes.
+- [x] 10.2 Build the Coupon list component displaying usage metrics.
+- [x] 10.3 Build the Coupon creation form (Island) handling optional limit
       fields gracefully.
-- [ ] 10.4 Integrate the UI with the Coupon CRUD APIs from `task_09`.
+- [x] 10.4 Integrate the UI with the Coupon CRUD APIs from `task_09`.
 
 ## Implementation Details
 
@@ -65,10 +65,10 @@ date pickers for the `validUntil` field.
 ## Tests
 
 - Unit tests:
-  - [ ] Form validates that discount percentage is between constraints (5-30) if
+  - [x] Form validates that discount percentage is between constraints (5-30) if
         applicable.
 - Integration tests:
-  - [ ] Business user can successfully create a new special coupon and see it in
+  - [x] Business user can successfully create a new special coupon and see it in
         the list.
 - Test coverage target: >=80%
 - All tests must pass
