@@ -4,10 +4,7 @@ import {
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { betterAuth } from 'better-auth'
 import { denoKvAdapter, getDenoKvAdapterRaw } from '../lib/kv-adapter.ts'
-import {
-  AppState,
-  applyMiddleware,
-} from '../routes/_middleware.ts'
+import { applyMiddleware, AppState } from '../routes/_middleware.ts'
 
 Deno.test('Deno KV Adapter - Core CRUD operations', async (t) => {
   const kv = await Deno.openKv(':memory:')

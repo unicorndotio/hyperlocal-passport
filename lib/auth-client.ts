@@ -1,7 +1,9 @@
 import { createAuthClient } from 'better-auth/client'
 
 export const authClient = createAuthClient({
-  baseURL: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000'
+  baseURL: typeof window !== 'undefined'
+    ? window.location.origin
+    : 'http://localhost:8000',
 })
 
 export const { signIn, signOut, useSession } = authClient

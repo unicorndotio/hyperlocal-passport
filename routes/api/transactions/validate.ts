@@ -15,7 +15,10 @@ export const handler = define.handlers({
     }
 
     if (session.user.role !== 'business' && session.user.role !== 'admin') {
-      return new Response('Forbidden: Only business owners or admins can validate transactions', { status: 403 })
+      return new Response(
+        'Forbidden: Only business owners or admins can validate transactions',
+        { status: 403 },
+      )
     }
 
     let body
@@ -30,7 +33,9 @@ export const handler = define.handlers({
       return new Response('Missing redemption code', { status: 400 })
     }
     if (typeof amountCents !== 'number' || amountCents <= 0) {
-      return new Response('Invalid amountCents: must be a positive number', { status: 400 })
+      return new Response('Invalid amountCents: must be a positive number', {
+        status: 400,
+      })
     }
 
     // 1. Find business associated with the user
@@ -40,14 +45,19 @@ export const handler = define.handlers({
     })
 
     if (!business && session.user.role === 'business') {
-      return new Response('Business profile not found for this user', { status: 404 })
+      return new Response('Business profile not found for this user', {
+        status: 404,
+      })
     }
 
-    // For admins without a business profile, we'll allow validation 
+    // For admins without a business profile, we'll allow validation
     // but skip the ownership check if we want, OR we require they have a business.
     // Techspec implies it must belong to "the requesting business".
     if (!business) {
-      return new Response('A business profile is required to validate transactions', { status: 403 })
+      return new Response(
+        'A business profile is required to validate transactions',
+        { status: 403 },
+      )
     }
 
     const businessId = business.id
@@ -61,10 +71,14 @@ export const handler = define.handlers({
 
     // 3. Verify ownership and status
     if (redemption.businessId !== businessId) {
-      return new Response('Redemption code belongs to another business', { status: 403 })
+      return new Response('Redemption code belongs to another business', {
+        status: 403,
+      })
     }
     if (redemption.status !== 'active') {
-      return new Response(`Redemption is already ${redemption.status}`, { status: 400 })
+      return new Response(`Redemption is already ${redemption.status}`, {
+        status: 400,
+      })
     }
 
     // 4. Fetch Coupon
@@ -90,7 +104,7 @@ export const handler = define.handlers({
     // 7. Atomic Update
     const transactionId = crypto.randomUUID()
     const now = Date.now()
-    
+
     const transaction: Transaction = {
       id: transactionId,
       redemptionId: redemption.id,
@@ -112,19 +126,25 @@ export const handler = define.handlers({
     const atomic = kv.atomic()
       .check(redemptionRes)
       .set(['redemptions', code], updatedRedemption)
-      .set(['user_redemptions', redemption.userId, redemption.redeemedAt], updatedRedemption)
+      .set(
+        ['user_redemptions', redemption.userId, redemption.redeemedAt],
+        updatedRedemption,
+      )
       .set(['transactions', transactionId], transaction)
       .set(['business_transactions', businessId, now], transaction)
       .set(['user_transactions', redemption.userId, now], transaction)
 
     const result = await atomic.commit()
     if (!result.ok) {
-      return new Response('Conflict: Redemption may have been processed already', { status: 409 })
+      return new Response(
+        'Conflict: Redemption may have been processed already',
+        { status: 409 },
+      )
     }
 
     return Response.json({
       transaction,
-      redemption: updatedRedemption
+      redemption: updatedRedemption,
     })
-  }
+  },
 })

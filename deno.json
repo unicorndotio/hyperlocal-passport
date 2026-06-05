@@ -23,7 +23,11 @@
   },
   "fmt": {
     "semiColons": false,
-    "singleQuote": true
+    "singleQuote": true,
+    "exclude": [
+      "**/*.md",
+      "**/.*/**/*.md"
+    ]
   },
   "exclude": [
     "**/_fresh/*"

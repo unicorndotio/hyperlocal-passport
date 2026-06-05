@@ -20,7 +20,6 @@ function makeFile(name: string, content = 'data', type = 'image/jpeg'): File {
   return new File([content], name, { type })
 }
 
-
 Deno.test('POST /api/users/register', async (t) => {
   // Use a temp uploads dir to avoid polluting the project
   const testUploadsDir = await Deno.makeTempDir({
@@ -237,7 +236,9 @@ Deno.test('POST /api/users/register', async (t) => {
 
       // Verify URLs use APP_BASE_URL
       assertEquals(
-        user.documents.idPhotoUrl.startsWith('http://localhost:8000/api/uploads/'),
+        user.documents.idPhotoUrl.startsWith(
+          'http://localhost:8000/api/uploads/',
+        ),
         true,
       )
       assertEquals(

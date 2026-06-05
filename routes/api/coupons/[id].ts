@@ -36,7 +36,9 @@ export const handler = define.handlers({
         where: [{ field: 'userId', value: session.user.id }],
       })
       if (!business || business.id !== coupon.businessId) {
-        return new Response('Forbidden: You do not own this coupon', { status: 403 })
+        return new Response('Forbidden: You do not own this coupon', {
+          status: 403,
+        })
       }
     }
 
@@ -74,7 +76,9 @@ export const handler = define.handlers({
         where: [{ field: 'userId', value: session.user.id }],
       })
       if (!business || business.id !== coupon.businessId) {
-        return new Response('Forbidden: You do not own this coupon', { status: 403 })
+        return new Response('Forbidden: You do not own this coupon', {
+          status: 403,
+        })
       }
     }
 

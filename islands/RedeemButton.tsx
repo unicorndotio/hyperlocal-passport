@@ -10,9 +10,9 @@ export default function RedeemButton({ couponId }: { couponId: string }) {
     error.value = null
     try {
       const res = await fetch(`/api/coupons/${couponId}/redeem`, {
-        method: 'POST'
+        method: 'POST',
       })
-      
+
       if (res.ok) {
         // Redirect to Passaporte on success
         window.location.href = '/passaporte'
@@ -28,16 +28,16 @@ export default function RedeemButton({ couponId }: { couponId: string }) {
   }
 
   return (
-    <div class="space-y-2">
-      <Button 
-        onClick={handleRedeem} 
+    <div class='space-y-2'>
+      <Button
+        onClick={handleRedeem}
         disabled={loading.value}
-        className="w-full font-bold py-6 text-base rounded-xl"
+        className='w-full font-bold py-6 text-base rounded-xl'
       >
         {loading.value ? 'Processando...' : 'Resgatar Agora'}
       </Button>
       {error.value && (
-        <p class="text-destructive text-[10px] text-center font-bold bg-destructive/10 py-2 rounded-lg border border-destructive/20 uppercase tracking-tight">
+        <p class='text-destructive text-[10px] text-center font-bold bg-destructive/10 py-2 rounded-lg border border-destructive/20 uppercase tracking-tight'>
           {error.value}
         </p>
       )}

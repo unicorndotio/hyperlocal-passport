@@ -27,11 +27,20 @@ export function formatCpfDisplay(value: string): string {
   const digits = normalizeCpf(value).slice(0, 11)
   if (digits.length <= 3) return digits
   if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+  if (digits.length <= 9) {
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+  }
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${
+    digits.slice(9)
+  }`
 }
 
-export const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+export const ALLOWED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+]
 
 export function isValidFileType(file: File): boolean {
   return ALLOWED_FILE_TYPES.includes(file.type)
@@ -40,10 +49,10 @@ export function isValidFileType(file: File): boolean {
 // --- WhatsApp / Phone ---
 
 export interface Country {
-  code: string      // dial code e.g. '+55'
-  iso: string       // ISO 3166-1 alpha-2
-  label: string     // display name with flag
-  pattern: RegExp   // matches local digits only (no dial code)
+  code: string // dial code e.g. '+55'
+  iso: string // ISO 3166-1 alpha-2
+  label: string // display name with flag
+  pattern: RegExp // matches local digits only (no dial code)
   placeholder: string
 }
 
@@ -52,14 +61,14 @@ export const COUNTRIES: Country[] = [
     code: '+55',
     iso: 'BR',
     label: '🇧🇷 Brasil (+55)',
-    pattern: /^\d{10,11}$/,   // 10 = landline, 11 = mobile (with leading 9)
+    pattern: /^\d{10,11}$/, // 10 = landline, 11 = mobile (with leading 9)
     placeholder: '48 91234-5678',
   },
   {
     code: '+54',
     iso: 'AR',
     label: '🇦🇷 Argentina (+54)',
-    pattern: /^\d{10}$/,      // area code (without 0) + 8-digit number
+    pattern: /^\d{10}$/, // area code (without 0) + 8-digit number
     placeholder: '11 1234-5678',
   },
   {
@@ -136,7 +145,7 @@ export const COUNTRIES: Country[] = [
     code: '+1',
     iso: 'US',
     label: '🇺🇸 EUA/Canadá (+1)',
-    pattern: /^\d{10}$/,      // NPA-NXX-XXXX
+    pattern: /^\d{10}$/, // NPA-NXX-XXXX
     placeholder: '(555) 123-4567',
   },
 ]
@@ -179,7 +188,9 @@ export function validateForm(fields: {
   const errs: FormErrors = {}
   if (!fields.name.trim()) errs.name = 'Nome é obrigatório.'
   if (!isValidCpf(fields.cpf)) errs.cpf = 'CPF inválido. Informe 11 dígitos.'
-  if (!fields.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
+  if (
+    !fields.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)
+  ) {
     errs.email = 'E-mail inválido.'
   }
   if (!isValidPhone(fields.whatsappDial, fields.whatsappNumber)) {

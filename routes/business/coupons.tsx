@@ -16,7 +16,7 @@ const adapter = getDenoKvAdapterRaw(kv)
 
 export default define.page(async function BusinessCouponsPage(ctx) {
   const session = await auth.api.getSession({ headers: ctx.req.headers })
-  
+
   if (!session || session.user.role !== 'business') {
     return ctx.redirect('/login')
   }
@@ -36,12 +36,12 @@ export default define.page(async function BusinessCouponsPage(ctx) {
           </CardHeader>
           <CardContent>
             <p className='text-slate-600'>
-              Não encontramos uma empresa associada ao seu usuário. Se você é um parceiro, 
-              entre em contato com o suporte para vincular sua conta.
+              Não encontramos uma empresa associada ao seu usuário. Se você é um
+              parceiro, entre em contato com o suporte para vincular sua conta.
             </p>
             <div className='mt-6'>
-              <a 
-                href='/' 
+              <a
+                href='/'
                 className='text-blue-600 hover:underline text-sm font-medium'
               >
                 Voltar para o início

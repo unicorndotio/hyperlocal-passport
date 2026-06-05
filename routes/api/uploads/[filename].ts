@@ -10,8 +10,12 @@ interface FileMetadata {
 }
 
 const mimeTypes: Record<string, string> = {
-  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
-  gif: 'image/gif', webp: 'image/webp', pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  pdf: 'application/pdf',
 }
 
 function json(body: unknown, status: number) {
@@ -21,7 +25,10 @@ function json(body: unknown, status: number) {
   })
 }
 
-export async function handleGetUpload(req: Request, filename: string): Promise<Response> {
+export async function handleGetUpload(
+  req: Request,
+  filename: string,
+): Promise<Response> {
   if (!filename) return json({ error: 'Filename parameter is missing' }, 400)
 
   const metaEntry = await kv.get<FileMetadata>(['file_metadata', filename])
@@ -49,7 +56,9 @@ export async function handleGetUpload(req: Request, filename: string): Promise<R
     })
   } catch (err) {
     const status = err instanceof Deno.errors.NotFound ? 404 : 500
-    const error = err instanceof Deno.errors.NotFound ? 'File not found' : 'Internal Server Error'
+    const error = err instanceof Deno.errors.NotFound
+      ? 'File not found'
+      : 'Internal Server Error'
     return json({ error }, status)
   }
 }

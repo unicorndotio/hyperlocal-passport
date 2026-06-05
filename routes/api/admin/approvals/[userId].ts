@@ -23,10 +23,15 @@ export const handler = define.handlers({
 
     const { status } = body
     if (status !== 'approved' && status !== 'rejected') {
-      return new Response(JSON.stringify({ error: 'Invalid status. Must be approved or rejected' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid status. Must be approved or rejected',
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     const userEntry = await kv.get(['users', userId])
@@ -47,10 +52,13 @@ export const handler = define.handlers({
       .commit()
 
     if (!result.ok) {
-      return new Response(JSON.stringify({ error: 'Failed to update user status' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ error: 'Failed to update user status' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     return new Response(JSON.stringify(user), {

@@ -42,7 +42,9 @@ export default function LoginForm() {
     >
       <div className='space-y-1 text-center mb-6'>
         <h2 className='text-2xl font-bold text-slate-900'>Entrar</h2>
-        <p className='text-sm text-slate-500'>Acesse sua conta do Passaporte Local</p>
+        <p className='text-sm text-slate-500'>
+          Acesse sua conta do Passaporte Local
+        </p>
       </div>
 
       {error && (
@@ -89,7 +91,10 @@ export default function LoginForm() {
 
       <div className='text-center pt-2'>
         <p className='text-xs text-slate-400'>
-          Ainda não tem conta? <a href='/register' className='text-slate-600 hover:underline'>Cadastre-se</a>
+          Ainda não tem conta?{' '}
+          <a href='/register' className='text-slate-600 hover:underline'>
+            Cadastre-se
+          </a>
         </p>
       </div>
     </form>

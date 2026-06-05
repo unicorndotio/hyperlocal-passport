@@ -10,11 +10,14 @@ export default define.page(function LoginPage() {
         </h1>
         <p className='text-slate-500 mt-2'>Jurerê em comunidade</p>
       </div>
-      
+
       <LoginForm />
-      
+
       <div className='mt-8'>
-        <a href='/' className='text-sm text-slate-400 hover:text-slate-600 transition'>
+        <a
+          href='/'
+          className='text-sm text-slate-400 hover:text-slate-600 transition'
+        >
           &larr; Voltar para o início
         </a>
       </div>

@@ -1,6 +1,11 @@
 import { define } from '../../../utils.ts'
 import { uploadFile } from '../../../lib/storage.ts'
-import { isValidCpf, isValidPhone, formatWhatsApp, normalizeCpf } from '../../../lib/registration.ts'
+import {
+  formatWhatsApp,
+  isValidCpf,
+  isValidPhone,
+  normalizeCpf,
+} from '../../../lib/registration.ts'
 
 const kv = await Deno.openKv()
 
@@ -84,9 +89,15 @@ export async function handleRegister(req: Request): Promise<Response> {
   let residenceProofFilename: string
   try {
     idPhotoFilename = await uploadFile(idPhoto, { userId, isPublic: false })
-    residenceProofFilename = await uploadFile(residenceProof, { userId, isPublic: false })
+    residenceProofFilename = await uploadFile(residenceProof, {
+      userId,
+      isPublic: false,
+    })
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : 'Upload failed' }, 400)
+    return json(
+      { error: err instanceof Error ? err.message : 'Upload failed' },
+      400,
+    )
   }
 
   const user: User = {
@@ -107,7 +118,10 @@ export async function handleRegister(req: Request): Promise<Response> {
   const result = await kv.atomic()
     .set(['users', userId], user)
     .set(['users_by_cpf', cpf], userId)
-    .set(['approvals', 'pending', userId], { userId, createdAt: user.createdAt })
+    .set(['approvals', 'pending', userId], {
+      userId,
+      createdAt: user.createdAt,
+    })
     .commit()
 
   if (!result.ok) {

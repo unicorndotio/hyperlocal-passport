@@ -10,7 +10,12 @@ import {
   validateForm,
 } from '../lib/registration.ts'
 
-export { formatCpfDisplay, isValidCpf, isValidFileType, normalizeCpf } from '../lib/registration.ts'
+export {
+  formatCpfDisplay,
+  isValidCpf,
+  isValidFileType,
+  normalizeCpf,
+} from '../lib/registration.ts'
 
 const colors = {
   primary: '#FAD4C0',
@@ -41,7 +46,8 @@ export default function RegistrationForm() {
     })
   }
 
-  const currentCountry = COUNTRIES.find((c) => c.code === whatsappDial) ?? COUNTRIES[0]
+  const currentCountry = COUNTRIES.find((c) => c.code === whatsappDial) ??
+    COUNTRIES[0]
 
   function validateName(v: string) {
     setFieldError('name', v.trim() ? undefined : 'Nome é obrigatório.')
@@ -52,15 +58,25 @@ export default function RegistrationForm() {
   function validateEmail(v: string) {
     setFieldError(
       'email',
-      v.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? undefined : 'E-mail inválido.',
+      v.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+        ? undefined
+        : 'E-mail inválido.',
     )
   }
   function validateWhatsapp(dial: string, number: string) {
-    setFieldError('whatsapp', isValidPhone(dial, number) ? undefined : 'Número de WhatsApp inválido.')
+    setFieldError(
+      'whatsapp',
+      isValidPhone(dial, number) ? undefined : 'Número de WhatsApp inválido.',
+    )
   }
   function validateFile(field: string, file: File | null) {
     if (!file) {
-      setFieldError(field, field === 'idPhoto' ? 'Foto do documento é obrigatória.' : 'Comprovante é obrigatório.')
+      setFieldError(
+        field,
+        field === 'idPhoto'
+          ? 'Foto do documento é obrigatória.'
+          : 'Comprovante é obrigatório.',
+      )
     } else if (!isValidFileType(file)) {
       setFieldError(field, 'Formato inválido. Use JPG, PNG ou PDF.')
     } else {
@@ -70,7 +86,15 @@ export default function RegistrationForm() {
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
-    const errs = validateForm({ name, cpf, email, whatsappDial, whatsappNumber, idPhoto, residenceProof })
+    const errs = validateForm({
+      name,
+      cpf,
+      email,
+      whatsappDial,
+      whatsappNumber,
+      idPhoto,
+      residenceProof,
+    })
     if (Object.keys(errs).length > 0) {
       setErrors(errs as Record<string, string>)
       return
@@ -86,15 +110,22 @@ export default function RegistrationForm() {
     form.append('idPhoto', idPhoto!)
     form.append('residenceProof', residenceProof!)
     try {
-      const res = await fetch('/api/users/register', { method: 'POST', body: form })
+      const res = await fetch('/api/users/register', {
+        method: 'POST',
+        body: form,
+      })
       if (res.ok) {
         setSuccess(true)
       } else {
         const body = await res.json().catch(() => ({}))
-        setErrors({ global: body.error || 'Erro ao enviar cadastro. Tente novamente.' })
+        setErrors({
+          global: body.error || 'Erro ao enviar cadastro. Tente novamente.',
+        })
       }
     } catch {
-      setErrors({ global: 'Erro de conexão. Verifique sua internet e tente novamente.' })
+      setErrors({
+        global: 'Erro de conexão. Verifique sua internet e tente novamente.',
+      })
     } finally {
       setLoading(false)
     }
@@ -102,9 +133,14 @@ export default function RegistrationForm() {
 
   if (success) {
     return (
-      <div class='rounded-[8px] p-8 text-center' style={{ background: 'white', border: `2px solid ${colors.primary}` }}>
+      <div
+        class='rounded-[8px] p-8 text-center'
+        style={{ background: 'white', border: `2px solid ${colors.primary}` }}
+      >
         <div class='text-5xl mb-4'>✅</div>
-        <h2 class='text-xl font-semibold text-[#111827] mb-2'>Cadastro enviado!</h2>
+        <h2 class='text-xl font-semibold text-[#111827] mb-2'>
+          Cadastro enviado!
+        </h2>
         <p class='text-base text-[#374151]'>
           Seus dados foram recebidos. A análise será concluída em até{' '}
           <strong>1 dia útil</strong>. Você receberá uma confirmação por e-mail.
@@ -118,10 +154,21 @@ export default function RegistrationForm() {
       onSubmit={handleSubmit}
       noValidate
       class='rounded-[8px] p-6 space-y-5'
-      style={{ background: 'white', boxShadow: '0 1px 4px 0 rgba(17,24,39,0.06)' }}
+      style={{
+        background: 'white',
+        boxShadow: '0 1px 4px 0 rgba(17,24,39,0.06)',
+      }}
     >
       {errors.global && (
-        <div role='alert' class='rounded-[4px] px-4 py-3 text-sm' style={{ background: '#FEF2F2', color: colors.danger, border: '1px solid #FECACA' }}>
+        <div
+          role='alert'
+          class='rounded-[4px] px-4 py-3 text-sm'
+          style={{
+            background: '#FEF2F2',
+            color: colors.danger,
+            border: '1px solid #FECACA',
+          }}
+        >
           {errors.global}
         </div>
       )}
@@ -186,8 +233,13 @@ export default function RegistrationForm() {
             type='tel'
             inputMode='numeric'
             value={whatsappNumber}
-            onInput={(e) => setWhatsappNumber((e.target as HTMLInputElement).value)}
-            onBlur={(e) => validateWhatsapp(whatsappDial, (e.target as HTMLInputElement).value)}
+            onInput={(e) =>
+              setWhatsappNumber((e.target as HTMLInputElement).value)}
+            onBlur={(e) =>
+              validateWhatsapp(
+                whatsappDial,
+                (e.target as HTMLInputElement).value,
+              )}
             placeholder={currentCountry.placeholder}
             class={inputClass(!!errors.whatsapp)}
             aria-invalid={!!errors.whatsapp}
@@ -199,14 +251,29 @@ export default function RegistrationForm() {
       <Field label='Foto do documento (RG ou CNH)' error={errors.idPhoto}>
         <label
           class='flex items-center gap-3 rounded-[8px] border px-3 py-2 cursor-pointer text-sm transition'
-          style={{ borderColor: errors.idPhoto ? colors.danger : '#E5E7EB', background: idPhoto ? '#F0FDF4' : 'white' }}
+          style={{
+            borderColor: errors.idPhoto ? colors.danger : '#E5E7EB',
+            background: idPhoto ? '#F0FDF4' : 'white',
+          }}
         >
-          <span class='shrink-0 rounded-[4px] px-2 py-1 text-xs font-mono font-medium uppercase tracking-wide' style={{ background: colors.primary, color: colors.text }}>
+          <span
+            class='shrink-0 rounded-[4px] px-2 py-1 text-xs font-mono font-medium uppercase tracking-wide'
+            style={{ background: colors.primary, color: colors.text }}
+          >
             Escolher
           </span>
-          <span class='truncate text-[#6B7280]'>{idPhoto ? idPhoto.name : 'JPG, PNG ou PDF'}</span>
-          <input type='file' accept='image/jpeg,image/png,image/webp,application/pdf' class='sr-only'
-            onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0] ?? null; setIdPhoto(f); validateFile('idPhoto', f) }}
+          <span class='truncate text-[#6B7280]'>
+            {idPhoto ? idPhoto.name : 'JPG, PNG ou PDF'}
+          </span>
+          <input
+            type='file'
+            accept='image/jpeg,image/png,image/webp,application/pdf'
+            class='sr-only'
+            onChange={(e) => {
+              const f = (e.target as HTMLInputElement).files?.[0] ?? null
+              setIdPhoto(f)
+              validateFile('idPhoto', f)
+            }}
             aria-invalid={!!errors.idPhoto}
           />
         </label>
@@ -215,14 +282,29 @@ export default function RegistrationForm() {
       <Field label='Comprovante de residência' error={errors.residenceProof}>
         <label
           class='flex items-center gap-3 rounded-[8px] border px-3 py-2 cursor-pointer text-sm transition'
-          style={{ borderColor: errors.residenceProof ? colors.danger : '#E5E7EB', background: residenceProof ? '#F0FDF4' : 'white' }}
+          style={{
+            borderColor: errors.residenceProof ? colors.danger : '#E5E7EB',
+            background: residenceProof ? '#F0FDF4' : 'white',
+          }}
         >
-          <span class='shrink-0 rounded-[4px] px-2 py-1 text-xs font-mono font-medium uppercase tracking-wide' style={{ background: colors.primary, color: colors.text }}>
+          <span
+            class='shrink-0 rounded-[4px] px-2 py-1 text-xs font-mono font-medium uppercase tracking-wide'
+            style={{ background: colors.primary, color: colors.text }}
+          >
             Escolher
           </span>
-          <span class='truncate text-[#6B7280]'>{residenceProof ? residenceProof.name : 'JPG, PNG ou PDF'}</span>
-          <input type='file' accept='image/jpeg,image/png,image/webp,application/pdf' class='sr-only'
-            onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0] ?? null; setResidenceProof(f); validateFile('residenceProof', f) }}
+          <span class='truncate text-[#6B7280]'>
+            {residenceProof ? residenceProof.name : 'JPG, PNG ou PDF'}
+          </span>
+          <input
+            type='file'
+            accept='image/jpeg,image/png,image/webp,application/pdf'
+            class='sr-only'
+            onChange={(e) => {
+              const f = (e.target as HTMLInputElement).files?.[0] ?? null
+              setResidenceProof(f)
+              validateFile('residenceProof', f)
+            }}
             aria-invalid={!!errors.residenceProof}
           />
         </label>
@@ -240,12 +322,22 @@ export default function RegistrationForm() {
   )
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: preact.ComponentChildren }) {
+function Field(
+  { label, error, children }: {
+    label: string
+    error?: string
+    children: preact.ComponentChildren
+  },
+) {
   return (
     <div class='space-y-1'>
-      <label class='block text-xs font-mono font-medium uppercase tracking-wide text-[#6B7280]'>{label}</label>
+      <label class='block text-xs font-mono font-medium uppercase tracking-wide text-[#6B7280]'>
+        {label}
+      </label>
       {children}
-      {error && <p class='text-xs font-medium' style={{ color: '#DC2626' }}>{error}</p>}
+      {error && (
+        <p class='text-xs font-medium' style={{ color: '#DC2626' }}>{error}</p>
+      )}
     </div>
   )
 }

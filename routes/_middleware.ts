@@ -35,13 +35,18 @@ export async function applyMiddleware(
     // Admin-only API paths
     if (
       url.pathname.startsWith('/api/admin/') ||
-      (url.pathname.startsWith('/api/businesses') && (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE'))
+      (url.pathname.startsWith('/api/businesses') &&
+        (req.method === 'POST' || req.method === 'PUT' ||
+          req.method === 'DELETE'))
     ) {
       if (session.user.role !== 'admin') {
-        return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        })
+        return new Response(
+          JSON.stringify({ error: 'Forbidden: Admin access required' }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        )
       }
     }
 
@@ -51,10 +56,15 @@ export async function applyMiddleware(
       url.pathname.startsWith('/api/transactions/')
     ) {
       if (session.user.role !== 'business' && session.user.role !== 'admin') {
-        return new Response(JSON.stringify({ error: 'Forbidden: Business or Admin access required' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        })
+        return new Response(
+          JSON.stringify({
+            error: 'Forbidden: Business or Admin access required',
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        )
       }
     }
   }
@@ -66,7 +76,10 @@ export async function applyMiddleware(
     url.pathname.startsWith('/dashboard')
   ) {
     if (!session) {
-      return new Response(null, { status: 302, headers: { Location: '/login' } })
+      return new Response(null, {
+        status: 302,
+        headers: { Location: '/login' },
+      })
     }
 
     // Admin routes
@@ -75,8 +88,13 @@ export async function applyMiddleware(
     }
 
     // Business routes (Admin can also access)
-    if (url.pathname.startsWith('/business') && session.user.role !== 'business' && session.user.role !== 'admin') {
-      return new Response('Forbidden: Business access required', { status: 403 })
+    if (
+      url.pathname.startsWith('/business') &&
+      session.user.role !== 'business' && session.user.role !== 'admin'
+    ) {
+      return new Response('Forbidden: Business access required', {
+        status: 403,
+      })
     }
   }
 

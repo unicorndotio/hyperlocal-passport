@@ -1,4 +1,7 @@
-import { assertEquals, assertMatch } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import {
+  assertEquals,
+  assertMatch,
+} from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import {
   formatCpfDisplay,
   isValidCpf,
@@ -85,27 +88,45 @@ Deno.test('formatCpfDisplay truncates beyond 11 digits', () => {
 // --- isValidFileType ---
 
 Deno.test('isValidFileType accepts image/jpeg', () => {
-  assertEquals(isValidFileType(new File([''], 'photo.jpg', { type: 'image/jpeg' })), true)
+  assertEquals(
+    isValidFileType(new File([''], 'photo.jpg', { type: 'image/jpeg' })),
+    true,
+  )
 })
 
 Deno.test('isValidFileType accepts image/png', () => {
-  assertEquals(isValidFileType(new File([''], 'photo.png', { type: 'image/png' })), true)
+  assertEquals(
+    isValidFileType(new File([''], 'photo.png', { type: 'image/png' })),
+    true,
+  )
 })
 
 Deno.test('isValidFileType accepts image/webp', () => {
-  assertEquals(isValidFileType(new File([''], 'photo.webp', { type: 'image/webp' })), true)
+  assertEquals(
+    isValidFileType(new File([''], 'photo.webp', { type: 'image/webp' })),
+    true,
+  )
 })
 
 Deno.test('isValidFileType accepts application/pdf', () => {
-  assertEquals(isValidFileType(new File([''], 'doc.pdf', { type: 'application/pdf' })), true)
+  assertEquals(
+    isValidFileType(new File([''], 'doc.pdf', { type: 'application/pdf' })),
+    true,
+  )
 })
 
 Deno.test('isValidFileType rejects image/gif', () => {
-  assertEquals(isValidFileType(new File([''], 'anim.gif', { type: 'image/gif' })), false)
+  assertEquals(
+    isValidFileType(new File([''], 'anim.gif', { type: 'image/gif' })),
+    false,
+  )
 })
 
 Deno.test('isValidFileType rejects text/plain', () => {
-  assertEquals(isValidFileType(new File([''], 'note.txt', { type: 'text/plain' })), false)
+  assertEquals(
+    isValidFileType(new File([''], 'note.txt', { type: 'text/plain' })),
+    false,
+  )
 })
 
 Deno.test('isValidFileType rejects empty type', () => {
@@ -233,7 +254,12 @@ Deno.test('fetch integration: 201 response returns success body', async () => {
     capturedUrl = input.toString()
     capturedMethod = init?.method ?? 'GET'
     return new Response(
-      JSON.stringify({ id: 'abc', name: 'Test', cpf: '52998224725', status: 'pending' }),
+      JSON.stringify({
+        id: 'abc',
+        name: 'Test',
+        cpf: '52998224725',
+        status: 'pending',
+      }),
       { status: 201, headers: { 'Content-Type': 'application/json' } },
     )
   }
@@ -243,7 +269,10 @@ Deno.test('fetch integration: 201 response returns success body', async () => {
   form.append('cpf', '52998224725')
   form.append('email', 'test@example.com')
   form.append('idPhoto', new File(['data'], 'id.jpg', { type: 'image/jpeg' }))
-  form.append('residenceProof', new File(['data'], 'proof.pdf', { type: 'application/pdf' }))
+  form.append(
+    'residenceProof',
+    new File(['data'], 'proof.pdf', { type: 'application/pdf' }),
+  )
 
   const res = await fetch('/api/users/register', { method: 'POST', body: form })
   assertEquals(res.status, 201)
@@ -271,7 +300,10 @@ Deno.test('fetch integration: 409 response returns error body', async () => {
   form.append('cpf', '52998224725')
   form.append('email', 'dup@example.com')
   form.append('idPhoto', new File(['data'], 'id.jpg', { type: 'image/jpeg' }))
-  form.append('residenceProof', new File(['data'], 'proof.pdf', { type: 'application/pdf' }))
+  form.append(
+    'residenceProof',
+    new File(['data'], 'proof.pdf', { type: 'application/pdf' }),
+  )
 
   const res = await fetch('/api/users/register', { method: 'POST', body: form })
   assertEquals(res.status, 409)

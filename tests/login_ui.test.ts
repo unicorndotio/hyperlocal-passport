@@ -1,14 +1,29 @@
-import { assertEquals, assertMatch } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import {
+  assertEquals,
+  assertMatch,
+} from 'https://deno.land/std@0.224.0/assert/mod.ts'
 
 let capturedUrl = ''
 const originalFetch = globalThis.fetch
 globalThis.fetch = async (input: RequestInfo | URL) => {
-  const url = typeof input === 'string' ? input : (input as any).url || (input as any).href
+  const url = typeof input === 'string'
+    ? input
+    : (input as any).url || (input as any).href
   capturedUrl = url
-  return new Response(JSON.stringify({
-    user: { id: 'u1', email: 'test@example.com', role: 'admin' },
-    session: { id: 's1', userId: 'u1', expiresAt: new Date(Date.now() + 10000).toISOString(), token: 't', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-  }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  return new Response(
+    JSON.stringify({
+      user: { id: 'u1', email: 'test@example.com', role: 'admin' },
+      session: {
+        id: 's1',
+        userId: 'u1',
+        expiresAt: new Date(Date.now() + 10000).toISOString(),
+        token: 't',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  )
 }
 
 // Now import the components that use the auth client
@@ -33,13 +48,16 @@ Deno.test({
     const { signIn } = await import('../lib/auth-client.ts')
 
     await t.step('Successful login triggers sign-in request', async () => {
-      const res = await signIn.email({ email: 'test@example.com', password: 'password' })
+      const res = await signIn.email({
+        email: 'test@example.com',
+        password: 'password',
+      })
       assertMatch(capturedUrl, /\/api\/auth\/sign-in\/email/)
     })
-    
+
     globalThis.fetch = originalFetch
   },
-  ignore: true
+  ignore: true,
 })
 
 function assertExists(val: any) {

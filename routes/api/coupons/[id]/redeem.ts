@@ -1,7 +1,11 @@
 import { define } from '../../../../utils.ts'
 import { auth } from '../../../../lib/auth.ts'
 import { kv } from '../../../../lib/kv.ts'
-import { Coupon, generateRedemptionCode, Redemption } from '../../../../lib/coupon.ts'
+import {
+  Coupon,
+  generateRedemptionCode,
+  Redemption,
+} from '../../../../lib/coupon.ts'
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -41,14 +45,15 @@ export const handler = define.handlers({
     // 4. Check userMonthlyLimit
     if (coupon.userMonthlyLimit) {
       const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
-      
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        .getTime()
+
       // List user redemptions to count for this coupon this month
       // Key: ["user_redemptions", userId, timestamp]
-      const userRedemptions = kv.list<Redemption>({ 
-        prefix: ['user_redemptions', userId] 
+      const userRedemptions = kv.list<Redemption>({
+        prefix: ['user_redemptions', userId],
       })
-      
+
       let count = 0
       for await (const entry of userRedemptions) {
         const r = entry.value
@@ -65,7 +70,7 @@ export const handler = define.handlers({
     // 5. Generate redemption code and attempt atomic update
     const redemptionId = generateRedemptionCode()
     const now = Date.now()
-    
+
     const redemption: Redemption = {
       id: redemptionId,
       couponId: coupon.id,
@@ -84,16 +89,19 @@ export const handler = define.handlers({
     // Increment globalClaimedCount if limit exists
     const updatedCoupon = {
       ...coupon,
-      globalClaimedCount: coupon.globalClaimedCount + 1
+      globalClaimedCount: coupon.globalClaimedCount + 1,
     }
     atomic.set(['coupons', couponId], updatedCoupon)
 
     const result = await atomic.commit()
 
     if (!result.ok) {
-      return new Response('Conflict or race condition occurred. Please try again.', { status: 409 })
+      return new Response(
+        'Conflict or race condition occurred. Please try again.',
+        { status: 409 },
+      )
     }
 
     return Response.json(redemption, { status: 201 })
-  }
+  },
 })
