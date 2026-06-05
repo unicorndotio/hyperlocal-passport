@@ -55,16 +55,31 @@ Deno.test('Checkout Validation API', async (t) => {
   // Stub auth.api.getSession
   let currentRole = 'business'
   let currentUserId = businessUserId
-  const getSessionStub = stub(auth.api, 'getSession', () => {
-    return Promise.resolve({
-      user: { id: currentUserId, role: currentRole },
-      session: {
-        id: 'sess_1',
-        userId: currentUserId,
-        expiresAt: new Date(Date.now() + 3600000),
-      },
-    } as unknown)
-  })
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    (() => {
+      return Promise.resolve({
+        user: {
+          id: currentUserId,
+          role: currentRole,
+          email: 'business@example.com',
+          emailVerified: true,
+          name: 'Business User',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } satisfies typeof auth.$Infer.Session['user'],
+        session: {
+          id: 'sess_1',
+          userId: currentUserId,
+          expiresAt: new Date(Date.now() + 3600000),
+          token: 'token_biz',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } satisfies typeof auth.$Infer.Session['session'],
+      })
+    }) as (...args: unknown[]) => ReturnType<typeof auth.api.getSession>,
+  )
 
   try {
     await t.step('POST /api/transactions/validate - Success', async () => {

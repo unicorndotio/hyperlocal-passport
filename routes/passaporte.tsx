@@ -1,4 +1,5 @@
 import { define } from '../utils.ts'
+import { page } from 'fresh'
 import { auth } from '../lib/auth.ts'
 import { kv } from '../lib/kv.ts'
 import { Redemption } from '../lib/coupon.ts'
@@ -40,14 +41,14 @@ export const handler = define.handlers({
       }
     }
 
-    return ctx.render({ redemptions: activeRedemptions })
+    return page(
+      { redemptions: activeRedemptions },
+    )
   },
 })
 
 export default define.page<typeof handler>(function PassaportePage(ctx) {
-  const { redemptions } = ctx.data as {
-    redemptions: (Redemption & { businessName: string })[]
-  }
+  const { redemptions } = ctx.data
 
   return (
     <div class='px-4 py-6 max-w-md mx-auto min-h-screen bg-background'>

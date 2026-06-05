@@ -306,17 +306,14 @@ function ChartLegendContent({
       )}
     >
       {payload
-        // deno-lint-ignore no-explicit-any
-        .filter((item) => (item as any).type !== 'none')
-        .map((item) => {
-          // deno-lint-ignore no-explicit-any
-          const typedItem = item as any
-          const key = `${nameKey || typedItem.dataKey || 'value'}`
-          const itemConfig = getPayloadConfigFromPayload(config, typedItem, key)
+        .filter((item: RechartsPrimitive.LegendPayload) => item.type !== 'none')
+        .map((item: RechartsPrimitive.LegendPayload) => {
+          const key = `${nameKey || item.dataKey || 'value'}`
+          const itemConfig = getPayloadConfigFromPayload(config, item, key)
 
           return (
             <div
-              key={typedItem.value}
+              key={item.value}
               className={cn(
                 'flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground',
               )}
@@ -325,7 +322,7 @@ function ChartLegendContent({
                 <div
                   className='h-2 w-2 shrink-0 rounded-[2px]'
                   style={{
-                    backgroundColor: typedItem.color,
+                    backgroundColor: item.color,
                   }}
                 />
               )}

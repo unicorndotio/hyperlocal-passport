@@ -1,4 +1,5 @@
 import { define } from '../../utils.ts'
+import { page } from 'fresh'
 import { kv } from '../../lib/kv.ts'
 import { getDenoKvAdapterRaw } from '../../lib/kv-adapter.ts'
 import { Business } from '../../lib/business.ts'
@@ -32,15 +33,12 @@ export const handler = define.handlers({
       }],
     })
 
-    return ctx.render({ business, coupons })
+    return page({ business, coupons })
   },
 })
 
 export default define.page<typeof handler>(function BusinessDetailPage(ctx) {
-  const { business, coupons } = ctx.data as {
-    business: Business
-    coupons: Coupon[]
-  }
+  const { business, coupons } = ctx.data
 
   return (
     <div class='px-4 py-6 max-w-md mx-auto min-h-screen bg-background'>

@@ -9,16 +9,31 @@ Deno.test('User Redemptions API', async (t) => {
   const userId = 'user_' + Math.random().toString(36).slice(2)
 
   // Stub auth.api.getSession
-  const getSessionStub = stub(auth.api, 'getSession', () => {
-    return Promise.resolve({
-      user: { id: userId, role: 'resident' },
-      session: {
-        id: 'sess_1',
-        userId,
-        expiresAt: new Date(Date.now() + 3600000),
-      },
-    } as unknown)
-  })
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    (() => {
+      return Promise.resolve({
+        user: {
+          id: userId,
+          role: 'resident',
+          email: 'test@example.com',
+          emailVerified: true,
+          name: 'Test User',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } satisfies typeof auth.$Infer.Session['user'],
+        session: {
+          id: 'sess_1',
+          userId,
+          expiresAt: new Date(Date.now() + 3600000),
+          token: 'token_1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } satisfies typeof auth.$Infer.Session['session'],
+      })
+    }) as (...args: unknown[]) => ReturnType<typeof auth.api.getSession>,
+  )
 
   try {
     await t.step('GET /api/users/me/redemptions - Empty', async () => {

@@ -1,4 +1,5 @@
 import { define } from '../utils.ts'
+import { page } from 'fresh'
 import { kv } from '../lib/kv.ts'
 import { Business } from '../lib/business.ts'
 import { Head } from 'fresh/runtime'
@@ -35,7 +36,7 @@ export const handler = define.handlers({
     ].sort()
     const selectedCategory = category || 'Todos'
 
-    return ctx.render({
+    return page({
       businesses: filtered,
       categories: allCategories,
       selectedCategory,
@@ -44,11 +45,7 @@ export const handler = define.handlers({
 })
 
 export default define.page<typeof handler>(function CatalogPage(ctx) {
-  const { businesses, categories, selectedCategory } = ctx.data as {
-    businesses: Business[]
-    categories: string[]
-    selectedCategory: string
-  }
+  const { businesses, categories, selectedCategory } = ctx.data
 
   return (
     <div class='px-4 py-6 max-w-md mx-auto min-h-screen bg-background'>

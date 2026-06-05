@@ -55,26 +55,37 @@ Deno.test('Mobile Catalog Integration', async (t) => {
   )
 
   try {
+    const mockRender = (_data: unknown) => new Response(null, { status: 200 })
+
     await t.step('Browse Catalog', async () => {
       const req = new Request('http://localhost:8000/catalog')
       const res = await (catalogHandler as unknown as {
-        GET: (ctx: { req: Request; url: URL }) => Promise<Response>
+        GET: (ctx: {
+          req: Request
+          url: URL
+          render: (data: unknown) => Response
+        }) => Promise<Response>
       }).GET({
         req,
         url: new URL(req.url),
+        render: mockRender,
       })
 
       assertEquals(res.status, 200)
-      // Fresh 2.x renders to HTML, but we check if it doesn't 500
     })
 
     await t.step('Filter by Category', async () => {
       const req = new Request('http://localhost:8000/catalog?category=Lazer')
       const res = await (catalogHandler as unknown as {
-        GET: (ctx: { req: Request; url: URL }) => Promise<Response>
+        GET: (ctx: {
+          req: Request
+          url: URL
+          render: (data: unknown) => Response
+        }) => Promise<Response>
       }).GET({
         req,
         url: new URL(req.url),
+        render: mockRender,
       })
 
       assertEquals(res.status, 200)
