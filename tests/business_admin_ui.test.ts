@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any require-await no-empty
 import {
   assertEquals,
   assertExists,
@@ -98,12 +97,12 @@ Deno.test('Business Admin Form - validation rules', async (t) => {
 Deno.test('BusinessManager UI - Unit Tests', async (t) => {
   const originalFetch = globalThis.fetch
 
-  globalThis.fetch = async (input: RequestInfo | URL) => {
+  globalThis.fetch = (input: RequestInfo | URL): Promise<Response> => {
     const url = typeof input === 'string'
       ? input
-      : (input as any).url || (input as any).href
+      : input instanceof URL ? input.href : input.url
     if (url.includes('/api/businesses')) {
-      return new Response(JSON.stringify([
+      return Promise.resolve(new Response(JSON.stringify([
         {
           id: 'b-1',
           name: 'Empresa Teste',
@@ -113,14 +112,14 @@ Deno.test('BusinessManager UI - Unit Tests', async (t) => {
           userId: 'u-1',
           isActive: true,
         },
-      ]))
+      ])))
     }
     if (url.includes('/api/admin/users')) {
-      return new Response(JSON.stringify([
+      return Promise.resolve(new Response(JSON.stringify([
         { id: 'u-1', name: 'User 1', email: 'u1@test.com', role: 'resident' },
-      ]))
+      ])))
     }
-    return new Response('{}')
+    return Promise.resolve(new Response('{}'))
   }
 
   await t.step('renders loading state initially', () => {
@@ -169,7 +168,8 @@ Deno.test('Business API Endpoints Integration', async (t) => {
           body: formData,
         })
 
-        const res = await (indexHandler as any).POST({ req })
+        const postHandler = indexHandler.POST as (ctx: { req: Request }) => Response | Promise<Response>
+        const res = await postHandler({ req })
         assertEquals(res.status, 201)
 
         const business = await res.json()
@@ -186,7 +186,7 @@ Deno.test('Business API Endpoints Integration', async (t) => {
 
         // Verify that user role got updated to 'business'
         const userEntry = await kv.get(['user', testUserId])
-        assertEquals((userEntry.value as any).role, 'business')
+        assertEquals((userEntry.value as Record<string, unknown>).role, 'business')
       },
     )
 
@@ -194,11 +194,12 @@ Deno.test('Business API Endpoints Integration', async (t) => {
       'GET /api/businesses returns the list of businesses',
       async () => {
         const req = new Request('http://localhost:8000/api/businesses')
-        const res = await (indexHandler as any).GET({ req })
+        const getHandler = indexHandler.GET as (ctx: { req: Request }) => Response | Promise<Response>
+        const res = await getHandler({ req })
         assertEquals(res.status, 200)
 
-        const list = await res.json()
-        const found = list.find((b: any) => b.id === createdBusinessId)
+        const list = await res.json() as Array<Record<string, unknown>>
+        const found = list.find((b) => b.id === createdBusinessId)
         assertExists(found)
         assertEquals(found.name, 'Gourmet Burguer')
       },
@@ -217,7 +218,8 @@ Deno.test('Business API Endpoints Integration', async (t) => {
         },
       )
 
-      const res = await (detailHandler as any).PUT({
+      const putHandler = detailHandler.PUT as (ctx: { req: Request; params: Record<string, string> }) => Response | Promise<Response>
+      const res = await putHandler({
         req,
         params: { id: createdBusinessId },
       })
@@ -238,7 +240,8 @@ Deno.test('Business API Endpoints Integration', async (t) => {
           },
         )
 
-        const res = await (detailHandler as any).DELETE({
+        const deleteHandler = detailHandler.DELETE as (ctx: { req: Request; params: Record<string, string> }) => Response | Promise<Response>
+        const res = await deleteHandler({
           req,
           params: { id: createdBusinessId },
         })
@@ -246,9 +249,10 @@ Deno.test('Business API Endpoints Integration', async (t) => {
 
         // Verify it is deleted from list
         const getReq = new Request('http://localhost:8000/api/businesses')
-        const getRes = await (indexHandler as any).GET({ req: getReq })
-        const list = await getRes.json()
-        const found = list.find((b: any) => b.id === createdBusinessId)
+        const getHandler2 = indexHandler.GET as (ctx: { req: Request }) => Response | Promise<Response>
+        const getRes = await getHandler2({ req: getReq })
+        const list = await getRes.json() as Array<Record<string, unknown>>
+        const found = list.find((b) => b.id === createdBusinessId)
         assertEquals(found, undefined)
       },
     )
@@ -262,7 +266,9 @@ Deno.test('Business API Endpoints Integration', async (t) => {
     // Clean up temporary uploads directory
     try {
       await Deno.remove(tempUploadsDir, { recursive: true })
-    } catch {}
+    } catch {
+      // Directory may not exist
+    }
 
     // Restore original uploads directory env var
     if (originalUploadsDir) {

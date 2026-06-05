@@ -9,8 +9,7 @@ export const handler = define.handlers({
   async PUT(ctx) {
     const { id } = ctx.params
     const contentType = ctx.req.headers.get('content-type') || ''
-    // deno-lint-ignore no-explicit-any
-    let updateData: Record<string, any> = {}
+    let updateData: Record<string, unknown> = {}
 
     if (contentType.includes('multipart/form-data')) {
       let formData: FormData
@@ -75,26 +74,30 @@ export const handler = define.handlers({
         }
       }
     } else {
-      try {
-        updateData = await ctx.req.json()
-      } catch {
+      const body = await ctx.req.json()
+      if (typeof body !== 'object' || body === null) {
         return new Response('Invalid JSON body', { status: 400 })
       }
+      updateData = body as Record<string, unknown>
 
-      if (updateData.name && !updateData.companyName) {
-        updateData.companyName = updateData.name
-      } else if (updateData.companyName && !updateData.name) {
-        updateData.name = updateData.companyName
+      const name = updateData.name
+      const companyName = updateData.companyName
+      if (typeof name === 'string' && typeof companyName !== 'string') {
+        updateData.companyName = name
+      } else if (typeof companyName === 'string' && typeof name !== 'string') {
+        updateData.name = companyName
       }
 
-      if (updateData.cnpj && !isValidCnpj(updateData.cnpj)) {
+      const cnpj = updateData.cnpj
+      if (typeof cnpj === 'string' && !isValidCnpj(cnpj)) {
         return new Response('Invalid CNPJ', { status: 400 })
       }
 
-      if (updateData.userId) {
+      const userId = updateData.userId
+      if (typeof userId === 'string') {
         await adapter.update({
           model: 'user',
-          where: [{ field: 'id', value: updateData.userId }],
+          where: [{ field: 'id', value: userId }],
           update: { role: 'business' },
         })
       }

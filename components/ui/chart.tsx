@@ -3,6 +3,7 @@
 import * as React from 'preact'
 import { useContext, useId, useMemo } from 'preact/hooks'
 import * as RechartsPrimitive from 'recharts'
+import type { Payload, ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent'
 
 import { cn } from '@/lib/utils'
 
@@ -82,29 +83,26 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   }
 
   return (
-    <style
-      // deno-lint-ignore react-no-danger
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
+    <style>
+      {Object.entries(THEMES)
+        .map(
+          ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${
-              colorConfig
-                .map(([key, itemConfig]) => {
-                  const color = itemConfig.theme
-                    ?.[theme as keyof typeof itemConfig.theme] ||
-                    itemConfig.color
-                  return color ? `  --color-${key}: ${color};` : null
-                })
-                .join('\n')
-            }
+            colorConfig
+              .map(([key, itemConfig]) => {
+                const color = itemConfig.theme
+                  ?.[theme as keyof typeof itemConfig.theme] ||
+                  itemConfig.color
+                return color ? `  --color-${key}: ${color};` : null
+              })
+              .join('\n')
+          }
 }
 `,
-          )
-          .join('\n'),
-      }}
-    />
+        )
+        .join('\n')}
+    </style>
   )
 }
 
@@ -129,8 +127,7 @@ function ChartTooltipContent({
   & React.ComponentProps<'div'>
   & {
     active?: boolean
-    // deno-lint-ignore no-explicit-any
-    payload?: any[]
+    payload?: Array<Payload<ValueType, NameType>>
     label?: unknown
     color?: string
     hideLabel?: boolean
@@ -192,36 +189,33 @@ function ChartTooltipContent({
       {!nestLabel ? tooltipLabel : null}
       <div className='grid gap-1.5'>
         {payload
-          // deno-lint-ignore no-explicit-any
-          .filter((item) => (item as any).type !== 'none')
+          .filter((item) => item.type !== 'none')
           .map((item, index: number) => {
-            // deno-lint-ignore no-explicit-any
-            const typedItem = item as any
             const key = `${
-              nameKey || typedItem.name || typedItem.dataKey || 'value'
+              nameKey || item.name || item.dataKey || 'value'
             }`
             const itemConfig = getPayloadConfigFromPayload(
               config,
-              typedItem,
+              item,
               key,
             )
-            const indicatorColor = color || typedItem.payload?.fill ||
-              typedItem.color
+            const indicatorColor = color || item.payload?.fill ||
+              item.color
 
             return (
               <div
-                key={typedItem.dataKey}
+                key={item.dataKey}
                 className={cn(
                   'flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground',
                   indicator === 'dot' && 'items-center',
                 )}
               >
-                {formatter && typedItem?.value !== undefined && typedItem.name
+                {formatter && item.value !== undefined && item.name
                   ? (
                     formatter(
-                      typedItem.value,
-                      typedItem.name,
-                      typedItem,
+                      item.value,
+                      item.name,
+                      item,
                       index,
                       payload,
                     )
@@ -257,12 +251,12 @@ function ChartTooltipContent({
                         <div className='grid gap-1.5'>
                           {nestLabel ? tooltipLabel : null}
                           <span className='text-muted-foreground'>
-                            {itemConfig?.label || typedItem.name}
+                            {itemConfig?.label || item.name}
                           </span>
                         </div>
-                        {typedItem.value && (
+                        {item.value && (
                           <span className='font-mono font-medium text-foreground tabular-nums'>
-                            {typedItem.value.toLocaleString()}
+                            {String(item.value)}
                           </span>
                         )}
                       </div>

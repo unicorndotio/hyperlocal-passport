@@ -4,6 +4,12 @@ import { handler as catalogHandler } from '../routes/catalog.tsx'
 import { auth } from '../lib/auth.ts'
 import { kv } from '../lib/kv.ts'
 
+type CatalogCtx = { req: Request }
+type CatalogPage = { businesses: unknown[]; categories: string[]; selectedCategory: string }
+type CatalogHandler = {
+  GET(ctx: CatalogCtx): { data: CatalogPage } | Promise<{ data: CatalogPage }>
+}
+
 Deno.test('Mobile Catalog Integration', async (t) => {
   const userId = 'user_cat_123'
   const businessId = 'biz_cat_123'
@@ -55,40 +61,20 @@ Deno.test('Mobile Catalog Integration', async (t) => {
   )
 
   try {
-    const mockRender = (_data: unknown) => new Response(null, { status: 200 })
-
     await t.step('Browse Catalog', async () => {
       const req = new Request('http://localhost:8000/catalog')
-      const res = await (catalogHandler as unknown as {
-        GET: (ctx: {
-          req: Request
-          url: URL
-          render: (data: unknown) => Response
-        }) => Promise<Response>
-      }).GET({
-        req,
-        url: new URL(req.url),
-        render: mockRender,
-      })
+      const res = await (catalogHandler as CatalogHandler).GET({ req })
 
-      assertEquals(res.status, 200)
+      assertEquals(typeof res.data, 'object')
+      assertEquals(Array.isArray(res.data.businesses), true)
     })
 
     await t.step('Filter by Category', async () => {
       const req = new Request('http://localhost:8000/catalog?category=Lazer')
-      const res = await (catalogHandler as unknown as {
-        GET: (ctx: {
-          req: Request
-          url: URL
-          render: (data: unknown) => Response
-        }) => Promise<Response>
-      }).GET({
-        req,
-        url: new URL(req.url),
-        render: mockRender,
-      })
+      const res = await (catalogHandler as CatalogHandler).GET({ req })
 
-      assertEquals(res.status, 200)
+      assertEquals(typeof res.data, 'object')
+      assertEquals(Array.isArray(res.data.businesses), true)
     })
   } finally {
     // 3. Cleanup

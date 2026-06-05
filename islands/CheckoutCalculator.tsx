@@ -1,6 +1,7 @@
 import { useSignal } from '@preact/signals'
 import { useRef } from 'preact/hooks'
 import { JSX } from 'preact'
+import type { Html5QrcodeScanner } from 'html5-qrcode'
 import { cn, formatBRL } from '@/lib/utils.ts'
 import type { Transaction } from '@/lib/coupon.ts'
 import {
@@ -26,8 +27,7 @@ export default function CheckoutCalculator(
     | null
   >(null)
   const scannerVisible = useSignal(false)
-  // deno-lint-ignore no-explicit-any
-  const scannerRef = useRef<any>(null)
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
 
   const handleAmountChange = (
     e: JSX.TargetedEvent<HTMLInputElement, Event>,
