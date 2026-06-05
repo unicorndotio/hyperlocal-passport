@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Mobile Catalog & Redemption UI
 type: frontend
 complexity: high
@@ -34,13 +34,13 @@ generating the code they will use at the cashier.
 
 ## Subtasks
 
-- [ ] 11.1 Build the Catalog listing page with category filters.
-- [ ] 11.2 Build the Business Detail page to list available coupons.
-- [ ] 11.3 Build the interactive Redeem button handling success/error states.
-- [ ] 11.4 Build the "Passaporte" screen showing the active alphanumeric codes
+- [x] 11.1 Build the Catalog listing page with category filters.
+- [x] 11.2 Build the Business Detail page to list available coupons.
+- [x] 11.3 Build the interactive Redeem button handling success/error states.
+- [x] 11.4 Build the "Passaporte" screen showing the active alphanumeric codes
       and generating the QR Code visually (e.g., using `qrcode.react` or
       similar).
-- [ ] 11.5 Implement `GET /api/users/me/redemptions` logic to fetch the active
+- [x] 11.5 Implement `GET /api/users/me/redemptions` logic to fetch the active
       codes.
 
 ## Implementation Details
