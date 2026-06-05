@@ -1,5 +1,5 @@
 import { define } from '../../../utils.ts'
-import { uploadFile } from '../../../lib/storage.ts'
+import { deleteFile, uploadFile } from '../../../lib/storage.ts'
 import {
   formatWhatsApp,
   isValidCpf,
@@ -116,7 +116,8 @@ export async function handleRegister(req: Request): Promise<Response> {
   }
 
   const result = await kv.atomic()
-    .set(['users', userId], user)
+    .check(existing) // Issue 001: Ensure CPF wasn't taken during upload
+    .set(['user', userId], user) // Issue 003: singular 'user'
     .set(['users_by_cpf', cpf], userId)
     .set(['approvals', 'pending', userId], {
       userId,
@@ -125,7 +126,12 @@ export async function handleRegister(req: Request): Promise<Response> {
     .commit()
 
   if (!result.ok) {
-    return json({ error: 'Failed to save user, please retry' }, 500)
+    // Issue 006: Cleanup orphaned files
+    await Promise.allSettled([
+      deleteFile(idPhotoFilename),
+      deleteFile(residenceProofFilename),
+    ])
+    return json({ error: 'Conflict or system error, please retry' }, 500)
   }
 
   return json(user, 201)

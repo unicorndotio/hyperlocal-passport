@@ -81,3 +81,21 @@ export async function uploadFile(
 
   return filename
 }
+
+/**
+ * Deletes a file from the local filesystem and its metadata from Deno KV.
+ */
+export async function deleteFile(filename: string): Promise<void> {
+  const uploadsDir = Deno.env.get('UPLOADS_DIR') || '/app/uploads'
+  const filePath = join(uploadsDir, filename)
+
+  try {
+    await Deno.remove(filePath)
+  } catch (err) {
+    if (!(err instanceof Deno.errors.NotFound)) {
+      console.error(`Failed to delete file ${filePath}:`, err)
+    }
+  }
+
+  await kv.delete(['file_metadata', filename])
+}

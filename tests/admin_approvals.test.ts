@@ -22,7 +22,7 @@ async function setupTestUser(
     status,
     createdAt: Date.now(),
   }
-  await kv.set(['users', userId], user)
+  await kv.set(['user', userId], user)
   if (status === 'pending') {
     await kv.set(['approvals', 'pending', userId], {
       userId,
@@ -33,7 +33,7 @@ async function setupTestUser(
 }
 
 async function cleanupTestUser(userId: string) {
-  await kv.delete(['users', userId])
+  await kv.delete(['user', userId])
   await kv.delete(['approvals', 'pending', userId])
 }
 
@@ -93,7 +93,7 @@ Deno.test('Admin Approvals API', async (t) => {
       assertEquals(user.status, 'approved')
 
       // Verify KV
-      const kvUser = await kv.get(['users', userId])
+      const kvUser = await kv.get(['user', userId])
       assertEquals((kvUser.value as { status: string }).status, 'approved')
       const kvPending = await kv.get(['approvals', 'pending', userId])
       assertEquals(kvPending.value, null)
@@ -122,7 +122,7 @@ Deno.test('Admin Approvals API', async (t) => {
     assertEquals(user.status, 'rejected')
 
     // Verify KV
-    const kvUser = await kv.get(['users', userId])
+    const kvUser = await kv.get(['user', userId])
     assertEquals((kvUser.value as { status: string }).status, 'rejected')
     const kvPending = await kv.get(['approvals', 'pending', userId])
     assertEquals(kvPending.value, null)

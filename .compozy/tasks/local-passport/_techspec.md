@@ -48,7 +48,7 @@ efficient listing.
 
 ### Key Structures
 
-- **Users:** `["users", "<user_id>"]`
+- **Users:** `["user", "<user_id>"]`
 - **Users by CPF (Index):** `["users_by_cpf", "<cpf>"]` -> returns `user_id`
 - **Pending Approvals:** `["approvals", "pending", "<user_id>"]`
 - **Businesses:** `["businesses", "<business_id>"]`

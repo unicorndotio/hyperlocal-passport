@@ -40,7 +40,7 @@ Deno.test('POST /api/users/register', async (t) => {
     const entry = await kv.get<string>(['users_by_cpf', cpf])
     if (entry.value) {
       const userId = entry.value
-      await kv.delete(['users', userId])
+      await kv.delete(['user', userId])
       await kv.delete(['users_by_cpf', cpf])
       await kv.delete(['approvals', 'pending', userId])
     }
@@ -249,7 +249,7 @@ Deno.test('POST /api/users/register', async (t) => {
       )
 
       // Verify user stored in KV
-      const kvUser = await kv.get(['users', user.id])
+      const kvUser = await kv.get(['user', user.id])
       assertExists(kvUser.value)
       assertEquals((kvUser.value as { cpf: string }).cpf, integrationCpf)
 

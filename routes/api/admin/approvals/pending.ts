@@ -9,7 +9,7 @@ export const handler = define.handlers({
 
     for await (const entry of list) {
       const { userId } = entry.value as { userId: string }
-      const userEntry = await kv.get(['users', userId])
+      const userEntry = await kv.get(['user', userId])
       if (userEntry.value) {
         pendingUsers.push(userEntry.value)
       }

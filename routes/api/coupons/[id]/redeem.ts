@@ -43,33 +43,24 @@ export const handler = define.handlers({
     }
 
     // 4. Check userMonthlyLimit
-    if (coupon.userMonthlyLimit) {
-      const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-        .getTime()
+    const now = new Date()
+    const yearMonth = `${now.getFullYear()}-${now.getMonth() + 1}`
+    const monthlyCounterKey = [
+      'user_coupon_monthly_count',
+      userId,
+      couponId,
+      yearMonth,
+    ]
+    const monthlyCounterRes = await kv.get<number>(monthlyCounterKey)
+    const currentMonthlyCount = monthlyCounterRes.value || 0
 
-      // List user redemptions to count for this coupon this month
-      // Key: ["user_redemptions", userId, timestamp]
-      const userRedemptions = kv.list<Redemption>({
-        prefix: ['user_redemptions', userId],
-      })
-
-      let count = 0
-      for await (const entry of userRedemptions) {
-        const r = entry.value
-        if (r.couponId === couponId && r.redeemedAt >= startOfMonth) {
-          count++
-        }
-      }
-
-      if (count >= coupon.userMonthlyLimit) {
-        return new Response('User monthly limit reached', { status: 400 })
-      }
+    if (coupon.userMonthlyLimit && currentMonthlyCount >= coupon.userMonthlyLimit) {
+      return new Response('User monthly limit reached', { status: 400 })
     }
 
     // 5. Generate redemption code and attempt atomic update
     const redemptionId = generateRedemptionCode()
-    const now = Date.now()
+    const nowMs = Date.now()
 
     const redemption: Redemption = {
       id: redemptionId,
@@ -77,14 +68,16 @@ export const handler = define.handlers({
       businessId: coupon.businessId,
       userId: userId,
       status: 'active',
-      redeemedAt: now,
+      redeemedAt: nowMs,
     }
 
     const atomic = kv.atomic()
       .check(couponRes) // Ensure coupon hasn't changed since we read it
+      .check(monthlyCounterRes) // Ensure user limit hasn't changed
       .check({ key: ['redemptions', redemptionId], versionstamp: null }) // Ensure code is unique
       .set(['redemptions', redemptionId], redemption)
-      .set(['user_redemptions', userId, now], redemption)
+      .set(['user_redemptions', userId, nowMs], redemption)
+      .set(monthlyCounterKey, currentMonthlyCount + 1)
 
     // Increment globalClaimedCount if limit exists
     const updatedCoupon = {
