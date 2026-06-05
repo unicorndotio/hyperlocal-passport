@@ -5,7 +5,11 @@ import { auth } from '../lib/auth.ts'
 import { kv } from '../lib/kv.ts'
 
 type CatalogCtx = { req: Request }
-type CatalogPage = { businesses: unknown[]; categories: string[]; selectedCategory: string }
+type CatalogPage = {
+  businesses: unknown[]
+  categories: string[]
+  selectedCategory: string
+}
 type CatalogHandler = {
   GET(ctx: CatalogCtx): { data: CatalogPage } | Promise<{ data: CatalogPage }>
 }

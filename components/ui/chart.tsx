@@ -3,7 +3,11 @@
 import * as React from 'preact'
 import { useContext, useId, useMemo } from 'preact/hooks'
 import * as RechartsPrimitive from 'recharts'
-import type { Payload, ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent'
+import type {
+  NameType,
+  Payload,
+  ValueType,
+} from 'recharts/types/component/DefaultTooltipContent'
 
 import { cn } from '@/lib/utils'
 
@@ -191,9 +195,7 @@ function ChartTooltipContent({
         {payload
           .filter((item) => item.type !== 'none')
           .map((item, index: number) => {
-            const key = `${
-              nameKey || item.name || item.dataKey || 'value'
-            }`
+            const key = `${nameKey || item.name || item.dataKey || 'value'}`
             const itemConfig = getPayloadConfigFromPayload(
               config,
               item,

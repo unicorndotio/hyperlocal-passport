@@ -407,7 +407,7 @@ export default function BusinessManager() {
       {isOpen && (
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'>
           <div className='bg-white rounded-2xl max-w-xl w-full p-6 relative shadow-2xl overflow-y-auto max-h-[90vh]'>
-             <button
+            <button
               type='button'
               onClick={() => setIsOpen(false)}
               className='absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl transition-colors'
@@ -434,7 +434,8 @@ export default function BusinessManager() {
                 <input
                   type='text'
                   value={name}
-                  onChange={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => setName(e.currentTarget.value)}
+                  onChange={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setName(e.currentTarget.value)}
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                     formErrors.name
                       ? 'border-red-500 ring-1 ring-red-500'
@@ -478,7 +479,9 @@ export default function BusinessManager() {
                   </label>
                   <select
                     value={category}
-                    onChange={(e: JSX.TargetedEvent<HTMLSelectElement, Event>) => setCategory(e.currentTarget.value)}
+                    onChange={(
+                      e: JSX.TargetedEvent<HTMLSelectElement, Event>,
+                    ) => setCategory(e.currentTarget.value)}
                     className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white'
                     disabled={saving}
                   >
@@ -508,7 +511,9 @@ export default function BusinessManager() {
                   : (
                     <select
                       value={userId}
-                      onChange={(e: JSX.TargetedEvent<HTMLSelectElement, Event>) => setUserId(e.currentTarget.value)}
+                      onChange={(
+                        e: JSX.TargetedEvent<HTMLSelectElement, Event>,
+                      ) => setUserId(e.currentTarget.value)}
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
                         formErrors.userId
                           ? 'border-red-500 ring-1 ring-red-500'
@@ -541,7 +546,9 @@ export default function BusinessManager() {
                 </label>
                 <textarea
                   value={description}
-                  onChange={(e: JSX.TargetedEvent<HTMLTextAreaElement, Event>) => setDescription(e.currentTarget.value)}
+                  onChange={(
+                    e: JSX.TargetedEvent<HTMLTextAreaElement, Event>,
+                  ) => setDescription(e.currentTarget.value)}
                   className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-h-[80px]'
                   placeholder='Ex: Oferecemos 15% de desconto de segunda a quarta-feira.'
                   disabled={saving}
@@ -569,7 +576,8 @@ export default function BusinessManager() {
                 <input
                   type='file'
                   accept='image/jpeg,image/png,image/webp'
-                  onChange={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => setLogo(e.currentTarget.files?.[0] || null)}
+                  onChange={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setLogo(e.currentTarget.files?.[0] || null)}
                   className={`w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer ${
                     formErrors.logo ? 'border-red-500' : ''
                   }`}
@@ -585,7 +593,8 @@ export default function BusinessManager() {
                   type='checkbox'
                   id='isActive'
                   checked={isActive}
-                  onChange={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => setIsActive(e.currentTarget.checked)}
+                  onChange={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setIsActive(e.currentTarget.checked)}
                   className='rounded text-blue-600 focus:ring-blue-500 h-4 w-4'
                   disabled={saving}
                 />
