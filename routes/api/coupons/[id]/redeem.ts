@@ -54,7 +54,9 @@ export const handler = define.handlers({
     const monthlyCounterRes = await kv.get<number>(monthlyCounterKey)
     const currentMonthlyCount = monthlyCounterRes.value || 0
 
-    if (coupon.userMonthlyLimit && currentMonthlyCount >= coupon.userMonthlyLimit) {
+    if (
+      coupon.userMonthlyLimit && currentMonthlyCount >= coupon.userMonthlyLimit
+    ) {
       return new Response('User monthly limit reached', { status: 400 })
     }
 
