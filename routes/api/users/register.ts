@@ -77,9 +77,18 @@ export async function handleRegister(req: Request): Promise<Response> {
     return json({ error: 'Invalid WhatsApp number' }, 400)
   }
 
-  const existing = await kv.get(['users_by_cpf', cpf])
-  if (existing.value !== null) {
+  const normalizedEmail = email.trim().toLowerCase()
+
+  const [existingCpf, existingEmail] = await kv.getMany([
+    ['users_by_cpf', cpf],
+    ['users_by_email', normalizedEmail],
+  ])
+
+  if (existingCpf.value !== null) {
     return json({ error: 'CPF already registered' }, 409)
+  }
+  if (existingEmail.value !== null) {
+    return json({ error: 'Email already registered' }, 409)
   }
 
   const userId = crypto.randomUUID()
@@ -104,7 +113,7 @@ export async function handleRegister(req: Request): Promise<Response> {
     id: userId,
     name: name.trim(),
     cpf,
-    email: email.trim(),
+    email: normalizedEmail,
     whatsapp: formatWhatsApp(whatsappDial, whatsappNumber),
     role: 'resident',
     status: 'pending',
@@ -116,9 +125,11 @@ export async function handleRegister(req: Request): Promise<Response> {
   }
 
   const result = await kv.atomic()
-    .check(existing) // Issue 001: Ensure CPF wasn't taken during upload
+    .check(existingCpf) // Issue 001: Ensure CPF wasn't taken during upload
+    .check(existingEmail) // Issue 009: Ensure email wasn't taken during upload
     .set(['user', userId], user) // Issue 003: singular 'user'
     .set(['users_by_cpf', cpf], userId)
+    .set(['users_by_email', normalizedEmail], userId)
     .set(['approvals', 'pending', userId], {
       userId,
       createdAt: user.createdAt,

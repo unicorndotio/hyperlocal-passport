@@ -40,6 +40,13 @@ Deno.test('POST /api/users/register', async (t) => {
     const entry = await kv.get<string>(['users_by_cpf', cpf])
     if (entry.value) {
       const userId = entry.value
+      const userRes = await kv.get<{ email?: string }>(['user', userId])
+      if (userRes.value) {
+        const user = userRes.value
+        if (user.email) {
+          await kv.delete(['users_by_email', user.email.toLowerCase()])
+        }
+      }
       await kv.delete(['user', userId])
       await kv.delete(['users_by_cpf', cpf])
       await kv.delete(['approvals', 'pending', userId])
@@ -47,6 +54,7 @@ Deno.test('POST /api/users/register', async (t) => {
   }
 
   await cleanupCpf(integrationCpf)
+  await kv.delete(['users_by_email', 'carlos@example.com'])
 
   // --- Unit tests: validation ---
 
@@ -145,12 +153,14 @@ Deno.test('POST /api/users/register', async (t) => {
     // Use a CPF that won't conflict — we'll clean up after
     const cpfWithPunctuation = '987.654.321-00'
     const normalizedCpf = '98765432100'
+    const email = 'punctuation@example.com'
     await cleanupCpf(normalizedCpf)
+    await kv.delete(['users_by_email', email])
 
     const req = makeRegisterRequest({
       name: 'Maria Souza',
       cpf: cpfWithPunctuation,
-      email: 'maria@example.com',
+      email: email,
       whatsappDial: '+55',
       whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
@@ -166,14 +176,18 @@ Deno.test('POST /api/users/register', async (t) => {
   })
 
   await t.step('rejects duplicate CPF with 409', async () => {
-    const cpf = '98765432100'
+    const cpf = '12345678909'
+    const email1 = 'first@example.com'
+    const email2 = 'second@example.com'
     await cleanupCpf(cpf)
+    await kv.delete(['users_by_email', email1])
+    await kv.delete(['users_by_email', email2])
 
     // First registration
     const req1 = makeRegisterRequest({
       name: 'First User',
       cpf,
-      email: 'first@example.com',
+      email: email1,
       whatsappDial: '+55',
       whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
@@ -186,7 +200,7 @@ Deno.test('POST /api/users/register', async (t) => {
     const req2 = makeRegisterRequest({
       name: 'Second User',
       cpf,
-      email: 'second@example.com',
+      email: email2,
       whatsappDial: '+55',
       whatsappNumber: '48912345678',
       idPhoto: makeFile('id.jpg'),
@@ -199,6 +213,53 @@ Deno.test('POST /api/users/register', async (t) => {
 
     // Cleanup
     await cleanupCpf(cpf)
+  })
+
+  await t.step('rejects duplicate email with 409', async () => {
+    const email = 'duplicate@example.com'
+    const cpf1 = '98765432100'
+    const cpf2 = '12345678909'
+    await cleanupCpf(cpf1)
+    await cleanupCpf(cpf2)
+    await kv.delete(['users_by_email', email])
+
+    // Pre-register first user
+    const req1 = makeRegisterRequest({
+      name: 'User 1',
+      cpf: cpf1,
+      email: email,
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
+      idPhoto: makeFile('id1.jpg'),
+      residenceProof: makeFile('proof1.jpg'),
+    })
+    const res1 = await handleRegister(req1)
+    if (res1.status !== 201) {
+      console.error('First registration failed:', await res1.json())
+    }
+    assertEquals(res1.status, 201)
+
+    // Try to register second user with same email
+    const req2 = makeRegisterRequest({
+      name: 'User 2',
+      cpf: cpf2,
+      email: email,
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
+      idPhoto: makeFile('id2.jpg'),
+      residenceProof: makeFile('proof2.jpg'),
+    })
+    const res = await handleRegister(req2)
+    if (res.status !== 409) {
+      console.error('Second registration response:', await res.json())
+    }
+    assertEquals(res.status, 409)
+    const body = await res.json()
+    assertEquals(body.error, 'Email already registered')
+
+    await cleanupCpf(cpf1)
+    await cleanupCpf(cpf2)
+    await kv.delete(['users_by_email', email.toLowerCase()])
   })
 
   // --- Integration test ---

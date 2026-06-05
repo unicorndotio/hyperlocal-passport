@@ -67,11 +67,15 @@ export const handler = define.handlers({
             email: user.email,
             password: (user.cpf as string) || 'Pass@123',
             name: user.name,
+            role: 'resident',
           },
         })
       } catch (err) {
         // If user already exists in Auth, ignore (might be a re-approval)
-        console.warn(`Auth account creation failed or user already exists:`, err)
+        console.warn(
+          `Auth account creation failed or user already exists:`,
+          err,
+        )
       }
     }
 

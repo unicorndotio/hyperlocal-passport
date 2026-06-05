@@ -43,7 +43,10 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       const indexable = where.find((w) => indexedFields.includes(w.field))
 
       if (indexable) {
-        const indexKey = [`${model}_by_${indexable.field}`, indexable.value as Deno.KvKeyPart]
+        const indexKey = [
+          `${model}_by_${indexable.field}`,
+          indexable.value as Deno.KvKeyPart,
+        ]
         const idRes = await kv.get<string>(indexKey)
         if (idRes.value) {
           const res = await kv.get<T>([model, idRes.value])
@@ -90,7 +93,10 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
       const indexable = where?.find((w) => indexedFields.includes(w.field))
 
       if (indexable) {
-        const indexKey = [`${model}_by_${indexable.field}`, indexable.value as Deno.KvKeyPart]
+        const indexKey = [
+          `${model}_by_${indexable.field}`,
+          indexable.value as Deno.KvKeyPart,
+        ]
         const idRes = await kv.get<string>(indexKey)
         if (idRes.value) {
           const res = await kv.get<T>([model, idRes.value])
@@ -148,8 +154,32 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
           }
         }
         if (matches) {
-          const updated = { ...val, ...update }
-          await kv.set(entry.key, updated)
+          const updated = { ...val, ...update } as Record<string, unknown>
+          const atomic = kv.atomic().set(entry.key, updated)
+
+          // Update secondary indexes
+          const indexedFields = INDEXED_FIELDS[model] || []
+          for (const field of indexedFields) {
+            const oldVal = val[field]
+            const newVal = updated[field]
+
+            if (oldVal !== newVal) {
+              if (oldVal !== undefined && oldVal !== null) {
+                atomic.delete([
+                  `${model}_by_${field}`,
+                  oldVal as Deno.KvKeyPart,
+                ])
+              }
+              if (newVal !== undefined && newVal !== null) {
+                atomic.set(
+                  [`${model}_by_${field}`, newVal as Deno.KvKeyPart],
+                  val.id as string,
+                )
+              }
+            }
+          }
+
+          await atomic.commit()
           return updated as unknown as T
         }
       }
@@ -176,8 +206,32 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
           }
         }
         if (matches) {
-          const updated = { ...val, ...update }
-          await kv.set(entry.key, updated)
+          const updated = { ...val, ...update } as Record<string, unknown>
+          const atomic = kv.atomic().set(entry.key, updated)
+
+          // Update secondary indexes
+          const indexedFields = INDEXED_FIELDS[model] || []
+          for (const field of indexedFields) {
+            const oldVal = val[field]
+            const newVal = updated[field]
+
+            if (oldVal !== newVal) {
+              if (oldVal !== undefined && oldVal !== null) {
+                atomic.delete([
+                  `${model}_by_${field}`,
+                  oldVal as Deno.KvKeyPart,
+                ])
+              }
+              if (newVal !== undefined && newVal !== null) {
+                atomic.set(
+                  [`${model}_by_${field}`, newVal as Deno.KvKeyPart],
+                  val.id as string,
+                )
+              }
+            }
+          }
+
+          await atomic.commit()
           count++
         }
       }
@@ -199,7 +253,21 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
           }
         }
         if (matches) {
-          await kv.delete(entry.key)
+          const atomic = kv.atomic().delete(entry.key)
+
+          // Remove secondary indexes
+          const indexedFields = INDEXED_FIELDS[model] || []
+          for (const field of indexedFields) {
+            const indexVal = val[field]
+            if (indexVal !== undefined && indexVal !== null) {
+              atomic.delete([
+                `${model}_by_${field}`,
+                indexVal as Deno.KvKeyPart,
+              ])
+            }
+          }
+
+          await atomic.commit()
           return
         }
       }
@@ -223,7 +291,21 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
           }
         }
         if (matches) {
-          await kv.delete(entry.key)
+          const atomic = kv.atomic().delete(entry.key)
+
+          // Remove secondary indexes
+          const indexedFields = INDEXED_FIELDS[model] || []
+          for (const field of indexedFields) {
+            const indexVal = val[field]
+            if (indexVal !== undefined && indexVal !== null) {
+              atomic.delete([
+                `${model}_by_${field}`,
+                indexVal as Deno.KvKeyPart,
+              ])
+            }
+          }
+
+          await atomic.commit()
           count++
         }
       }
