@@ -1,5 +1,6 @@
 import { define } from '../../utils.ts'
 import { kv } from '../../lib/kv.ts'
+import { getDenoKvAdapterRaw } from '../../lib/kv-adapter.ts'
 import { Business } from '../../lib/business.ts'
 import { Coupon } from '../../lib/coupon.ts'
 import { Head } from 'fresh/runtime'
@@ -22,14 +23,14 @@ export const handler = define.handlers({
     }
 
     const business = businessRes.value
-    const iter = kv.list<Coupon>({ prefix: ['coupons'] })
-    const coupons: Coupon[] = []
-    for await (const entry of iter) {
-      // Filter by businessId.
-      if (entry.value.businessId === id && entry.value.isActive) {
-        coupons.push(entry.value)
-      }
-    }
+    const adapter = getDenoKvAdapterRaw(kv)
+    const coupons = await adapter.findMany<Coupon>({
+      model: 'coupons',
+      where: [{ field: 'businessId', value: id }, {
+        field: 'isActive',
+        value: true,
+      }],
+    })
 
     return ctx.render({ business, coupons })
   },

@@ -1,9 +1,8 @@
 import { define } from '../../../utils.ts'
+import { kv } from '../../../lib/kv.ts'
 import { getDenoKvAdapterRaw } from '../../../lib/kv-adapter.ts'
 import { uploadFile } from '../../../lib/storage.ts'
 import { isValidCnpj } from '../../../lib/business.ts'
-
-const kv = await Deno.openKv()
 const adapter = getDenoKvAdapterRaw(kv)
 
 export const handler = define.handlers({

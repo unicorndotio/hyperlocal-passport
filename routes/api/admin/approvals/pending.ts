@@ -1,6 +1,5 @@
 import { define } from '../../../../utils.ts'
-
-const kv = await Deno.openKv()
+import { kv } from '../../../../lib/kv.ts'
 
 export const handler = define.handlers({
   async GET() {

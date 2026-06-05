@@ -6,8 +6,8 @@ import {
   isValidPhone,
   normalizeCpf,
 } from '../../../lib/registration.ts'
-
-const kv = await Deno.openKv()
+import { kv } from '../../../lib/kv.ts'
+import { json } from '../../../lib/utils.ts'
 
 interface User {
   id: string
@@ -22,13 +22,6 @@ interface User {
     residenceProofUrl: string
   }
   createdAt: number
-}
-
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
 }
 
 export async function handleRegister(req: Request): Promise<Response> {

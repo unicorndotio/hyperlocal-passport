@@ -1,7 +1,6 @@
 import { define } from '../../../../utils.ts'
 import { auth } from '../../../../lib/auth.ts'
-
-const kv = await Deno.openKv()
+import { kv } from '../../../../lib/kv.ts'
 
 interface User {
   id: string
@@ -53,32 +52,6 @@ export const handler = define.handlers({
       .set(['user', userId], user)
       .delete(['approvals', 'pending', userId])
 
-    // Issue 005: If approved, create Better Auth credentials
-    // We'll use a temporary password (the user's CPF) or similar.
-    // In a real app, we'd send a "set password" email.
-    if (status === 'approved') {
-      // Create the account in Better Auth.
-      // Since we are inside a request, we can use auth.api
-      // We'll set a temporary password as their CPF (normalized).
-      // They should change it on first login.
-      try {
-        await auth.api.signUpEmail({
-          body: {
-            email: user.email,
-            password: (user.cpf as string) || 'Pass@123',
-            name: user.name,
-            role: 'resident',
-          },
-        })
-      } catch (err) {
-        // If user already exists in Auth, ignore (might be a re-approval)
-        console.warn(
-          `Auth account creation failed or user already exists:`,
-          err,
-        )
-      }
-    }
-
     const result = await atomic.commit()
 
     if (!result.ok) {
@@ -89,6 +62,25 @@ export const handler = define.handlers({
           headers: { 'Content-Type': 'application/json' },
         },
       )
+    }
+
+    // If approved, create Better Auth credentials (after atomic commit succeeds)
+    if (status === 'approved') {
+      try {
+        await auth.api.signUpEmail({
+          body: {
+            email: user.email,
+            password: (user.cpf as string) || 'Pass@123',
+            name: user.name,
+            role: 'resident',
+          },
+        })
+      } catch (err) {
+        console.warn(
+          `Auth account creation failed or user already exists:`,
+          err,
+        )
+      }
     }
 
     return new Response(JSON.stringify(user), {

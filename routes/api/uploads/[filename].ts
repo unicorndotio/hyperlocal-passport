@@ -1,8 +1,8 @@
 import { define } from '../../../utils.ts'
 import { join } from 'https://deno.land/std@0.224.0/path/mod.ts'
 import { auth } from '../../../lib/auth.ts'
-
-const kv = await Deno.openKv()
+import { kv } from '../../../lib/kv.ts'
+import { json } from '../../../lib/utils.ts'
 
 interface FileMetadata {
   userId: string
@@ -16,13 +16,6 @@ const mimeTypes: Record<string, string> = {
   gif: 'image/gif',
   webp: 'image/webp',
   pdf: 'application/pdf',
-}
-
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
 }
 
 export async function handleGetUpload(

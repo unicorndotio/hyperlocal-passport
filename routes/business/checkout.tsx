@@ -1,5 +1,6 @@
 import { define } from '@/utils.ts'
 import { auth } from '@/lib/auth.ts'
+import { kv } from '@/lib/kv.ts'
 import { getDenoKvAdapterRaw } from '@/lib/kv-adapter.ts'
 import type { Business } from '@/lib/business.ts'
 import CheckoutCalculator from '@/islands/CheckoutCalculator.tsx'
@@ -10,8 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card.tsx'
-
-const kv = await Deno.openKv()
 const adapter = getDenoKvAdapterRaw(kv)
 
 export default define.page(async function BusinessCheckoutPage(ctx) {

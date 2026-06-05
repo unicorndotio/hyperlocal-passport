@@ -14,3 +14,10 @@ export function formatBRL(cents: number) {
     currency: 'BRL',
   }).format(cents / 100)
 }
+
+export function json(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
