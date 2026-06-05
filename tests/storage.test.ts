@@ -4,8 +4,9 @@ import {
   assertRejects,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { join } from 'https://deno.land/std@0.224.0/path/mod.ts'
-import { uploadFile } from '../lib/storage.ts'
+import { deleteFile, uploadFile } from '../lib/storage.ts'
 import { handleGetUpload } from '../routes/api/uploads/[filename].ts'
+import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
 import { auth } from '../lib/auth.ts'
 
 Deno.test('Storage and Upload API Tests', async (t) => {
@@ -272,4 +273,104 @@ Deno.test('Storage and Upload API Tests', async (t) => {
   }
 
   kv.close()
+})
+
+Deno.test('deleteFile utility', async (t) => {
+  const testDir = await Deno.makeTempDir({ prefix: 'local_passport_delete_test_' })
+  const origDir = Deno.env.get('UPLOADS_DIR')
+  Deno.env.set('UPLOADS_DIR', testDir)
+  const kv2 = await Deno.openKv()
+
+  await t.step('deletes existing file and metadata', async () => {
+    const filePath = join(testDir, 'test_delete.txt')
+    await Deno.writeTextFile(filePath, 'content')
+    await kv2.set(['file_metadata', 'test_delete.txt'], { userId: 'u1', isPublic: false })
+
+    await deleteFile('test_delete.txt')
+
+    // File should be gone from disk
+    await assertRejects(async () => await Deno.stat(filePath), Deno.errors.NotFound)
+    // Metadata should be gone
+    const entry = await kv2.get(['file_metadata', 'test_delete.txt'])
+    assertEquals(entry.value, null)
+  })
+
+  await t.step('handles non-existent file idempotently', async () => {
+    // Should not throw
+    await deleteFile('nonexistent_file.txt')
+    // Metadata deletion should also be idempotent
+    const entry = await kv2.get(['file_metadata', 'nonexistent_file.txt'])
+    assertEquals(entry.value, null)
+  })
+
+  await t.step('logs error when Deno.remove fails with unexpected error', async () => {
+    const filePath = join(testDir, 'test_perm_deny.txt')
+    await Deno.writeTextFile(filePath, 'content')
+
+    const removeStub = stub(Deno, 'remove', () => {
+      throw new Deno.errors.PermissionDenied('Permission denied')
+    })
+    try {
+      // Should not throw, just console.error
+      await deleteFile('test_perm_deny.txt')
+      // Metadata should still be deleted
+      const entry = await kv2.get(['file_metadata', 'test_perm_deny.txt'])
+      assertEquals(entry.value, null)
+    } finally {
+      removeStub.restore()
+    }
+  })
+
+  Deno.env.set('UPLOADS_DIR', origDir || '/app/uploads')
+  try { await Deno.remove(testDir, { recursive: true }) } catch { /* ignore */ }
+  kv2.close()
+})
+
+Deno.test('uploadFile edge cases', async (t) => {
+  const testDir = await Deno.makeTempDir({ prefix: 'local_passport_upload_edge_' })
+  const origDir = Deno.env.get('UPLOADS_DIR')
+  Deno.env.set('UPLOADS_DIR', testDir)
+
+  await t.step('infers extension from MIME type when filename has no extension', async () => {
+    const file = new File(['content'], 'avatar', { type: 'image/png' })
+    const filename = await uploadFile(file)
+    assertEquals(filename.endsWith('.png'), true)
+  })
+
+  await t.step('defaults to .bin when no extension and no MIME type', async () => {
+    const blob = new Blob(['binary-content'])
+    const filename = await uploadFile(blob)
+    assertEquals(filename.endsWith('.bin'), true)
+  })
+
+  Deno.env.set('UPLOADS_DIR', origDir || '/app/uploads')
+  try { await Deno.remove(testDir, { recursive: true }) } catch { /* ignore */ }
+})
+
+Deno.test('Upload API error branches', async (t) => {
+  await t.step('returns 400 for missing filename', async () => {
+    const req = new Request('http://localhost:8000/api/uploads/')
+    const res = await handleGetUpload(req, '')
+    assertEquals(res.status, 400)
+    const body = await res.json()
+    assertEquals(body.error, 'Filename parameter is missing')
+  })
+
+  await t.step('returns 404 for non-existent file with session', async () => {
+    const stubSession = stub(auth.api, 'getSession', () =>
+      Promise.resolve({
+        user: { id: 'admin_404', role: 'admin', email: 'admin@test.com', name: 'Admin', emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+        session: { id: 'sess_404', userId: 'admin_404', expiresAt: new Date(Date.now() + 3600000), token: 't_404', createdAt: new Date(), updatedAt: new Date() },
+      })
+    )
+    try {
+      const req = new Request('http://localhost:8000/api/uploads/nonexistent.png')
+      const res = await handleGetUpload(req, 'nonexistent.png')
+      assertEquals(res.status, 404)
+      const body = await res.json()
+      assertEquals(body.error, 'File not found')
+    } finally {
+      stubSession.restore()
+    }
+  })
 })

@@ -8,7 +8,8 @@
     "start": "deno serve -A _fresh/server.js",
     "test": "deno test -A --unstable-kv",
     "test:cov": "deno test -A --unstable-kv --coverage=cov_profile/",
-    "coverage": "deno coverage cov_profile/",
+    "coverage": "deno coverage --exclude='tests/' cov_profile/",
+    "coverage:html": "deno coverage --html --exclude='tests/' cov_profile/ && npx http-server cov_profile/html/",
     "type-check": "deno check",
     "update": "deno run -A -r jsr:@fresh/update .",
     "seed": "docker compose exec web deno run -A --unstable-kv seed.ts"

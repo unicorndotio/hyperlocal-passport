@@ -2,6 +2,7 @@ import {
   assertEquals,
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
 import { handleRegister } from '../routes/api/users/register.ts'
 
 // Helper to build a multipart FormData request
@@ -175,6 +176,86 @@ Deno.test('POST /api/users/register', async (t) => {
     await cleanupCpf(normalizedCpf)
   })
 
+  await t.step('rejects request with invalid whatsappDial', async () => {
+    const req = makeRegisterRequest({
+      name: 'João Silva',
+      cpf: '12345678901',
+      email: 'whatsapp@example.com',
+      whatsappDial: '',
+      whatsappNumber: '48912345678',
+      idPhoto: makeFile('id.jpg'),
+      residenceProof: makeFile('proof.jpg'),
+    })
+    const res = await handleRegister(req)
+    assertEquals(res.status, 400)
+    const body = await res.json()
+    assertExists(body.error)
+  })
+
+  await t.step('rejects request with invalid whatsappNumber', async () => {
+    const req = makeRegisterRequest({
+      name: 'João Silva',
+      cpf: '12345678901',
+      email: 'whatsapp2@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '',
+      idPhoto: makeFile('id.jpg'),
+      residenceProof: makeFile('proof.jpg'),
+    })
+    const res = await handleRegister(req)
+    assertEquals(res.status, 400)
+    const body = await res.json()
+    assertExists(body.error)
+  })
+
+  await t.step('rejects non-matching dial+number combination', async () => {
+    const req = makeRegisterRequest({
+      name: 'João Silva',
+      cpf: '12345678909',
+      email: 'phonecheck@example.com',
+      whatsappDial: '+55',
+      whatsappNumber: '12345',
+      idPhoto: makeFile('id.jpg'),
+      residenceProof: makeFile('proof.jpg'),
+    })
+    const res = await handleRegister(req)
+    assertEquals(res.status, 400)
+    const body = await res.json()
+    assertEquals(body.error, 'Invalid WhatsApp number')
+  })
+
+  await t.step('rejects invalid multipart form data', async () => {
+    const req = new Request('http://localhost:8000/api/users/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      body: 'not a valid form data body',
+    })
+    const res = await handleRegister(req)
+    assertEquals(res.status, 400)
+    const body = await res.json()
+    assertEquals(body.error, 'Invalid multipart form data')
+  })
+
+  await t.step('returns upload error when uploadFile fails (empty file)', async () => {
+    const cpf = '12345678909'
+    const email = 'uploadfail@example.com'
+    await cleanupCpf(cpf)
+    await kv.delete(['users_by_email', email])
+    const req = makeRegisterRequest({
+      name: 'João Silva',
+      cpf,
+      email,
+      whatsappDial: '+55',
+      whatsappNumber: '48912345678',
+      idPhoto: new File([], 'empty.jpg', { type: 'image/jpeg' }),
+      residenceProof: makeFile('proof.jpg'),
+    })
+    const res = await handleRegister(req)
+    assertEquals(res.status, 400)
+    const body = await res.json()
+    assertEquals(body.error, 'File is empty')
+  })
+
   await t.step('rejects duplicate CPF with 409', async () => {
     const cpf = '12345678909'
     const email1 = 'first@example.com'
@@ -338,6 +419,47 @@ Deno.test('POST /api/users/register', async (t) => {
 
       // Cleanup
       await cleanupCpf(integrationCpf)
+    },
+  )
+
+  await t.step(
+    'returns 500 on KV atomic commit failure with file cleanup',
+    async () => {
+      const atomicCpf = '12345678909'
+      const atomicEmail = 'kvfail@example.com'
+      await cleanupCpf(atomicCpf)
+      await kv.delete(['users_by_email', atomicEmail])
+
+      const { kv: moduleKv } = await import('../lib/kv.ts')
+      const mockAtomic: Deno.AtomicOperation = {
+        check: () => mockAtomic,
+        set: () => mockAtomic,
+        delete: () => mockAtomic,
+        mutate: () => mockAtomic,
+        sum: () => mockAtomic,
+        min: () => mockAtomic,
+        max: () => mockAtomic,
+        enqueue: () => mockAtomic,
+        commit: () => Promise.resolve({ ok: false } as unknown as Deno.KvCommitResult),
+      }
+      const atomicStub = stub(moduleKv, 'atomic', () => mockAtomic)
+      try {
+        const req = makeRegisterRequest({
+          name: 'KV Fail User',
+          cpf: atomicCpf,
+          email: atomicEmail,
+          whatsappDial: '+55',
+          whatsappNumber: '48912345678',
+          idPhoto: makeFile('id.jpg'),
+          residenceProof: makeFile('proof.jpg'),
+        })
+        const res = await handleRegister(req)
+        assertEquals(res.status, 500)
+        const body = await res.json()
+        assertExists(body.error)
+      } finally {
+        atomicStub.restore()
+      }
     },
   )
 
