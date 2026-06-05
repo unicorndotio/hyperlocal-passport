@@ -2,8 +2,8 @@
 
 ## Current State
 
-- Tasks 01-12 and 14 are completed.
-- Starting Task 13: Build Business Validation Dashboard.
+- All MVP tasks (01-14) are completed.
+- System is ready for final quality audit and production deployment readiness check.
 
 ## Shared Decisions
 
@@ -16,6 +16,8 @@
 - **Transaction Indexing:** Use
   `['business_transactions', businessId, timestamp]` and
   `['user_transactions', userId, timestamp]` for historical tracking.
+- **SSR-Safe Islands:** Use dynamic imports (`await import(...)`) for
+  browser-only libraries (like `html5-qrcode`) to prevent SSR crashes.
 
 ## Shared Learnings
 
@@ -31,6 +33,8 @@
 - **Development Tasks:** Use `deno task lint`, `deno task type-check`,
   `deno task test:cov`, and `deno task coverage` for standardized CI/CD and
   local development workflows.
+- **BRL Currency Input:** Sanitizing inputs by removing non-digits and parsing
+  as cents is the most reliable way to handle BRL currency values.
 
 ## Open Risks
 
@@ -38,4 +42,6 @@
 
 ## Handoffs
 
-- (None yet)
+- **Quality Audit:** Perform a full sweep of the UI for consistency (BRL formatting, loading states, error handling).
+- **Security Check:** Verify middleware coverage across all protected routes.
+- **Deployment Prep:** Configure production Deno KV and file storage volumes.

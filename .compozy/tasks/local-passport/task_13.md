@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build Business Validation Dashboard
 type: frontend
 complexity: medium
@@ -33,13 +33,13 @@ coupon code, input the purchase amount, and execute the checkout validation.
 
 ## Subtasks
 
-- [ ] 13.1 Create the checkout dashboard route for businesses.
-- [ ] 13.2 Build the input form (Code + Amount).
-- [ ] 13.3 Implement currency formatting for the Amount input (handling
+- [x] 13.1 Create the checkout dashboard route for businesses.
+- [x] 13.2 Build the input form (Code + Amount).
+- [x] 13.3 Implement currency formatting for the Amount input (handling
       cents/reais).
-- [ ] 13.4 Implement an optional camera-based QR scanner component (e.g.,
+- [x] 13.4 Implement an optional camera-based QR scanner component (e.g.,
       `html5-qrcode`).
-- [ ] 13.5 Wire the form submission to the validation API and build the result
+- [x] 13.5 Wire the form submission to the validation API and build the result
       display view.
 
 ## Implementation Details
@@ -71,10 +71,10 @@ must be prominent. Currency should be converted properly before sending
 ## Tests
 
 - Unit tests:
-  - [ ] Currency input correctly converts "R$ 100,50" to `10050` cents.
-  - [ ] Form displays error message if API returns 400 Bad Request.
+  - [x] Currency input correctly converts "R$ 100,50" to `10050` cents.
+  - [x] Form displays error message if API returns 400 Bad Request.
 - Integration tests:
-  - [ ] E2E flow typing a code, entering an amount, and seeing the successful
+  - [x] E2E flow typing a code, entering an amount, and seeing the successful
         discount applied screen.
 - Test coverage target: >=80%
 - All tests must pass

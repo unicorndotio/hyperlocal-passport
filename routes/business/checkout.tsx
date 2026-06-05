@@ -2,22 +2,22 @@ import { define } from '@/utils.ts'
 import { auth } from '@/lib/auth.ts'
 import { getDenoKvAdapterRaw } from '@/lib/kv-adapter.ts'
 import type { Business } from '@/lib/business.ts'
-import type { Coupon } from '@/lib/coupon.ts'
-import CouponManager from '@/islands/CouponManager.tsx'
+import CheckoutCalculator from '@/islands/CheckoutCalculator.tsx'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card.tsx'
 
 const kv = await Deno.openKv()
 const adapter = getDenoKvAdapterRaw(kv)
 
-export default define.page(async function BusinessCouponsPage(ctx) {
+export default define.page(async function BusinessCheckoutPage(ctx) {
   const session = await auth.api.getSession({ headers: ctx.req.headers })
   
-  if (!session || session.user.role !== 'business') {
+  if (!session || (session.user.role !== 'business' && session.user.role !== 'admin')) {
     return ctx.redirect('/login')
   }
 
@@ -53,12 +53,6 @@ export default define.page(async function BusinessCouponsPage(ctx) {
     )
   }
 
-  // Fetch coupons
-  const coupons = await adapter.findMany<Coupon>({
-    model: 'coupons',
-    where: [{ field: 'businessId', value: business.id }],
-  })
-
   return (
     <div className='min-h-screen bg-slate-50'>
       <header className='bg-white border-b sticky top-0 z-10'>
@@ -70,14 +64,14 @@ export default define.page(async function BusinessCouponsPage(ctx) {
             <nav className='flex items-center gap-4'>
               <a
                 href='/business/coupons'
-                className='text-sm font-semibold text-blue-600 transition-colors'
+                className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
               >
                 Meus Cupons
               </a>
               <span className='text-slate-300'>|</span>
               <a
                 href='/business/checkout'
-                className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
+                className='text-sm font-semibold text-blue-600 transition-colors'
               >
                 Validar Cupom
               </a>
@@ -90,14 +84,19 @@ export default define.page(async function BusinessCouponsPage(ctx) {
       </header>
 
       <main className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-        <Card>
-          <CardHeader>
-            <CardTitle>Gerenciamento de Cupons</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CouponManager businessId={business.id} initialCoupons={coupons} />
-          </CardContent>
-        </Card>
+        <div class="max-w-2xl mx-auto">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl font-black">Validar Cupom</CardTitle>
+              <CardDescription>
+                Digite o código do cupom e o valor total da compra para aplicar o desconto.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CheckoutCalculator businessId={business.id} />
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   )
