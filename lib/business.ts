@@ -48,6 +48,20 @@ export function isValidCnpj(value: string): boolean {
   return result === parseInt(digits.charAt(1))
 }
 
+export interface SocialLinks {
+  instagram?: string
+  facebook?: string
+  whatsapp?: string
+  menu?: string
+}
+
+export interface OpeningHoursEntry {
+  open: string
+  close: string
+}
+
+export type OpeningHours = Partial<Record<string, OpeningHoursEntry>>
+
 export interface Business {
   id: string
   userId: string
@@ -57,6 +71,8 @@ export interface Business {
   category: string
   description?: string
   logoUrl: string
+  socialLinks?: SocialLinks
+  openingHours?: OpeningHours
   isActive: boolean
   createdAt: string
 }
@@ -67,6 +83,8 @@ export interface BusinessFormErrors {
   category?: string
   logo?: string
   userId?: string
+  socialLinks?: string
+  openingHours?: string
   global?: string
 }
 
@@ -95,4 +113,67 @@ export function validateBusinessForm(fields: {
     errs.userId = 'Associação de usuário é obrigatória.'
   }
   return errs
+}
+
+const DAYS = [
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+]
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/
+
+export function validateOpeningHours(
+  value: unknown,
+): string | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    return 'Horários devem ser um objeto com dias da semana.'
+  }
+  const obj = value as Record<string, unknown>
+  for (const key of Object.keys(obj)) {
+    if (!DAYS.includes(key)) {
+      return `Dia inválido: "${key}". Use monday–sunday.`
+    }
+    const entry = obj[key]
+    if (entry === null || entry === undefined) continue
+    if (typeof entry !== 'object' || Array.isArray(entry)) {
+      return `Horário para "${key}" deve conter open e close.`
+    }
+    const { open, close } = entry as { open?: unknown; close?: unknown }
+    if (typeof open !== 'string' || !TIME_PATTERN.test(open)) {
+      return `Horário de abertura inválido para "${key}". Use HH:MM (24h).`
+    }
+    if (typeof close !== 'string' || !TIME_PATTERN.test(close)) {
+      return `Horário de fechamento inválido para "${key}". Use HH:MM (24h).`
+    }
+    if (open >= close) {
+      return `Horário de abertura deve ser anterior ao fechamento para "${key}".`
+    }
+  }
+  return undefined
+}
+
+export function validateSocialLinks(
+  value: unknown,
+): string | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    return 'Links sociais devem ser um objeto.'
+  }
+  const obj = value as Record<string, unknown>
+  for (const key of Object.keys(obj)) {
+    if (!['instagram', 'facebook', 'whatsapp', 'menu'].includes(key)) {
+      return `Campo inválido: "${key}".`
+    }
+    const val = obj[key]
+    if (val === null || val === undefined) continue
+    if (typeof val !== 'string' || !val.trim()) {
+      return `Link do ${key} deve ser uma URL válida.`
+    }
+    try {
+      new URL(val)
+    } catch {
+      return `Link do ${key} deve ser uma URL válida.`
+    }
+  }
+  return undefined
 }
