@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Business dashboard UI — profile editor
 type: frontend
 complexity: medium
@@ -35,13 +35,13 @@ Build a self-service profile editor page for business owners to manage their bus
 
 ## Subtasks
 
-- [ ] 5.1 Create `routes/business/profile.tsx` page route
-- [ ] 5.2 Create `islands/BusinessProfileEditor.tsx` island component
-- [ ] 5.3 Implement logo preview and upload
-- [ ] 5.4 Implement socialLinks fields (Instagram, Facebook, WhatsApp, menu URL)
-- [ ] 5.5 Implement openingHours day-by-day time picker UI
-- [ ] 5.6 Implement activation status banner
-- [ ] 5.7 Write UI component and integration tests
+- [x] 5.1 Create `routes/business/profile.tsx` page route
+- [x] 5.2 Create `islands/BusinessProfileEditor.tsx` island component
+- [x] 5.3 Implement logo preview and upload
+- [x] 5.4 Implement socialLinks fields (Instagram, Facebook, WhatsApp, menu URL)
+- [x] 5.5 Implement openingHours day-by-day time picker UI
+- [x] 5.6 Implement activation status banner
+- [x] 5.7 Write UI component and integration tests
 
 ## Implementation Details
 
@@ -82,17 +82,17 @@ Follow the existing island patterns (Preact hooks, Tailwind styling, Radix UI co
 
 ### Unit Tests
 
-- [ ] Profile editor renders all expected form fields (logo, description, socialLinks, openingHours)
-- [ ] Activation banner renders when `isActive === false`
-- [ ] Activation banner hidden when `isActive === true`
-- [ ] Client-side validation rejects invalid URL in socialLinks fields
-- [ ] Client-side validation rejects invalid opening time format
+- [x] Profile editor renders all expected form fields (logo, description, socialLinks, openingHours)
+- [x] Activation banner renders when `isActive === false`
+- [x] Activation banner hidden when `isActive === true`
+- [x] Client-side validation rejects invalid URL in socialLinks fields
+- [x] Client-side validation rejects invalid opening time format
 
 ### Integration Tests
 
-- [ ] Business user loads profile page → sees their business data prefilled
-- [ ] Business user updates profile → success feedback shown → data persisted
-- [ ] Business user submits with invalid data → error feedback shown → form not submitted
+- [x] Business user loads profile page → sees their business data prefilled
+- [x] Business user updates profile → success feedback shown → data persisted
+- [x] Business user submits with invalid data → error feedback shown → form not submitted
 
 ## Success Criteria
 
