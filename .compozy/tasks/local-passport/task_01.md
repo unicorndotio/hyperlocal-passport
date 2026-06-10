@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Extend Business data model with socialLinks and openingHours
 type: backend
 complexity: low

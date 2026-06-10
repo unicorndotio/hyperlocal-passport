@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Self-service business registration endpoint
 type: backend
 complexity: medium
@@ -35,11 +35,11 @@ Create `POST /api/businesses/register` — a self-service endpoint that allows b
 
 ## Subtasks
 
-- [ ] 2.1 Create `routes/api/businesses/register.ts` with multipart form handling
-- [ ] 2.2 Implement user creation via Better Auth with `role=business`
-- [ ] 2.3 Implement business record creation with `isActive=false`
-- [ ] 2.4 Add duplicate email/CNPJ detection
-- [ ] 2.5 Write unit and integration tests
+- [x] 2.1 Create `routes/api/businesses/register.ts` with multipart form handling
+- [x] 2.2 Implement user creation via Better Auth with `role=business`
+- [x] 2.3 Implement business record creation with `isActive=false`
+- [x] 2.4 Add duplicate email/CNPJ detection
+- [x] 2.5 Write unit and integration tests
 
 ## Implementation Details
 

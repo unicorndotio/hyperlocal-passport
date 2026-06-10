@@ -7,7 +7,7 @@ export const getDenoKvAdapterRaw = (kv: Deno.Kv) => {
     user: ['email', 'cpf'],
     session: ['token', 'userId'],
     account: ['userId', 'providerId'],
-    businesses: ['userId'],
+    businesses: ['userId', 'cnpj'],
     coupons: ['businessId'],
   }
 
