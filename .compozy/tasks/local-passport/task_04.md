@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Admin enable/disable business toggle
 type: backend
 complexity: low
@@ -31,9 +31,9 @@ Create `PUT /api/admin/businesses/[id]/toggle` — an admin-only endpoint that f
 
 ## Subtasks
 
-- [ ] 4.1 Create `routes/api/admin/businesses/[id]/toggle.ts` route handler
-- [ ] 4.2 Implement the toggle logic (read business, flip isActive, save)
-- [ ] 4.3 Write unit and integration tests
+- [x] 4.1 Create `routes/api/admin/businesses/[id]/toggle.ts` route handler
+- [x] 4.2 Implement the toggle logic (read business, flip isActive, save)
+- [x] 4.3 Write unit and integration tests
 
 ## Implementation Details
 

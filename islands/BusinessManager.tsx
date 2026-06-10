@@ -131,7 +131,7 @@ export default function BusinessManager() {
     const newStatus = !b.isActive
     setActionLoadingId(b.id)
     try {
-      const res = await fetch(`/api/businesses/${b.id}`, {
+      const res = await fetch(`/api/admin/businesses/${b.id}/toggle`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: newStatus }),
