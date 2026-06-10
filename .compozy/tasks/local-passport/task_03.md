@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Business profile management API
 type: backend
 complexity: medium
@@ -35,11 +35,11 @@ Create `PUT /api/businesses/[id]/profile` — a self-service endpoint allowing b
 
 ## Subtasks
 
-- [ ] 3.1 Create `routes/api/businesses/[id]/profile.ts` route handler
-- [ ] 3.2 Implement ownership check (compare session user ID to business's userId)
-- [ ] 3.3 Implement partial update logic with field validation
-- [ ] 3.4 Handle logo re-upload in multipart mode
-- [ ] 3.5 Write unit and integration tests
+- [x] 3.1 Create `routes/api/businesses/[id]/profile.ts` route handler
+- [x] 3.2 Implement ownership check (compare session user ID to business's userId)
+- [x] 3.3 Implement partial update logic with field validation
+- [x] 3.4 Handle logo re-upload in multipart mode
+- [x] 3.5 Write unit and integration tests
 
 ## Implementation Details
 
@@ -75,18 +75,18 @@ The TechSpec middleware already restricts `/api/businesses/*` POST/PUT/DELETE to
 
 ### Unit Tests
 
-- [ ] Profile update with unmatched userId returns 403
-- [ ] Profile update for non-existent business returns 404
-- [ ] Profile update with invalid openingHours returns 400
-- [ ] Profile update with invalid socialLinks URL returns 400
-- [ ] Profile partial update — only provided fields change, others remain
+- [x] Profile update with unmatched userId returns 403
+- [x] Profile update for non-existent business returns 404
+- [x] Profile update with invalid openingHours returns 400
+- [x] Profile update with invalid socialLinks URL returns 400
+- [x] Profile partial update — only provided fields change, others remain
 
 ### Integration Tests
 
-- [ ] Business user authenticates and updates own profile (logo + fields) → 200
-- [ ] Admin updates any business profile → 200
-- [ ] Unauthenticated request returns 401
-- [ ] Another business user updates not-their-business → 403
+- [x] Business user authenticates and updates own profile (logo + fields) → 200
+- [x] Admin updates any business profile → 200
+- [x] Unauthenticated request returns 401
+- [x] Another business user updates not-their-business → 403
 
 ## Success Criteria
 

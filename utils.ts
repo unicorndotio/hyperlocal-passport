@@ -1,9 +1,23 @@
 import { createDefine } from 'fresh'
 
-// This specifies the type of "ctx.state" which is used to share
-// data among middlewares, layouts and routes.
+export interface SessionUser {
+  id: string
+  email: string
+  name: string
+  role: string
+  status?: string
+  [key: string]: unknown
+}
+
+export interface SessionSession {
+  id: string
+  userId: string
+  [key: string]: unknown
+}
+
 export interface State {
-  shared: string
+  user: SessionUser | null
+  session: SessionSession | null
 }
 
 export const define = createDefine<State>()

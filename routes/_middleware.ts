@@ -8,7 +8,7 @@ export interface AppState {
 
 export async function applyMiddleware(
   req: Request,
-  next: () => Promise<Response>,
+  next: (state?: { user: Record<string, unknown> | null; session: Record<string, unknown> | null }) => Promise<Response>,
 ): Promise<Response> {
   const url = new URL(req.url)
 
@@ -33,10 +33,11 @@ export async function applyMiddleware(
       })
     }
 
-    // Admin-only API paths
+    // Admin-only API paths — exempt business profile route
     if (
       url.pathname.startsWith('/api/admin/') ||
       (url.pathname.startsWith('/api/businesses') &&
+        !url.pathname.match(/^\/api\/businesses\/[^/]+\/profile$/) &&
         (req.method === 'POST' || req.method === 'PUT' ||
           req.method === 'DELETE'))
     ) {
@@ -54,7 +55,8 @@ export async function applyMiddleware(
     // Business or Admin API paths
     if (
       url.pathname.startsWith('/api/coupons') ||
-      url.pathname.startsWith('/api/transactions/')
+      url.pathname.startsWith('/api/transactions/') ||
+      url.pathname.match(/^\/api\/businesses\/[^/]+\/profile$/)
     ) {
       if (session.user.role !== 'business' && session.user.role !== 'admin') {
         return new Response(
@@ -99,9 +101,15 @@ export async function applyMiddleware(
     }
   }
 
-  return await next()
+  return await next({ user: session?.user ?? null, session: session?.session ?? null })
 }
 
 export const handler = define.middleware((ctx) => {
-  return applyMiddleware(ctx.req, () => ctx.next())
+  return applyMiddleware(ctx.req, (state) => {
+    if (state) {
+      ctx.state.user = state.user as typeof ctx.state.user
+      ctx.state.session = state.session as typeof ctx.state.session
+    }
+    return ctx.next()
+  })
 })
