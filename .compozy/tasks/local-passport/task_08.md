@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Business self-service registration page
 type: frontend
 complexity: medium

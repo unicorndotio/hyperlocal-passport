@@ -21,6 +21,7 @@ export async function applyMiddleware(
     url.pathname.startsWith('/api/auth') ||
     url.pathname === '/api/users/register' ||
     url.pathname === '/api/businesses/register' ||
+    url.pathname === '/business/register' ||
     url.pathname.startsWith('/_fresh') ||
     url.pathname.includes('.')
   ) {

@@ -1,7 +1,7 @@
-import { define } from '../utils.ts'
-import LoginForm from '../islands/LoginForm.tsx'
+import { define } from '../../utils.ts'
+import BusinessRegistrationForm from '../../islands/BusinessRegistrationForm.tsx'
 
-export default define.page(function LoginPage() {
+export default define.page(function BusinessRegisterPage() {
   return (
     <main class='min-h-screen bg-[#FFF5E6] flex items-center justify-center px-4 py-8'>
       <div class='w-full max-w-md'>
@@ -10,10 +10,13 @@ export default define.page(function LoginPage() {
             Passaporte Local
           </p>
           <h1 class='font-sans text-[2rem] font-700 leading-tight text-[#111827]'>
-            Acesso ao Passaporte
+            Cadastro de Negócio
           </h1>
+          <p class='text-sm text-[#6B7280] mt-2'>
+            Registre seu negócio no Passaporte Local
+          </p>
         </div>
-        <LoginForm />
+        <BusinessRegistrationForm />
       </div>
     </main>
   )

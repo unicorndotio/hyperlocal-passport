@@ -27,10 +27,8 @@ const validFields: Record<string, string | File> = {
   name: 'Minha Empresa',
   companyName: 'Minha Empresa Ltda',
   cnpj: '11222333000181',
-  category: 'Alimentação',
   email: 'empresa@test.com',
   password: 'Senha@123',
-  logo: makeFile('logo.png'),
 }
 
 Deno.test('POST /api/businesses/register', async (t) => {
@@ -96,15 +94,6 @@ Deno.test('POST /api/businesses/register', async (t) => {
     assertEquals(body.error, 'Missing required field: CNPJ')
   })
 
-  await t.step('rejects missing category', async () => {
-    const fields = { ...validFields }
-    delete (fields as Record<string, unknown>).category
-    const res = await handleRegister(makeRegisterRequest(fields))
-    assertEquals(res.status, 400)
-    const body = await res.json()
-    assertEquals(body.error, 'Missing required field: category')
-  })
-
   await t.step('rejects missing email', async () => {
     const fields = { ...validFields }
     delete (fields as Record<string, unknown>).email
@@ -121,16 +110,6 @@ Deno.test('POST /api/businesses/register', async (t) => {
     assertEquals(res.status, 400)
     const body = await res.json()
     assertEquals(body.error, 'Missing required field: password')
-  })
-
-  await t.step('rejects missing logo', async () => {
-    const fields = { ...validFields }
-    delete (fields as Record<string, unknown>).logo
-    const res = await handleRegister(makeRegisterRequest(fields))
-    assertEquals(res.status, 400)
-    const body = await res.json()
-    assertExists(body.error)
-    assertEquals(body.error, 'Missing required file: logo')
   })
 
   await t.step('rejects invalid CNPJ', async () => {
@@ -175,22 +154,6 @@ Deno.test('POST /api/businesses/register', async (t) => {
     assertEquals(body.error, 'Invalid multipart form data')
   })
 
-  await t.step('rejects empty logo file', async () => {
-    const email = `upload_fail_${Date.now()}@test.com`
-    await cleanupBusiness('11222333000181', email)
-    const res = await handleRegister(
-      makeRegisterRequest({
-        ...validFields,
-        email,
-        password: 'Test@123',
-        logo: new File([], 'empty.jpg', { type: 'image/jpeg' }),
-      }),
-    )
-    assertEquals(res.status, 400)
-    const body = await res.json()
-    assertEquals(body.error, 'Missing required file: logo')
-  })
-
   await t.step('rejects description over 1000 characters', async () => {
     const res = await handleRegister(
       makeRegisterRequest({
@@ -220,6 +183,28 @@ Deno.test('POST /api/businesses/register', async (t) => {
   })
 
   // --- Auth error differentiation tests ---
+
+  await t.step(
+    'accepts registration without logo (optional)',
+    async () => {
+      const email = `no_logo_${Date.now()}@test.com`
+      const cnpj = '60316817000103'
+      await cleanupBusiness(cnpj, email)
+      const res = await handleRegister(
+        makeRegisterRequest({
+          ...validFields,
+          email,
+          cnpj,
+          password: 'Test@123',
+        }),
+      )
+      assertEquals(res.status, 201)
+      const body = await res.json()
+      assertEquals(body.business.logoUrl, '')
+      assertEquals(body.business.category, '')
+      await cleanupBusiness(cnpj, email)
+    },
+  )
 
   await t.step(
     'returns 500 for auth failure (short password), not misleading 409',

@@ -11,4 +11,4 @@
 | 05 | Business dashboard UI — profile editor | completed | medium | task_03 |
 | 06 | Resident demand signals backend | completed | medium | — |
 | 07 | Demand signal frontend | pending | medium | task_06 |
-| 08 | Business self-service registration page | pending | medium | task_02 |
+| 08 | Business self-service registration page | completed | medium | task_02 |

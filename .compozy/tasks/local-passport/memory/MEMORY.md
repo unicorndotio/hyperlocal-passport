@@ -9,6 +9,7 @@
 - Task 05 (Business dashboard UI — profile editor) — **complete**
 - Task 06 (Resident demand signals backend) — **complete**
 - Task 07 (Demand signal frontend) — **complete**
+- Task 08 (Business self-service registration page) — **complete**
 
 ## Shared Decisions
 
@@ -22,6 +23,8 @@
 - Demand signals KV key structure (ADR-003): `["signals", "<id>"]` for records, `["signals_by_category", "<category>", "<timestamp>", "<id>"]` for category index (signalId in 4th part prevents millisecond collisions), `["signal_counts", "<category>"]` for aggregated counts.
 - Rate limiting pattern for resident features: KV key `["signal_rate_limit", "<residentId>", "<date>"]` with simple counter, 5/day limit per resident.
 - Exported `handle*` functions for testability with dependency-injected `Deno.Kv` instance — route handlers use `kv` singleton from `lib/kv.ts`, test exports accept any `Deno.Kv` for `:memory:` isolation.
+- `/business/register` is a public page route exempt from auth middleware — all other `/business/*` routes require auth.
+- Logo and category are optional in the business registration endpoint (`POST /api/businesses/register`). Businesses set these later via the profile editor. The API accepts them as optional extra fields for backward compatibility.
 
 ## Shared Learnings
 
@@ -38,4 +41,5 @@
 
 - Task 04 (Admin enable/disable business toggle) — **complete**. Created `PUT /api/admin/businesses/[id]/toggle`. Exported `handleToggle` for testability. Uses `kv.atomic()` with optimistic concurrency check. Admin-only via existing `/api/admin/*` middleware.
 - Task 05 (Business dashboard UI — profile editor) — **complete**. Created `routes/business/profile.tsx` and `islands/BusinessProfileEditor.tsx`. Full profile editor with logo upload/preview, description, socialLinks (Instagram, Facebook, WhatsApp, menu URL), openingHours (day-by-day time pickers), and activation status banner. Server-side data fetch pattern matching existing business pages. Tests: 7 test groups (9 steps) covering validation logic, rendering, and mocked API submission.
+- Task 08 (Business self-service registration page) — **complete**. Created `routes/business/register.tsx` and `islands/BusinessRegistrationForm.tsx`. Form accepts name, companyName, CNPJ, email, password with client-side validation. Submits via multipart/form-data. Success state redirects to `/login?registered=business`. LoginForm shows banner when query param present. API endpoint updated to make logo/category/description/socialLinks/openingHours optional. Middleware updated to exempt `/business/register` from auth. Tests: 5 test groups (7 steps) covering CNPJ helpers, email/password validation, and rendering. 115 total tests pass (298 steps), 0 failures.
 - Task 06 (Resident demand signals backend) — **complete**. Created backend for PRD F7: `POST /api/signals` (resident signal creation with 5/day rate limit, category indexing, atomic count updates), `GET /api/admin/signals` (admin listing with category counts and reviewed/unreviewed tracking), `PUT /api/admin/signals/[id]/review` (admin reviews signal). All handlers exported for testability. Tests: 5 groups (20 steps) covering creation, validation, rate limiting, listing with counts, review, and lib validation. Task 07 next.

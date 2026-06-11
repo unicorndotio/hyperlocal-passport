@@ -47,17 +47,11 @@ export async function handleRegister(req: Request): Promise<Response> {
   if (!cnpjRaw || typeof cnpjRaw !== 'string' || !cnpjRaw.trim()) {
     return json({ error: 'Missing required field: CNPJ' }, 400)
   }
-  if (!category || typeof category !== 'string' || !category.trim()) {
-    return json({ error: 'Missing required field: category' }, 400)
-  }
   if (!email || typeof email !== 'string' || !email.trim()) {
     return json({ error: 'Missing required field: email' }, 400)
   }
   if (!password || typeof password !== 'string' || !password.trim()) {
     return json({ error: 'Missing required field: password' }, 400)
-  }
-  if (!logo || !(logo instanceof File) || logo.size === 0) {
-    return json({ error: 'Missing required file: logo' }, 400)
   }
 
   if (
@@ -93,18 +87,20 @@ export async function handleRegister(req: Request): Promise<Response> {
     return json({ error: 'CNPJ already registered' }, 409)
   }
 
-  let logoFilename: string
-  try {
-    logoFilename = await uploadFile(logo, { isPublic: true })
-  } catch (err) {
-    return json(
-      { error: err instanceof Error ? err.message : 'Upload failed' },
-      400,
-    )
+  let logoUrl = ''
+  let logoFilename: string | undefined
+  if (logo && logo instanceof File && logo.size > 0) {
+    try {
+      logoFilename = await uploadFile(logo, { isPublic: true })
+      const baseUrl = Deno.env.get('APP_BASE_URL') || 'http://localhost:8000'
+      logoUrl = `${baseUrl}/api/uploads/${logoFilename}`
+    } catch (err) {
+      return json(
+        { error: err instanceof Error ? err.message : 'Upload failed' },
+        400,
+      )
+    }
   }
-
-  const baseUrl = Deno.env.get('APP_BASE_URL') || 'http://localhost:8000'
-  const logoUrl = `${baseUrl}/api/uploads/${logoFilename}`
 
   let userId: string
   try {
@@ -119,7 +115,7 @@ export async function handleRegister(req: Request): Promise<Response> {
     })
     userId = user.id
   } catch (err) {
-    await deleteFile(logoFilename).catch(() => {})
+    if (logoFilename) await deleteFile(logoFilename).catch(() => {})
     if (
       err && typeof err === 'object' && 'body' in err &&
       err.body && typeof err.body === 'object' && 'code' in err.body &&
@@ -138,7 +134,7 @@ export async function handleRegister(req: Request): Promise<Response> {
     name: name.trim(),
     companyName: companyName.trim(),
     cnpj,
-    category: category.trim(),
+    category: typeof category === 'string' ? category.trim() : '',
     description: typeof description === 'string' ? description.trim() : '',
     logoUrl,
     socialLinks: socialLinks || undefined,
@@ -154,12 +150,13 @@ export async function handleRegister(req: Request): Promise<Response> {
     .commit()
 
   if (!result.ok) {
-    await Promise.allSettled([
-      deleteFile(logoFilename),
+    const cleanup: Promise<unknown>[] = [
       kv.delete(['user', userId]),
       kv.delete(['user_by_email', normalizedEmail]),
       kv.delete(['account_by_userId', userId]),
-    ])
+    ]
+    if (logoFilename) cleanup.push(deleteFile(logoFilename))
+    await Promise.allSettled(cleanup)
     return json({ error: 'Conflict or system error, please retry' }, 500)
   }
 

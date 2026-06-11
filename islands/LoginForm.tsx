@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { signIn } from '../lib/auth-client.ts'
 import { Button } from '../components/ui/button.tsx'
 
@@ -7,6 +7,14 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [registeredBanner, setRegisteredBanner] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(globalThis.location.search)
+    if (params.get('registered') === 'business') {
+      setRegisteredBanner(true)
+    }
+  }, [])
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
@@ -46,6 +54,13 @@ export default function LoginForm() {
           Acesse sua conta do Passaporte Local
         </p>
       </div>
+
+      {registeredBanner && (
+        <div className='p-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg'>
+          Conta criada! Aguarde ativação do admin para seu negócio aparecer no
+          catálogo. Faça login para completar seu perfil.
+        </div>
+      )}
 
       {error && (
         <div className='p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg'>
