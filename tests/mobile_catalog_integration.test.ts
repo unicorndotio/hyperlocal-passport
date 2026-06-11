@@ -4,7 +4,12 @@ import { handler as catalogHandler } from '../routes/catalog.tsx'
 import { auth } from '../lib/auth.ts'
 import { kv } from '../lib/kv.ts'
 
-type CatalogCtx = { req: Request }
+interface CatalogState {
+  user: { id: string; role: string; email: string; name: string } | null
+  session: { id: string; userId: string } | null
+}
+
+type CatalogCtx = { req: Request; state: CatalogState }
 type CatalogPage = {
   businesses: unknown[]
   categories: string[]
@@ -13,6 +18,8 @@ type CatalogPage = {
 type CatalogHandler = {
   GET(ctx: CatalogCtx): { data: CatalogPage } | Promise<{ data: CatalogPage }>
 }
+
+const defaultState: CatalogState = { user: null, session: null }
 
 Deno.test('Mobile Catalog Integration', async (t) => {
   const userId = 'user_cat_123'
@@ -67,7 +74,7 @@ Deno.test('Mobile Catalog Integration', async (t) => {
   try {
     await t.step('Browse Catalog', async () => {
       const req = new Request('http://localhost:8000/catalog')
-      const res = await (catalogHandler as CatalogHandler).GET({ req })
+      const res = await (catalogHandler as CatalogHandler).GET({ req, state: defaultState })
 
       assertEquals(typeof res.data, 'object')
       assertEquals(Array.isArray(res.data.businesses), true)
@@ -75,7 +82,7 @@ Deno.test('Mobile Catalog Integration', async (t) => {
 
     await t.step('Filter by Category', async () => {
       const req = new Request('http://localhost:8000/catalog?category=Lazer')
-      const res = await (catalogHandler as CatalogHandler).GET({ req })
+      const res = await (catalogHandler as CatalogHandler).GET({ req, state: defaultState })
 
       assertEquals(typeof res.data, 'object')
       assertEquals(Array.isArray(res.data.businesses), true)

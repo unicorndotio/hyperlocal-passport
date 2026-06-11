@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Resident demand signals backend
 type: backend
 complexity: medium
@@ -35,11 +35,11 @@ Implement the backend for resident demand signals (PRD Feature F7). Residents su
 
 ## Subtasks
 
-- [ ] 6.1 Create `routes/api/signals/index.ts` — POST handler for signal creation with rate limiting and atomic count increments
-- [ ] 6.2 Create `routes/api/admin/signals/index.ts` — GET handler listing signals with category counts
-- [ ] 6.3 Create `routes/api/admin/signals/[id]/review.ts` — PUT handler marking reviewed
-- [ ] 6.4 Implement KV key structure from ADR-003
-- [ ] 6.5 Write unit and integration tests
+- [x] 6.1 Create `routes/api/signals/index.ts` — POST handler for signal creation with rate limiting and atomic count increments
+- [x] 6.2 Create `routes/api/admin/signals/index.ts` — GET handler listing signals with category counts
+- [x] 6.3 Create `routes/api/admin/signals/[id]/review.ts` — PUT handler marking reviewed
+- [x] 6.4 Implement KV key structure from ADR-003
+- [x] 6.5 Write unit and integration tests
 
 ## Implementation Details
 

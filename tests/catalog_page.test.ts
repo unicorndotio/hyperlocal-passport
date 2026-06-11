@@ -96,4 +96,45 @@ Deno.test('CatalogPage component', async (t) => {
     assertExists(html.includes('Passaporte'))
     assertExists(html.includes('/passaporte'))
   })
+
+  await t.step('shows "Solicitar serviço" button when user is a resident', () => {
+    const html = render(
+      h(CatalogPage as unknown as (props: Record<string, unknown>) => ReturnType<typeof h>, {
+        data: {
+          businesses: emptyBusinesses,
+          categories,
+          selectedCategory: 'Todos',
+          user: { id: 'u1', email: 'test@test.com', name: 'Test', role: 'resident' },
+        },
+      }),
+    )
+    assertExists(html.includes('Solicitar serviço'))
+  })
+
+  await t.step('hides "Solicitar serviço" button when user is not logged in', () => {
+    const html = render(
+      h(CatalogPage as unknown as (props: Record<string, unknown>) => ReturnType<typeof h>, {
+        data: {
+          businesses: emptyBusinesses,
+          categories,
+          selectedCategory: 'Todos',
+        },
+      }),
+    )
+    assertExists(!html.includes('Solicitar serviço'))
+  })
+
+  await t.step('hides "Solicitar serviço" button when user is a business', () => {
+    const html = render(
+      h(CatalogPage as unknown as (props: Record<string, unknown>) => ReturnType<typeof h>, {
+        data: {
+          businesses: emptyBusinesses,
+          categories,
+          selectedCategory: 'Todos',
+          user: { id: 'u2', email: 'biz@test.com', name: 'Biz', role: 'business' },
+        },
+      }),
+    )
+    assertExists(!html.includes('Solicitar serviço'))
+  })
 })

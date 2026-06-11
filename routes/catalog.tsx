@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
+import SignalRequestIsland from '../islands/SignalRequestIsland.tsx'
 
 export const handler = define.handlers({
   async GET(ctx) {
@@ -40,12 +41,13 @@ export const handler = define.handlers({
       businesses: filtered,
       categories: allCategories,
       selectedCategory,
+      user: ctx.state.user,
     })
   },
 })
 
 export default define.page<typeof handler>(function CatalogPage(ctx) {
-  const { businesses, categories, selectedCategory } = ctx.data
+  const { businesses, categories, selectedCategory, user } = ctx.data
 
   return (
     <div class='px-4 py-6 max-w-md mx-auto min-h-screen bg-background'>
@@ -127,6 +129,9 @@ export default define.page<typeof handler>(function CatalogPage(ctx) {
             ))
           )}
       </div>
+
+      {/* Request a Service - visible for authenticated residents */}
+      {user?.role === 'resident' && <SignalRequestIsland />}
 
       <nav class='fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-border px-6 py-3 flex justify-around items-center max-w-md mx-auto'>
         <a

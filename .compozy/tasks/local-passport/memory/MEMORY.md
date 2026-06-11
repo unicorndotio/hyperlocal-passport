@@ -7,7 +7,8 @@
 - Task 03 (Business profile management API) — **complete**
 - Task 04 (Admin enable/disable business toggle) — **complete**
 - Task 05 (Business dashboard UI — profile editor) — **complete**
-- Task 06 (Resident demand signals backend) — **next**
+- Task 06 (Resident demand signals backend) — **complete**
+- Task 07 (Demand signal frontend) — **complete**
 
 ## Shared Decisions
 
@@ -18,11 +19,15 @@
 - Middleware exempts `/api/businesses/*/profile` from admin-only POST/PUT/DELETE check and routes it through business-or-admin check instead.
 - Ownership check pattern: `user.role !== 'admin' && business.userId !== user.id` — reuse this pattern in any endpoint requiring resource ownership.
 - Self-service profile editor is a new island (`BusinessProfileEditor.tsx`), separate from the admin `BusinessManager.tsx`. Business owner counterpart to the admin panel.
+- Demand signals KV key structure (ADR-003): `["signals", "<id>"]` for records, `["signals_by_category", "<category>", "<timestamp>", "<id>"]` for category index (signalId in 4th part prevents millisecond collisions), `["signal_counts", "<category>"]` for aggregated counts.
+- Rate limiting pattern for resident features: KV key `["signal_rate_limit", "<residentId>", "<date>"]` with simple counter, 5/day limit per resident.
+- Exported `handle*` functions for testability with dependency-injected `Deno.Kv` instance — route handlers use `kv` singleton from `lib/kv.ts`, test exports accept any `Deno.Kv` for `:memory:` isolation.
 
 ## Shared Learnings
 
 - Islands that use `@/` imports resolve correctly in test files when imported via `await import()`.
 - `renderToString` from `preact-render-to-string` works for SSR-like rendering tests with mocked business data objects.
+- Fresh precompiled islands (`jsx: "precompile"`) cannot render to DOM via `preact.render()` in JSDOM — `root.innerHTML` stays empty. Use `renderToString` for layout checks and `act()` + mocked fetch for side-effect verification.
 - Validation logic is best tested as standalone exported functions to avoid JSDOM dependency in data-logic tests.
 
 ## Open Risks
@@ -32,4 +37,5 @@
 ## Handoffs
 
 - Task 04 (Admin enable/disable business toggle) — **complete**. Created `PUT /api/admin/businesses/[id]/toggle`. Exported `handleToggle` for testability. Uses `kv.atomic()` with optimistic concurrency check. Admin-only via existing `/api/admin/*` middleware.
-- Task 05 (Business dashboard UI — profile editor) — **complete**. Created `routes/business/profile.tsx` and `islands/BusinessProfileEditor.tsx`. Full profile editor with logo upload/preview, description, socialLinks (Instagram, Facebook, WhatsApp, menu URL), openingHours (day-by-day time pickers), and activation status banner. Server-side data fetch pattern matching existing business pages. Tests: 7 test groups (9 steps) covering validation logic, rendering, and mocked API submission. Task 06 next.
+- Task 05 (Business dashboard UI — profile editor) — **complete**. Created `routes/business/profile.tsx` and `islands/BusinessProfileEditor.tsx`. Full profile editor with logo upload/preview, description, socialLinks (Instagram, Facebook, WhatsApp, menu URL), openingHours (day-by-day time pickers), and activation status banner. Server-side data fetch pattern matching existing business pages. Tests: 7 test groups (9 steps) covering validation logic, rendering, and mocked API submission.
+- Task 06 (Resident demand signals backend) — **complete**. Created backend for PRD F7: `POST /api/signals` (resident signal creation with 5/day rate limit, category indexing, atomic count updates), `GET /api/admin/signals` (admin listing with category counts and reviewed/unreviewed tracking), `PUT /api/admin/signals/[id]/review` (admin reviews signal). All handlers exported for testability. Tests: 5 groups (20 steps) covering creation, validation, rate limiting, listing with counts, review, and lib validation. Task 07 next.
