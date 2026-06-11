@@ -1,6 +1,5 @@
 import { join } from 'https://deno.land/std@0.224.0/path/mod.ts'
-
-const kv = await Deno.openKv()
+import { kv } from './kv.ts'
 
 /**
  * Uploads a file/blob to the local filesystem under the UPLOADS_DIR directory.

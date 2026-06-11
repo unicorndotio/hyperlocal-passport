@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 2
 round_created_at: 2026-06-11T00:43:51Z
-status: pending
+status: resolved
 file: routes/api/businesses/index.ts
 line: 33
 severity: high
@@ -38,5 +38,8 @@ After the KV get, pass the `existingCnpj` entry through a `.check()` in the atom
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Root cause: The `POST` handler in `routes/api/businesses/index.ts` called `adapter.create()` without first querying the `businesses_by_cnpj` secondary index. The KV-backed adapter's `atomic.set()` silently overwrites the index entry for the same CNPJ, so no error was thrown — only the index pointer was lost for the older record.
+- Fix applied: Added `normalizeCnpj` import; normalized the CNPJ before validation; added a `kv.get(['businesses_by_cnpj', normalizedCnpj])` check returning 409 when a duplicate is found; used the normalized CNPJ in the `adapter.create()` data. Follows the same pattern as `register.ts:91-94`.
+- Test added: Added `POST /api/businesses rejects duplicate CNPJ` step in `tests/business_admin_ui.test.ts` that creates a business and then attempts to create another with the same CNPJ, asserting 409.
+- Verification: All 27 test steps in `business_admin_ui.test.ts` pass (4 tests, 0 failed).

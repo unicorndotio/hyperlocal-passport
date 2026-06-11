@@ -78,7 +78,22 @@ export const handler = define.handlers({
       if (typeof body !== 'object' || body === null) {
         return new Response('Invalid JSON body', { status: 400 })
       }
-      updateData = body as Record<string, unknown>
+      const ALLOWED_FIELDS = [
+        'name',
+        'companyName',
+        'cnpj',
+        'category',
+        'description',
+        'isActive',
+        'userId',
+        'logoUrl',
+      ]
+      updateData = {}
+      for (const key of ALLOWED_FIELDS) {
+        if (key in body) {
+          updateData[key] = body[key]
+        }
+      }
 
       const name = updateData.name
       const companyName = updateData.companyName

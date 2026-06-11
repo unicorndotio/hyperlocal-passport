@@ -1,4 +1,5 @@
 import {
+  assert,
   assertEquals,
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
@@ -310,6 +311,30 @@ Deno.test('Business API Endpoints Integration', async (t) => {
     )
 
     await t.step(
+      'POST /api/businesses rejects duplicate CNPJ',
+      async () => {
+        const formData = new FormData()
+        formData.append('name', 'Duplicate Store')
+        formData.append('cnpj', '12345678000195')
+        formData.append('category', 'Alimentação')
+        formData.append('userId', testUserId)
+        formData.append(
+          'logo',
+          new Blob(['img'], { type: 'image/png' }),
+          'logo.png',
+        )
+        const req = new Request('http://localhost:8000/api/businesses', {
+          method: 'POST',
+          body: formData,
+        })
+        const res = await (indexHandler.POST as (
+          ctx: { req: Request },
+        ) => Response | Promise<Response>)({ req })
+        assertEquals(res.status, 409)
+      },
+    )
+
+    await t.step(
       'GET /api/businesses returns the list of businesses',
       async () => {
         const req = new Request('http://localhost:8000/api/businesses')
@@ -352,6 +377,38 @@ Deno.test('Business API Endpoints Integration', async (t) => {
       assertEquals(updated.description, 'Hambúrgueres artesanais atualizados')
       assertEquals(updated.isActive, false)
     })
+
+    await t.step(
+      'PUT /api/businesses/:id JSON path rejects forbidden fields',
+      async () => {
+        const req = new Request(
+          `http://localhost:8000/api/businesses/${createdBusinessId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: 'Should Not Override',
+              description: 'Still updates allowed fields',
+              id: 'forbidden-id',
+              createdAt: 'forbidden-date',
+            }),
+          },
+        )
+        const putHandler = detailHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Response | Promise<Response>
+        const res = await putHandler({
+          req,
+          params: { id: createdBusinessId },
+        })
+        assertEquals(res.status, 200)
+        const updated = await res.json()
+        assertEquals(updated.description, 'Still updates allowed fields')
+        assertEquals(updated.id, createdBusinessId)
+        assertExists(updated.createdAt)
+        assert(updated.createdAt !== 'forbidden-date')
+      },
+    )
 
     await t.step('PUT /api/businesses/:id rejects invalid CNPJ', async () => {
       const req = new Request(

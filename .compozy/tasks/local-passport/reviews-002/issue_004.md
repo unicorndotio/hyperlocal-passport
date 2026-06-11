@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 2
 round_created_at: 2026-06-11T00:43:51Z
-status: pending
+status: resolved
 file: routes/api/businesses/[id]/profile.ts
 line: 88
 severity: low
@@ -41,5 +41,7 @@ return json(
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes: The same pattern also appears in `routes/api/businesses/index.ts` at lines 57–60 (logo upload in admin POST handler).
+- Decision: `VALID`
+- Root cause: `routes/api/businesses/[id]/profile.ts:87-90` passes a raw string as the body to `json()`, producing a JSON string literal (e.g. `"File is empty"`) instead of the standard `{"error": "File is empty"}` object used by every other error response.
+- Fix: Wrapped the error message in `{ error: ... }` at line 88. Added a test case in `tests/routes/api/businesses/profile_test.ts` that asserts the upload error response has `body.error === 'File is empty'`.
+- Note: The same pattern also appears in `routes/api/businesses/index.ts` at lines 57–60, but that file is outside this batch scope.

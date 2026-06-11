@@ -85,7 +85,7 @@ export async function handleProfileUpdate(
         updateData.logoUrl = `${appBaseUrl}/api/uploads/${filename}`
       } catch (err) {
         return json(
-          err instanceof Error ? err.message : 'Upload failed',
+          { error: err instanceof Error ? err.message : 'Upload failed' },
           400,
         )
       }

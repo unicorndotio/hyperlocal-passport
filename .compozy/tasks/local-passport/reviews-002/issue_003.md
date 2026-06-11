@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 2
 round_created_at: 2026-06-11T00:43:51Z
-status: pending
+status: resolved
 file: routes/api/businesses/[id].ts
 line: 81
 severity: medium
@@ -49,5 +49,5 @@ Alternatively, reuse the same validation logic from the multipart path.
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Notes: The JSON path at line 81 (`updateData = body as Record<string, unknown>`) bypasses all field-level filtering. Fields like `id`, `createdAt`, and any future sensitive field can be blindly passed to `adapter.update()`. The multipart path explicitly enumerates each allowed field; the JSON path must do the same. Root cause: missing allowlist for writable fields. Fix: define `ALLOWED_FIELDS` and filter the parsed JSON body through it before further processing.

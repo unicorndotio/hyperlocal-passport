@@ -23,7 +23,7 @@
     "compozy:run:all": "compozy tasks run local-passport --include-completed",
     "compozy:reviews": "compozy reviews list local-passport",
     "compozy:review:show": "compozy reviews show local-passport",
-    "compozy:review:fix": "compozy reviews fix local-passport",
+    "compozy:review:fix": "compozy reviews fix local-passport --ide opencode --concurrent 2",
     "compozy:review:fetch": "compozy reviews fetch local-passport --provider coderabbit",
     "compozy:exec": "compozy exec"
   },

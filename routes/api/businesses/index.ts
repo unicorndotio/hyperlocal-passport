@@ -2,7 +2,7 @@ import { define } from '../../../utils.ts'
 import { kv } from '../../../lib/kv.ts'
 import { getDenoKvAdapterRaw } from '../../../lib/kv-adapter.ts'
 import { uploadFile } from '../../../lib/storage.ts'
-import { isValidCnpj } from '../../../lib/business.ts'
+import { isValidCnpj, normalizeCnpj } from '../../../lib/business.ts'
 const adapter = getDenoKvAdapterRaw(kv)
 
 export const handler = define.handlers({
@@ -34,9 +34,16 @@ export const handler = define.handlers({
     if (!name.trim()) {
       return new Response('Missing required field: name', { status: 400 })
     }
-    if (!cnpj.trim() || !isValidCnpj(cnpj)) {
+    const normalizedCnpj = normalizeCnpj(cnpj)
+    if (!normalizedCnpj || !isValidCnpj(normalizedCnpj)) {
       return new Response('Missing or invalid CNPJ', { status: 400 })
     }
+
+    const existingCnpj = await kv.get(['businesses_by_cnpj', normalizedCnpj])
+    if (existingCnpj.value !== null) {
+      return new Response('CNPJ already registered', { status: 409 })
+    }
+
     if (!category.trim()) {
       return new Response('Missing required field: category', { status: 400 })
     }
@@ -66,7 +73,7 @@ export const handler = define.handlers({
       data: {
         name,
         companyName,
-        cnpj,
+        cnpj: normalizedCnpj,
         category,
         description,
         logoUrl,

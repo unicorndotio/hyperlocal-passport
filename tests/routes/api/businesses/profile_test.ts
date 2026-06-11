@@ -361,6 +361,41 @@ Deno.test('PUT /api/businesses/[id]/profile', async (t) => {
     },
   )
 
+  // --- Unit: upload failure returns structured error ---
+
+  await t.step(
+    'returns structured { error } response when upload fails',
+    async () => {
+      const biz = await seedBusiness()
+      try {
+        const invalidFile = new File(
+          ['some-content'],
+          'logo.xyz',
+          { type: 'application/octet-stream' },
+        )
+        const form = new FormData()
+        form.append('logo', invalidFile)
+        form.append('description', 'With invalid logo')
+
+        const req = new Request(
+          `http://localhost:8000/api/businesses/${biz.id}/profile`,
+          { method: 'PUT', body: form },
+        )
+        const res = await handleProfileUpdate(
+          req,
+          biz.id as string,
+          ownerUser,
+        )
+        assertEquals(res.status, 400)
+        const body = await res.json()
+        assertEquals(typeof body.error, 'string')
+        assertExists(body.error)
+      } finally {
+        await cleanupBusiness(biz.id as string)
+      }
+    },
+  )
+
   // --- Integration: admin updates any business ---
 
   await t.step('admin can update any business profile', async () => {

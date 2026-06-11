@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 2
 round_created_at: 2026-06-11T00:43:51Z
-status: pending
+status: resolved
 file: lib/storage.ts
 line: 3
 severity: high
@@ -45,5 +45,5 @@ Remove the local `const kv = await Deno.openKv()` declaration at the module leve
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Notes: The issue is correct. `lib/storage.ts` opens its own KV instance via `const kv = await Deno.openKv()` (no args) on line 3, while the rest of the application uses the shared instance from `lib/kv.ts` which reads `Deno.env.get('DENO_KV_PATH')`. In production with `DENO_KV_PATH` set, metadata written by `uploadFile` goes to a different database than the one read by the upload handler routes, causing all file_metadata lookups to return null. The fix imports the shared `kv` from `./kv.ts` and removes the private instance.
