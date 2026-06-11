@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 1
 round_created_at: 2026-06-10T20:00:00Z
-status: pending
+status: resolved
 file: routes/api/signals/index.ts
 line: 74
 severity: high
@@ -40,5 +40,6 @@ const atomic = kvInstance.atomic()
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Root cause: `handleCreateSignal` in `routes/api/signals/index.ts:74-76` reads the category count outside the atomic transaction and writes it back with a separate `set()` call. Under concurrent requests, two reads can observe the same value (e.g., 0) and both write `1`, permanently losing one increment.
+- Fix approach: Read the count entry before the atomic block, then include it in the atomic block with `.check(countEntry)` for optimistic concurrency, and `.set(countKey, (countEntry.value ?? 0) + 1)` inside the same atomic block. Remove the old lines 74-76.

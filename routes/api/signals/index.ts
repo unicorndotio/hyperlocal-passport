@@ -2,10 +2,10 @@ import { define } from '../../../utils.ts'
 import { kv } from '../../../lib/kv.ts'
 import {
   type DemandSignal,
-  getSignalKey,
-  getCategoryIndexKey,
   getCategoryCountKey,
+  getCategoryIndexKey,
   getRateLimitKey,
+  getSignalKey,
   getTodayDate,
   validateSignalInput,
 } from '../../../lib/signals.ts'
@@ -36,7 +36,8 @@ export async function handleCreateSignal(
   if (currentCount >= MAX_SIGNALS_PER_DAY) {
     return new Response(
       JSON.stringify({
-        error: `Rate limit exceeded. Maximum ${MAX_SIGNALS_PER_DAY} signals per day.`,
+        error:
+          `Rate limit exceeded. Maximum ${MAX_SIGNALS_PER_DAY} signals per day.`,
       }),
       {
         status: 429,
@@ -57,23 +58,27 @@ export async function handleCreateSignal(
     reviewed: false,
   }
 
+  const countKey = getCategoryCountKey(category)
+  const countEntry = await kvInstance.get<number>(countKey)
+
   const atomic = kvInstance.atomic()
+    .check(countEntry)
     .set(getSignalKey(signalId), signal)
     .set(getCategoryIndexKey(category, now, signalId), signalId)
     .set(rateLimitKey, currentCount + 1)
+    .set(countKey, (countEntry.value ?? 0) + 1)
 
   const result = await atomic.commit()
 
   if (!result.ok) {
-    return new Response(JSON.stringify({ error: 'Failed to create signal, please retry' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ error: 'Failed to create signal, please retry' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
   }
-
-  const countKey = getCategoryCountKey(category)
-  const currentCountVal = (await kvInstance.get<number>(countKey)).value ?? 0
-  await kvInstance.set(countKey, currentCountVal + 1)
 
   return new Response(JSON.stringify(signal), {
     status: 201,
@@ -91,10 +96,13 @@ export const handler = define.handlers({
       })
     }
     if (user.role !== 'resident') {
-      return new Response(JSON.stringify({ error: 'Forbidden: Residents only' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: Residents only' }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     let body: { category?: string; description?: string }
