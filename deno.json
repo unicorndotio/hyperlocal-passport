@@ -12,7 +12,20 @@
     "coverage:html": "deno coverage --html --exclude='tests/' cov_profile/ && npx http-server cov_profile/html/",
     "type-check": "deno check",
     "update": "deno run -A -r jsr:@fresh/update .",
-    "seed": "docker compose exec web deno run -A --unstable-kv seed.ts"
+    "seed": "docker compose exec web deno run -A --unstable-kv seed.ts",
+    "compozy:setup": "compozy setup",
+    "compozy:daemon:start": "compozy daemon start",
+    "compozy:daemon:status": "compozy daemon status",
+    "compozy:daemon:stop": "compozy daemon stop",
+    "compozy:sync": "compozy sync",
+    "compozy:validate": "compozy tasks validate --name local-passport",
+    "compozy:run": "compozy tasks run local-passport",
+    "compozy:run:all": "compozy tasks run local-passport --include-completed",
+    "compozy:reviews": "compozy reviews list local-passport",
+    "compozy:review:show": "compozy reviews show local-passport",
+    "compozy:review:fix": "compozy reviews fix local-passport",
+    "compozy:review:fetch": "compozy reviews fetch local-passport --provider coderabbit",
+    "compozy:exec": "compozy exec"
   },
   "lint": {
     "rules": {
