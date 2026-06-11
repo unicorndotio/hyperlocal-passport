@@ -48,13 +48,18 @@ export function validateSignalInput(body: {
   category?: string
   description?: string
 }): string | undefined {
-  if (!body.category || typeof body.category !== 'string' || !body.category.trim()) {
+  if (
+    !body.category || typeof body.category !== 'string' || !body.category.trim()
+  ) {
     return 'Category is required'
   }
   if (!VALID_CATEGORIES.includes(body.category.trim())) {
     return `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`
   }
-  if (!body.description || typeof body.description !== 'string' || !body.description.trim()) {
+  if (
+    !body.description || typeof body.description !== 'string' ||
+    !body.description.trim()
+  ) {
     return 'Description is required'
   }
   if (body.description.trim().length < 10) {

@@ -1,4 +1,7 @@
-import { assertEquals, assertStrictEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import {
+  assertEquals,
+  assertStrictEquals,
+} from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import {
   formatCnpjDisplay,
   validateOpeningHours,
@@ -36,7 +39,10 @@ Deno.test('formatCnpjDisplay', async (t) => {
   })
 
   await t.step('slices input beyond 14 digits', () => {
-    assertEquals(formatCnpjDisplay('12345678901234567890'), '12.345.678/9012-34')
+    assertEquals(
+      formatCnpjDisplay('12345678901234567890'),
+      '12.345.678/9012-34',
+    )
   })
 })
 
@@ -54,8 +60,14 @@ Deno.test('validateOpeningHours', async (t) => {
       validateOpeningHours('not-an-object'),
       'Horários devem ser um objeto com dias da semana.',
     )
-    assertEquals(validateOpeningHours(123), 'Horários devem ser um objeto com dias da semana.')
-    assertEquals(validateOpeningHours([]), 'Horários devem ser um objeto com dias da semana.')
+    assertEquals(
+      validateOpeningHours(123),
+      'Horários devem ser um objeto com dias da semana.',
+    )
+    assertEquals(
+      validateOpeningHours([]),
+      'Horários devem ser um objeto com dias da semana.',
+    )
   })
 
   await t.step('rejects invalid day keys', () => {

@@ -81,19 +81,30 @@ Deno.test('Deno KV Adapter - Branch Coverage', async (t) => {
   const kv = await Deno.openKv(':memory:')
   const adapter = getDenoKvAdapterRaw(kv)
 
-  const alice = { id: 'u-br-1', email: 'alice@test.com', cpf: '111', name: 'Alice' }
+  const alice = {
+    id: 'u-br-1',
+    email: 'alice@test.com',
+    cpf: '111',
+    name: 'Alice',
+  }
   const bob = { id: 'u-br-2', email: 'bob@test.com', cpf: '222', name: 'Bob' }
 
   await adapter.create({ model: 'user', data: alice })
   await adapter.create({ model: 'user', data: bob })
 
-  await t.step('findOne - index matches but secondary where field does not', async () => {
-    const result = await adapter.findOne({
-      model: 'user',
-      where: [{ field: 'email', value: 'alice@test.com' }, { field: 'cpf', value: '999' }],
-    })
-    assertEquals(result, null)
-  })
+  await t.step(
+    'findOne - index matches but secondary where field does not',
+    async () => {
+      const result = await adapter.findOne({
+        model: 'user',
+        where: [{ field: 'email', value: 'alice@test.com' }, {
+          field: 'cpf',
+          value: '999',
+        }],
+      })
+      assertEquals(result, null)
+    },
+  )
 
   await t.step('findOne - index does not exist at all', async () => {
     const result = await adapter.findOne({
@@ -103,13 +114,19 @@ Deno.test('Deno KV Adapter - Branch Coverage', async (t) => {
     assertEquals(result, null)
   })
 
-  await t.step('findMany - index matches but secondary where field does not', async () => {
-    const results = await adapter.findMany({
-      model: 'user',
-      where: [{ field: 'email', value: 'alice@test.com' }, { field: 'cpf', value: '999' }],
-    })
-    assertEquals(results.length, 0)
-  })
+  await t.step(
+    'findMany - index matches but secondary where field does not',
+    async () => {
+      const results = await adapter.findMany({
+        model: 'user',
+        where: [{ field: 'email', value: 'alice@test.com' }, {
+          field: 'cpf',
+          value: '999',
+        }],
+      })
+      assertEquals(results.length, 0)
+    },
+  )
 
   await t.step('findMany - index lookup returns no result', async () => {
     const results = await adapter.findMany({
@@ -119,21 +136,30 @@ Deno.test('Deno KV Adapter - Branch Coverage', async (t) => {
     assertEquals(results.length, 0)
   })
 
-  await t.step('findMany - scan mode filters when using non-indexed field', async () => {
-    const results = await adapter.findMany({
-      model: 'user',
-      where: [{ field: 'name', value: 'Nonexistent' }],
-    })
-    assertEquals(results.length, 0)
-  })
+  await t.step(
+    'findMany - scan mode filters when using non-indexed field',
+    async () => {
+      const results = await adapter.findMany({
+        model: 'user',
+        where: [{ field: 'name', value: 'Nonexistent' }],
+      })
+      assertEquals(results.length, 0)
+    },
+  )
 
-  await t.step('findMany - scan mode with multiple where clauses filters correctly', async () => {
-    const results = await adapter.findMany({
-      model: 'user',
-      where: [{ field: 'name', value: 'Alice' }, { field: 'cpf', value: '999' }],
-    })
-    assertEquals(results.length, 0)
-  })
+  await t.step(
+    'findMany - scan mode with multiple where clauses filters correctly',
+    async () => {
+      const results = await adapter.findMany({
+        model: 'user',
+        where: [{ field: 'name', value: 'Alice' }, {
+          field: 'cpf',
+          value: '999',
+        }],
+      })
+      assertEquals(results.length, 0)
+    },
+  )
 
   await t.step('findMany - no where clause returns all', async () => {
     const results = await adapter.findMany({ model: 'user' })
@@ -164,7 +190,12 @@ Deno.test('Deno KV Adapter - Branch Coverage', async (t) => {
   })
 
   await t.step('deleteMany - where clause finds matching records', async () => {
-    const carol = { id: 'u-br-3', email: 'carol@test.com', cpf: '333', name: 'Carol' }
+    const carol = {
+      id: 'u-br-3',
+      email: 'carol@test.com',
+      cpf: '333',
+      name: 'Carol',
+    }
     await adapter.create({ model: 'user', data: carol })
     const count = await adapter.deleteMany({
       model: 'user',
@@ -216,7 +247,12 @@ Deno.test('Deno KV Adapter - Branch Coverage', async (t) => {
   })
 
   await t.step('updateMany - index cleanup when field changes', async () => {
-    const dave = { id: 'u-br-4', email: 'dave-old@test.com', cpf: '444', name: 'Dave' }
+    const dave = {
+      id: 'u-br-4',
+      email: 'dave-old@test.com',
+      cpf: '444',
+      name: 'Dave',
+    }
     await adapter.create({ model: 'user', data: dave })
 
     await adapter.updateMany({

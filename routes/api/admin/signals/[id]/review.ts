@@ -30,7 +30,11 @@ export async function handleReviewSignal(
 
   signal.reviewed = true
 
-  const categoryIndexKey = getCategoryIndexKey(signal.category, signal.createdAt, signalId)
+  const categoryIndexKey = getCategoryIndexKey(
+    signal.category,
+    signal.createdAt,
+    signalId,
+  )
   const atomic = kvInstance.atomic()
     .check(signalEntry)
     .set(getSignalKey(signalId), signal)
@@ -38,10 +42,13 @@ export async function handleReviewSignal(
 
   const result = await atomic.commit()
   if (!result.ok) {
-    return new Response(JSON.stringify({ error: 'Failed to review signal, please retry' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ error: 'Failed to review signal, please retry' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
   }
 
   return new Response(JSON.stringify(signal), {

@@ -212,8 +212,13 @@ Deno.test('BusinessProfileEditor - API submission logic', async (t) => {
       let capturedUrl = ''
       let capturedMethod = ''
 
-      globalThis.fetch = (input: string | Request | URL, init?: RequestInit) => {
-        capturedUrl = typeof input === 'string' ? input : (input as Request).url || String(input)
+      globalThis.fetch = (
+        input: string | Request | URL,
+        init?: RequestInit,
+      ) => {
+        capturedUrl = typeof input === 'string'
+          ? input
+          : (input as Request).url || String(input)
         capturedMethod = init?.method || 'GET'
         return Promise.resolve(
           new Response(
@@ -228,7 +233,10 @@ Deno.test('BusinessProfileEditor - API submission logic', async (t) => {
 
       const formData = new FormData()
       formData.append('description', 'Updated description')
-      formData.append('socialLinks', JSON.stringify({ instagram: 'https://instagram.com/test' }))
+      formData.append(
+        'socialLinks',
+        JSON.stringify({ instagram: 'https://instagram.com/test' }),
+      )
       formData.append('openingHours', JSON.stringify({}))
       const res = await fetch(`/api/businesses/${TEST_BUSINESS.id}/profile`, {
         method: 'PUT',
@@ -251,7 +259,9 @@ Deno.test('BusinessProfileEditor - API submission logic', async (t) => {
       const originalFetch = globalThis.fetch
 
       globalThis.fetch = () => {
-        return Promise.resolve(new Response('Erro ao salvar perfil', { status: 400 }))
+        return Promise.resolve(
+          new Response('Erro ao salvar perfil', { status: 400 }),
+        )
       }
 
       const formData = new FormData()

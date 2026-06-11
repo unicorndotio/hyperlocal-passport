@@ -7,37 +7,44 @@ import { handleListSignals } from '../routes/api/admin/signals/index.ts'
 import { handleReviewSignal } from '../routes/api/admin/signals/[id]/review.ts'
 import {
   type DemandSignal,
+  getCategoryCountKey,
   getCategoryIndexKey,
   getSignalKey,
-  getCategoryCountKey,
 } from '../lib/signals.ts'
 
 Deno.test('Signal creation', async (t) => {
-  await t.step('creates signal with valid data returns 201 and persists to KV', async () => {
-    const kv = await Deno.openKv(':memory:')
-    try {
-      const res = await handleCreateSignal(kv, {
-        category: 'Alimentação',
-        description: 'I would love to have a Japanese restaurant in the neighborhood',
-      }, 'resident_123')
-      assertEquals(res.status, 201)
+  await t.step(
+    'creates signal with valid data returns 201 and persists to KV',
+    async () => {
+      const kv = await Deno.openKv(':memory:')
+      try {
+        const res = await handleCreateSignal(kv, {
+          category: 'Alimentação',
+          description:
+            'I would love to have a Japanese restaurant in the neighborhood',
+        }, 'resident_123')
+        assertEquals(res.status, 201)
 
-      const body = await res.json() as DemandSignal
-      assertExists(body.id)
-      assertEquals(body.category, 'Alimentação')
-      assertEquals(body.description, 'I would love to have a Japanese restaurant in the neighborhood')
-      assertEquals(body.residentId, 'resident_123')
-      assertEquals(body.reviewed, false)
-      assertExists(body.createdAt)
+        const body = await res.json() as DemandSignal
+        assertExists(body.id)
+        assertEquals(body.category, 'Alimentação')
+        assertEquals(
+          body.description,
+          'I would love to have a Japanese restaurant in the neighborhood',
+        )
+        assertEquals(body.residentId, 'resident_123')
+        assertEquals(body.reviewed, false)
+        assertExists(body.createdAt)
 
-      const stored = await kv.get<DemandSignal>(getSignalKey(body.id))
-      assertExists(stored.value)
-      assertEquals(stored.value!.category, 'Alimentação')
-      assertEquals(stored.value!.reviewed, false)
-    } finally {
-      kv.close()
-    }
-  })
+        const stored = await kv.get<DemandSignal>(getSignalKey(body.id))
+        assertExists(stored.value)
+        assertEquals(stored.value!.category, 'Alimentação')
+        assertEquals(stored.value!.reviewed, false)
+      } finally {
+        kv.close()
+      }
+    },
+  )
 
   await t.step('returns 400 for missing category', async () => {
     const kv = await Deno.openKv(':memory:')
@@ -135,59 +142,67 @@ Deno.test('Signal creation', async (t) => {
     }
   })
 
-  await t.step('rate limit is per-resident (different residents unaffected)', async () => {
-    const kv = await Deno.openKv(':memory:')
-    try {
-      for (let i = 0; i < 5; i++) {
-        const r = await handleCreateSignal(kv, {
+  await t.step(
+    'rate limit is per-resident (different residents unaffected)',
+    async () => {
+      const kv = await Deno.openKv(':memory:')
+      try {
+        for (let i = 0; i < 5; i++) {
+          const r = await handleCreateSignal(kv, {
+            category: 'Casa',
+            description: `Signal ${
+              i + 1
+            } for resident A for rate limit testing`,
+          }, 'resident_a')
+          assertEquals(r.status, 201)
+        }
+
+        const res = await handleCreateSignal(kv, {
           category: 'Casa',
-          description: `Signal ${i + 1} for resident A for rate limit testing`,
-        }, 'resident_a')
-        assertEquals(r.status, 201)
+          description: 'First signal for resident B should succeed',
+        }, 'resident_b')
+        assertEquals(res.status, 201)
+      } finally {
+        kv.close()
       }
+    },
+  )
 
-      const res = await handleCreateSignal(kv, {
-        category: 'Casa',
-        description: 'First signal for resident B should succeed',
-      }, 'resident_b')
-      assertEquals(res.status, 201)
-    } finally {
-      kv.close()
-    }
-  })
+  await t.step(
+    'creates category index and increments count atomically',
+    async () => {
+      const kv = await Deno.openKv(':memory:')
+      try {
+        const res1 = await handleCreateSignal(kv, {
+          category: 'Náutica',
+          description: 'We need a boat rental service in the area',
+        }, 'resident_idx_1')
+        assertEquals(res1.status, 201)
 
-  await t.step('creates category index and increments count atomically', async () => {
-    const kv = await Deno.openKv(':memory:')
-    try {
-      const res1 = await handleCreateSignal(kv, {
-        category: 'Náutica',
-        description: 'We need a boat rental service in the area',
-      }, 'resident_idx_1')
-      assertEquals(res1.status, 201)
+        const res2 = await handleCreateSignal(kv, {
+          category: 'Náutica',
+          description: 'A sailing school would be great too',
+        }, 'resident_idx_2')
+        assertEquals(res2.status, 201)
 
-      const res2 = await handleCreateSignal(kv, {
-        category: 'Náutica',
-        description: 'A sailing school would be great too',
-      }, 'resident_idx_2')
-      assertEquals(res2.status, 201)
+        const catCount = await kv.get<number>(getCategoryCountKey('Náutica'))
+        assertEquals(catCount.value, 2)
 
-      const catCount = await kv.get<number>(getCategoryCountKey('Náutica'))
-      assertEquals(catCount.value, 2)
-
-      const indexIter = kv.list<{ signalId: string; reviewed: boolean }>(
-        { prefix: ['signals_by_category', 'Náutica'] },
-      )
-      let idxCount = 0
-      for await (const entry of indexIter) {
-        assertEquals(typeof entry.value.signalId, 'string')
-        assertEquals(entry.value.reviewed, false)
-        idxCount++
+        const indexIter = kv.list<{ signalId: string; reviewed: boolean }>(
+          { prefix: ['signals_by_category', 'Náutica'] },
+        )
+        let idxCount = 0
+        for await (const entry of indexIter) {
+          assertEquals(typeof entry.value.signalId, 'string')
+          assertEquals(entry.value.reviewed, false)
+          idxCount++
+        }
+        assertEquals(idxCount, 2)
+      } finally {
+        kv.close()
       }
-      assertEquals(idxCount, 2)
-    } finally {
-      kv.close()
-    }
-  })
+    },
+  )
 })
 
 Deno.test('Signal listing', async (t) => {
@@ -282,8 +297,14 @@ Deno.test('Signal review', async (t) => {
       const stored = await kv.get<DemandSignal>(getSignalKey(signal.id))
       assertEquals(stored.value!.reviewed, true)
 
-      const catIdxKey = getCategoryIndexKey(signal.category, signal.createdAt, signal.id)
-      const catIdxEntry = await kv.get<{ signalId: string; reviewed: boolean }>(catIdxKey)
+      const catIdxKey = getCategoryIndexKey(
+        signal.category,
+        signal.createdAt,
+        signal.id,
+      )
+      const catIdxEntry = await kv.get<{ signalId: string; reviewed: boolean }>(
+        catIdxKey,
+      )
       assertEquals(catIdxEntry.value!.reviewed, true)
     } finally {
       kv.close()
@@ -302,26 +323,29 @@ Deno.test('Signal review', async (t) => {
     }
   })
 
-  await t.step('is idempotent: reviewing an already-reviewed signal returns 200', async () => {
-    const kv = await Deno.openKv(':memory:')
-    try {
-      const createRes = await handleCreateSignal(kv, {
-        category: 'Casa',
-        description: 'We need a plumber in the neighborhood',
-      }, 'resident_idem')
-      const signal = await createRes.json() as DemandSignal
+  await t.step(
+    'is idempotent: reviewing an already-reviewed signal returns 200',
+    async () => {
+      const kv = await Deno.openKv(':memory:')
+      try {
+        const createRes = await handleCreateSignal(kv, {
+          category: 'Casa',
+          description: 'We need a plumber in the neighborhood',
+        }, 'resident_idem')
+        const signal = await createRes.json() as DemandSignal
 
-      await handleReviewSignal(kv, signal.id)
-      const res = await handleReviewSignal(kv, signal.id)
-      assertEquals(res.status, 200)
+        await handleReviewSignal(kv, signal.id)
+        const res = await handleReviewSignal(kv, signal.id)
+        assertEquals(res.status, 200)
 
-      const body = await res.json()
-      assertEquals(body.reviewed, true)
-      assertEquals(body.id, signal.id)
-    } finally {
-      kv.close()
-    }
-  })
+        const body = await res.json()
+        assertEquals(body.reviewed, true)
+        assertEquals(body.id, signal.id)
+      } finally {
+        kv.close()
+      }
+    },
+  )
 })
 
 Deno.test('Category counts with reviewed/unreviewed', async (t) => {

@@ -201,7 +201,8 @@ export default function SignalRequestIsland() {
                       </Button>
                       <Button
                         type='submit'
-                        disabled={submitting || !category || !description.trim()}
+                        disabled={submitting || !category ||
+                          !description.trim()}
                         class='flex-1'
                       >
                         {submitting ? 'Enviando...' : 'Enviar'}

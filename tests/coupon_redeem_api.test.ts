@@ -41,9 +41,15 @@ async function cleanup(couponId: string) {
 
 Deno.test('Coupon Redeem API - unauthorized', async () => {
   const couponId = 'coupon_unauth_' + Math.random().toString(36).slice(2)
-  const getSessionStub = stub(auth.api, 'getSession', () => Promise.resolve(null))
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => Promise.resolve(null),
+  )
   try {
-    const res = await (redeemHandler as unknown as { POST: (ctx: RedeemCtx) => Promise<Response> }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+    const res = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
     assertEquals(res.status, 401)
   } finally {
     getSessionStub.restore()
@@ -53,9 +59,15 @@ Deno.test('Coupon Redeem API - unauthorized', async () => {
 
 Deno.test('Coupon Redeem API - coupon not found', async () => {
   const userId = 'user_nf_' + Math.random().toString(36).slice(2)
-  const getSessionStub = stub(auth.api, 'getSession', () => resolveSession(userId, 'resident'))
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => resolveSession(userId, 'resident'),
+  )
   try {
-    const res = await (redeemHandler as unknown as { POST: (ctx: RedeemCtx) => Promise<Response> }).POST({ req: redeemReq('nonexistent'), params: { id: 'nonexistent' } })
+    const res = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq('nonexistent'), params: { id: 'nonexistent' } })
     assertEquals(res.status, 404)
   } finally {
     getSessionStub.restore()
@@ -65,10 +77,24 @@ Deno.test('Coupon Redeem API - coupon not found', async () => {
 Deno.test('Coupon Redeem API - coupon inactive', async () => {
   const userId = 'user_inact_' + Math.random().toString(36).slice(2)
   const couponId = 'coupon_inact_' + Math.random().toString(36).slice(2)
-  await kv.set(['coupons', couponId], { id: couponId, businessId: 'biz', isActive: false, globalClaimedCount: 0, type: 'basic', title: 'Inactive', createdAt: new Date().toISOString() })
-  const getSessionStub = stub(auth.api, 'getSession', () => resolveSession(userId, 'resident'))
+  await kv.set(['coupons', couponId], {
+    id: couponId,
+    businessId: 'biz',
+    isActive: false,
+    globalClaimedCount: 0,
+    type: 'basic',
+    title: 'Inactive',
+    createdAt: new Date().toISOString(),
+  })
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => resolveSession(userId, 'resident'),
+  )
   try {
-    const res = await (redeemHandler as unknown as { POST: (ctx: RedeemCtx) => Promise<Response> }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+    const res = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
     assertEquals(res.status, 400)
   } finally {
     getSessionStub.restore()
@@ -79,10 +105,25 @@ Deno.test('Coupon Redeem API - coupon inactive', async () => {
 Deno.test('Coupon Redeem API - coupon expired', async () => {
   const userId = 'user_exp_' + Math.random().toString(36).slice(2)
   const couponId = 'coupon_exp_' + Math.random().toString(36).slice(2)
-  await kv.set(['coupons', couponId], { id: couponId, businessId: 'biz', isActive: true, validUntil: Date.now() - 10000, globalClaimedCount: 0, type: 'basic', title: 'Expired', createdAt: new Date().toISOString() })
-  const getSessionStub = stub(auth.api, 'getSession', () => resolveSession(userId, 'resident'))
+  await kv.set(['coupons', couponId], {
+    id: couponId,
+    businessId: 'biz',
+    isActive: true,
+    validUntil: Date.now() - 10000,
+    globalClaimedCount: 0,
+    type: 'basic',
+    title: 'Expired',
+    createdAt: new Date().toISOString(),
+  })
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => resolveSession(userId, 'resident'),
+  )
   try {
-    const res = await (redeemHandler as unknown as { POST: (ctx: RedeemCtx) => Promise<Response> }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+    const res = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
     assertEquals(res.status, 400)
   } finally {
     getSessionStub.restore()
@@ -93,10 +134,25 @@ Deno.test('Coupon Redeem API - coupon expired', async () => {
 Deno.test('Coupon Redeem API - global limit reached', async () => {
   const userId = 'user_gl_' + Math.random().toString(36).slice(2)
   const couponId = 'coupon_gl_' + Math.random().toString(36).slice(2)
-  await kv.set(['coupons', couponId], { id: couponId, businessId: 'biz', isActive: true, globalLimit: 5, globalClaimedCount: 5, type: 'basic', title: 'Full', createdAt: new Date().toISOString() })
-  const getSessionStub = stub(auth.api, 'getSession', () => resolveSession(userId, 'resident'))
+  await kv.set(['coupons', couponId], {
+    id: couponId,
+    businessId: 'biz',
+    isActive: true,
+    globalLimit: 5,
+    globalClaimedCount: 5,
+    type: 'basic',
+    title: 'Full',
+    createdAt: new Date().toISOString(),
+  })
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => resolveSession(userId, 'resident'),
+  )
   try {
-    const res = await (redeemHandler as unknown as { POST: (ctx: RedeemCtx) => Promise<Response> }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+    const res = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
     assertEquals(res.status, 400)
   } finally {
     getSessionStub.restore()
@@ -109,12 +165,27 @@ Deno.test('Coupon Redeem API - user monthly limit reached', async () => {
   const couponId = 'coupon_ml_' + Math.random().toString(36).slice(2)
   const now = new Date()
   const yearMonth = `${now.getFullYear()}-${now.getMonth() + 1}`
-  await kv.set(['coupons', couponId], { id: couponId, businessId: 'biz', isActive: true, userMonthlyLimit: 1, globalClaimedCount: 0, type: 'basic', title: 'Limited', createdAt: new Date().toISOString() })
+  await kv.set(['coupons', couponId], {
+    id: couponId,
+    businessId: 'biz',
+    isActive: true,
+    userMonthlyLimit: 1,
+    globalClaimedCount: 0,
+    type: 'basic',
+    title: 'Limited',
+    createdAt: new Date().toISOString(),
+  })
   // Set monthly counter to already at limit
   await kv.set(['user_coupon_monthly_count', userId, couponId, yearMonth], 1)
-  const getSessionStub = stub(auth.api, 'getSession', () => resolveSession(userId, 'resident'))
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => resolveSession(userId, 'resident'),
+  )
   try {
-    const res = await (redeemHandler as unknown as { POST: (ctx: RedeemCtx) => Promise<Response> }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+    const res = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
     assertEquals(res.status, 400)
   } finally {
     getSessionStub.restore()
@@ -126,11 +197,26 @@ Deno.test('Coupon Redeem API - user monthly limit reached', async () => {
 Deno.test('Coupon Redeem API - success', async () => {
   const userId = 'user_succ_' + Math.random().toString(36).slice(2)
   const couponId = 'coupon_succ_' + Math.random().toString(36).slice(2)
-  const coupon: Coupon = { id: couponId, businessId: 'biz_' + Math.random().toString(36).slice(2), type: 'special', title: 'Redeemable', globalLimit: 5, globalClaimedCount: 0, isActive: true, createdAt: new Date().toISOString() }
+  const coupon: Coupon = {
+    id: couponId,
+    businessId: 'biz_' + Math.random().toString(36).slice(2),
+    type: 'special',
+    title: 'Redeemable',
+    globalLimit: 5,
+    globalClaimedCount: 0,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  }
   await kv.set(['coupons', couponId], coupon)
-  const getSessionStub = stub(auth.api, 'getSession', () => resolveSession(userId, 'resident'))
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => resolveSession(userId, 'resident'),
+  )
   try {
-    const res = await (redeemHandler as unknown as { POST: (ctx: RedeemCtx) => Promise<Response> }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+    const res = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
     assertEquals(res.status, 201)
     const data = await res.json()
     assertEquals(data.couponId, couponId)

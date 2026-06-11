@@ -61,11 +61,14 @@ Deno.test('PUT /api/businesses/[id]/profile', async (t) => {
   // --- Unit: non-existent business ---
 
   await t.step('returns 404 for non-existent business', async () => {
-    const req = new Request('http://localhost:8000/api/businesses/nope/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: 'new desc' }),
-    })
+    const req = new Request(
+      'http://localhost:8000/api/businesses/nope/profile',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'new desc' }),
+      },
+    )
     const res = await handleProfileUpdate(req, 'nope', ownerUser)
     assertEquals(res.status, 404)
     const body = await res.json()
@@ -135,6 +138,50 @@ Deno.test('PUT /api/businesses/[id]/profile', async (t) => {
       await cleanupBusiness(biz.id as string)
     }
   })
+
+  await t.step(
+    'rejects description over 1000 characters via JSON',
+    async () => {
+      const biz = await seedBusiness()
+      try {
+        const req = new Request(
+          `http://localhost:8000/api/businesses/${biz.id}/profile`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description: 'x'.repeat(1001) }),
+          },
+        )
+        const res = await handleProfileUpdate(req, biz.id as string, ownerUser)
+        assertEquals(res.status, 400)
+        const body = await res.json()
+        assertEquals(body.error, 'Description must be at most 1000 characters')
+      } finally {
+        await cleanupBusiness(biz.id as string)
+      }
+    },
+  )
+
+  await t.step(
+    'rejects description over 1000 characters via multipart',
+    async () => {
+      const biz = await seedBusiness()
+      try {
+        const form = new FormData()
+        form.append('description', 'x'.repeat(1001))
+        const req = new Request(
+          `http://localhost:8000/api/businesses/${biz.id}/profile`,
+          { method: 'PUT', body: form },
+        )
+        const res = await handleProfileUpdate(req, biz.id as string, ownerUser)
+        assertEquals(res.status, 400)
+        const body = await res.json()
+        assertEquals(body.error, 'Description must be at most 1000 characters')
+      } finally {
+        await cleanupBusiness(biz.id as string)
+      }
+    },
+  )
 
   await t.step('returns 400 for invalid JSON body', async () => {
     const biz = await seedBusiness()
@@ -269,7 +316,10 @@ Deno.test('PUT /api/businesses/[id]/profile', async (t) => {
       const biz = await seedBusiness()
       try {
         const form = new FormData()
-        form.append('logo', new File(['new-logo-bytes'], 'logo.png', { type: 'image/png' }))
+        form.append(
+          'logo',
+          new File(['new-logo-bytes'], 'logo.png', { type: 'image/png' }),
+        )
         form.append('description', 'Com novo logo')
 
         const req = new Request(

@@ -40,7 +40,14 @@ export async function handleProfileUpdate(
 
     const description = formData.get('description')
     if (description !== null && typeof description === 'string') {
-      updateData.description = description.trim()
+      const trimmed = description.trim()
+      if (trimmed.length > 1000) {
+        return json(
+          { error: 'Description must be at most 1000 characters' },
+          400,
+        )
+      }
+      updateData.description = trimmed
     }
 
     let socialLinks: unknown = undefined
@@ -98,7 +105,14 @@ export async function handleProfileUpdate(
       if (typeof body.description !== 'string') {
         return json({ error: 'description must be a string' }, 400)
       }
-      updateData.description = body.description.trim()
+      const trimmed = body.description.trim()
+      if (trimmed.length > 1000) {
+        return json(
+          { error: 'Description must be at most 1000 characters' },
+          400,
+        )
+      }
+      updateData.description = trimmed
     }
 
     if ('socialLinks' in body) {

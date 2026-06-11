@@ -1,6 +1,11 @@
 import { useState } from 'preact/hooks'
 import type { JSX } from 'preact'
-import type { Business, SocialLinks, OpeningHours, OpeningHoursEntry } from '@/lib/business.ts'
+import type {
+  Business,
+  OpeningHours,
+  OpeningHoursEntry,
+  SocialLinks,
+} from '@/lib/business.ts'
 import { Button } from '@/components/ui/button.tsx'
 
 interface Props {
@@ -118,8 +123,7 @@ export default function BusinessProfileEditor({ business }: Props) {
           validateOpeningHourTime(entry.close) &&
           !validateOpeningHourOrder(entry.open, entry.close)
         ) {
-          errors[`hours_${day}`] =
-            'Abertura deve ser anterior ao fechamento'
+          errors[`hours_${day}`] = 'Abertura deve ser anterior ao fechamento'
         }
       }
     }
@@ -290,7 +294,8 @@ export default function BusinessProfileEditor({ business }: Props) {
                     value={socialLinks[key as keyof SocialLinks] || ''}
                     onInput={(
                       e: JSX.TargetedEvent<HTMLInputElement, Event>,
-                    ) => handleSocialLinkChange(key, e.currentTarget.value)}
+                    ) =>
+                      handleSocialLinkChange(key, e.currentTarget.value)}
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                       formErrors[`social_${key}`]
                         ? 'border-red-500 ring-1 ring-red-500'

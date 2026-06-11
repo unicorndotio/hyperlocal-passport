@@ -1,4 +1,7 @@
-import { assertEquals, assertExists } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import {
+  assertEquals,
+  assertExists,
+} from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { cn, formatBRL, json } from '../../lib/utils.ts'
 
 Deno.test('cn utility', async (t) => {

@@ -60,6 +60,13 @@ export async function handleRegister(req: Request): Promise<Response> {
     return json({ error: 'Missing required file: logo' }, 400)
   }
 
+  if (
+    description && typeof description === 'string' &&
+    description.trim().length > 1000
+  ) {
+    return json({ error: 'Description must be at most 1000 characters' }, 400)
+  }
+
   const cnpj = normalizeCnpj(cnpjRaw)
   if (!isValidCnpj(cnpj)) {
     return json({ error: 'Invalid CNPJ' }, 400)

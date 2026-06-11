@@ -8,7 +8,12 @@ export interface AppState {
 
 export async function applyMiddleware(
   req: Request,
-  next: (state?: { user: Record<string, unknown> | null; session: Record<string, unknown> | null }) => Promise<Response>,
+  next: (
+    state?: {
+      user: Record<string, unknown> | null
+      session: Record<string, unknown> | null
+    },
+  ) => Promise<Response>,
 ): Promise<Response> {
   const url = new URL(req.url)
 
@@ -101,7 +106,10 @@ export async function applyMiddleware(
     }
   }
 
-  return await next({ user: session?.user ?? null, session: session?.session ?? null })
+  return await next({
+    user: session?.user ?? null,
+    session: session?.session ?? null,
+  })
 }
 
 export const handler = define.middleware((ctx) => {

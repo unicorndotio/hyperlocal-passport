@@ -64,7 +64,10 @@ export async function handleCreateSignal(
   const atomic = kvInstance.atomic()
     .check(countEntry)
     .set(getSignalKey(signalId), signal)
-    .set(getCategoryIndexKey(category, now, signalId), { signalId, reviewed: false })
+    .set(getCategoryIndexKey(category, now, signalId), {
+      signalId,
+      reviewed: false,
+    })
     .set(rateLimitKey, currentCount + 1)
     .set(countKey, (countEntry.value ?? 0) + 1)
 

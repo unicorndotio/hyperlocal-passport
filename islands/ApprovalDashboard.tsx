@@ -274,8 +274,7 @@ export default function ApprovalDashboard() {
                             size='sm'
                             onClick={() =>
                               setSelectedDocs({
-                                idPhoto:
-                                  user.documents?.idPhotoUrl || '',
+                                idPhoto: user.documents?.idPhotoUrl || '',
                                 residenceProof:
                                   user.documents?.residenceProofUrl ||
                                   '',
@@ -289,8 +288,7 @@ export default function ApprovalDashboard() {
                             variant='default'
                             size='sm'
                             className='bg-green-600 hover:bg-green-700 text-white border-none'
-                            onClick={() =>
-                              handleAction(user.id, 'approved')}
+                            onClick={() => handleAction(user.id, 'approved')}
                             disabled={!!actionLoading}
                           >
                             {actionLoading === user.id ? '...' : 'Aprovar'}
@@ -298,13 +296,10 @@ export default function ApprovalDashboard() {
                           <Button
                             variant='destructive'
                             size='sm'
-                            onClick={() =>
-                              handleAction(user.id, 'rejected')}
+                            onClick={() => handleAction(user.id, 'rejected')}
                             disabled={!!actionLoading}
                           >
-                            {actionLoading === user.id
-                              ? '...'
-                              : 'Rejeitar'}
+                            {actionLoading === user.id ? '...' : 'Rejeitar'}
                           </Button>
                         </td>
                       </tr>
@@ -365,8 +360,8 @@ export default function ApprovalDashboard() {
                     </p>
                     <div className='border rounded-lg overflow-hidden bg-slate-100 min-h-[300px] flex items-center justify-center'>
                       {selectedDocs.residenceProof
-                        .toLowerCase()
-                        .endsWith('.pdf')
+                          .toLowerCase()
+                          .endsWith('.pdf')
                         ? (
                           <iframe
                             src={selectedDocs.residenceProof}

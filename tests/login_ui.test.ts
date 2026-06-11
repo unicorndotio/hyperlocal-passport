@@ -1,4 +1,7 @@
-import { assertEquals, assertMatch } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import {
+  assertEquals,
+  assertMatch,
+} from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { renderToString } from 'npm:preact-render-to-string@^6.5.13'
 import { h } from 'npm:preact@^10.27.2'
 
@@ -6,7 +9,9 @@ Deno.test('LoginForm - renders all required fields', async () => {
   const origFetch = globalThis.fetch
   globalThis.fetch = () =>
     Promise.resolve(
-      new Response(JSON.stringify({ user: null, session: null }), { status: 200 }),
+      new Response(JSON.stringify({ user: null, session: null }), {
+        status: 200,
+      }),
     )
 
   const { default: LoginForm } = await import('../islands/LoginForm.tsx')

@@ -191,6 +191,34 @@ Deno.test('POST /api/businesses/register', async (t) => {
     assertEquals(body.error, 'Missing required file: logo')
   })
 
+  await t.step('rejects description over 1000 characters', async () => {
+    const res = await handleRegister(
+      makeRegisterRequest({
+        ...validFields,
+        description: 'x'.repeat(1001),
+      }),
+    )
+    assertEquals(res.status, 400)
+    const body = await res.json()
+    assertEquals(body.error, 'Description must be at most 1000 characters')
+  })
+
+  await t.step('accepts description at exactly 1000 characters', async () => {
+    const email = `desc_max_${Date.now()}@test.com`
+    const cnpj = '11222333000181'
+    await cleanupBusiness(cnpj, email)
+    const res = await handleRegister(
+      makeRegisterRequest({
+        ...validFields,
+        email,
+        password: 'Test@123',
+        description: 'x'.repeat(1000),
+      }),
+    )
+    assertEquals(res.status, 201)
+    await cleanupBusiness(cnpj, email)
+  })
+
   // --- Auth error differentiation tests ---
 
   await t.step(

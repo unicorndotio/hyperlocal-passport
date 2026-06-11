@@ -1,5 +1,8 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
-import { handleToggle, handler } from '../../../../../routes/api/admin/businesses/[id]/toggle.ts'
+import {
+  handler,
+  handleToggle,
+} from '../../../../../routes/api/admin/businesses/[id]/toggle.ts'
 import { applyMiddleware } from '../../../../../routes/_middleware.ts'
 import { auth } from '../../../../../lib/auth.ts'
 import { kv } from '../../../../../lib/kv.ts'
@@ -74,17 +77,20 @@ Deno.test('PUT /api/admin/businesses/[id]/toggle', async (t) => {
 
   // --- Unit: missing body field defaults to !currentValue ---
 
-  await t.step('defaults to !currentValue when isActive is missing', async () => {
-    const biz = await seedBusiness({ isActive: true })
-    try {
-      const res = await handleToggle(biz.id as string)
-      assertEquals(res.status, 200)
-      const body = await res.json()
-      assertEquals(body.isActive, false)
-    } finally {
-      await cleanupBusiness(biz.id as string)
-    }
-  })
+  await t.step(
+    'defaults to !currentValue when isActive is missing',
+    async () => {
+      const biz = await seedBusiness({ isActive: true })
+      try {
+        const res = await handleToggle(biz.id as string)
+        assertEquals(res.status, 200)
+        const body = await res.json()
+        assertEquals(body.isActive, false)
+      } finally {
+        await cleanupBusiness(biz.id as string)
+      }
+    },
+  )
 
   // --- Unit: invalid JSON body returns 400 ---
 

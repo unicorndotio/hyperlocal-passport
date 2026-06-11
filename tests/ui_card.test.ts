@@ -1,4 +1,7 @@
-import { assertEquals, assertExists } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import {
+  assertEquals,
+  assertExists,
+} from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { render } from 'npm:preact-render-to-string@^6.6.3'
 import { h } from 'npm:preact@^10.27.2'
 import {
@@ -25,7 +28,9 @@ Deno.test('Card components', async (t) => {
   })
 
   await t.step('Card merges custom className', () => {
-    const html = render(h(Card, { className: 'my-custom-class' }, h('div', {}, 'content')))
+    const html = render(
+      h(Card, { className: 'my-custom-class' }, h('div', {}, 'content')),
+    )
     assertExists(html.includes('my-custom-class'))
     assertExists(html.includes('data-slot="card"'))
   })
@@ -68,8 +73,12 @@ Deno.test('Card components', async (t) => {
 
   await t.step('Card nested structure renders complete', () => {
     const html = render(
-      h(Card, {},
-        h(CardHeader, {},
+      h(
+        Card,
+        {},
+        h(
+          CardHeader,
+          {},
           h(CardTitle, {}, 'My Title'),
           h(CardDescription, {}, 'My Description'),
           h(CardAction, {}, h('button', {}, 'X')),

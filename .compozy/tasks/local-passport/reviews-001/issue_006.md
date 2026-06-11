@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 1
 round_created_at: 2026-06-10T20:00:00Z
-status: pending
+status: resolved
 file: routes/api/businesses/register.ts
 line: 127
 severity: medium
@@ -38,5 +38,5 @@ Apply the same check in `routes/api/businesses/[id]/profile.ts` in both the mult
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes: Also affects `routes/api/businesses/[id]/profile.ts` line 43 (JSON path) and line 41 (multipart path).
+- Decision: `VALID`
+- Notes: Also affects `routes/api/businesses/[id]/profile.ts` line 43 (JSON path) and line 41 (multipart path). The `lib/signals.ts` already enforces a 500-char limit on description for demand signals, so 1000-char limit aligns with codebase conventions while being generous for business descriptions.

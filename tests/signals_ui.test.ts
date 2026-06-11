@@ -3,7 +3,7 @@ import {
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { act } from 'npm:preact@^10.27.2/test-utils'
-import { render, h } from 'npm:preact@^10.27.2'
+import { h, render } from 'npm:preact@^10.27.2'
 import { renderToString } from 'npm:preact-render-to-string@^6.5.13'
 import { setupDom } from './islands/dom_setup.ts'
 

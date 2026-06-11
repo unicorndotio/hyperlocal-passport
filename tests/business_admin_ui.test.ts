@@ -170,9 +170,18 @@ Deno.test('Business API Endpoints Integration', async (t) => {
       formData.append('cnpj', '12345678000195')
       formData.append('category', 'Alimentação')
       formData.append('userId', testUserId)
-      formData.append('logo', new Blob(['img'], { type: 'image/png' }), 'logo.png')
-      const req = new Request('http://localhost:8000/api/businesses', { method: 'POST', body: formData })
-      const res = await (indexHandler.POST as (ctx: { req: Request }) => Response | Promise<Response>)({ req })
+      formData.append(
+        'logo',
+        new Blob(['img'], { type: 'image/png' }),
+        'logo.png',
+      )
+      const req = new Request('http://localhost:8000/api/businesses', {
+        method: 'POST',
+        body: formData,
+      })
+      const res = await (indexHandler.POST as (
+        ctx: { req: Request },
+      ) => Response | Promise<Response>)({ req })
       assertEquals(res.status, 400)
     })
 
@@ -182,9 +191,18 @@ Deno.test('Business API Endpoints Integration', async (t) => {
       formData.append('cnpj', '12345678901234') // invalid checksum
       formData.append('category', 'Alimentação')
       formData.append('userId', testUserId)
-      formData.append('logo', new Blob(['img'], { type: 'image/png' }), 'logo.png')
-      const req = new Request('http://localhost:8000/api/businesses', { method: 'POST', body: formData })
-      const res = await (indexHandler.POST as (ctx: { req: Request }) => Response | Promise<Response>)({ req })
+      formData.append(
+        'logo',
+        new Blob(['img'], { type: 'image/png' }),
+        'logo.png',
+      )
+      const req = new Request('http://localhost:8000/api/businesses', {
+        method: 'POST',
+        body: formData,
+      })
+      const res = await (indexHandler.POST as (
+        ctx: { req: Request },
+      ) => Response | Promise<Response>)({ req })
       assertEquals(res.status, 400)
     })
 
@@ -193,9 +211,18 @@ Deno.test('Business API Endpoints Integration', async (t) => {
       formData.append('name', 'Test')
       formData.append('cnpj', '12345678000195')
       formData.append('userId', testUserId)
-      formData.append('logo', new Blob(['img'], { type: 'image/png' }), 'logo.png')
-      const req = new Request('http://localhost:8000/api/businesses', { method: 'POST', body: formData })
-      const res = await (indexHandler.POST as (ctx: { req: Request }) => Response | Promise<Response>)({ req })
+      formData.append(
+        'logo',
+        new Blob(['img'], { type: 'image/png' }),
+        'logo.png',
+      )
+      const req = new Request('http://localhost:8000/api/businesses', {
+        method: 'POST',
+        body: formData,
+      })
+      const res = await (indexHandler.POST as (
+        ctx: { req: Request },
+      ) => Response | Promise<Response>)({ req })
       assertEquals(res.status, 400)
     })
 
@@ -205,8 +232,13 @@ Deno.test('Business API Endpoints Integration', async (t) => {
       formData.append('cnpj', '12345678000195')
       formData.append('category', 'Alimentação')
       formData.append('userId', testUserId)
-      const req = new Request('http://localhost:8000/api/businesses', { method: 'POST', body: formData })
-      const res = await (indexHandler.POST as (ctx: { req: Request }) => Response | Promise<Response>)({ req })
+      const req = new Request('http://localhost:8000/api/businesses', {
+        method: 'POST',
+        body: formData,
+      })
+      const res = await (indexHandler.POST as (
+        ctx: { req: Request },
+      ) => Response | Promise<Response>)({ req })
       assertEquals(res.status, 400)
     })
 
@@ -215,9 +247,18 @@ Deno.test('Business API Endpoints Integration', async (t) => {
       formData.append('name', 'Test')
       formData.append('cnpj', '12345678000195')
       formData.append('category', 'Alimentação')
-      formData.append('logo', new Blob(['img'], { type: 'image/png' }), 'logo.png')
-      const req = new Request('http://localhost:8000/api/businesses', { method: 'POST', body: formData })
-      const res = await (indexHandler.POST as (ctx: { req: Request }) => Response | Promise<Response>)({ req })
+      formData.append(
+        'logo',
+        new Blob(['img'], { type: 'image/png' }),
+        'logo.png',
+      )
+      const req = new Request('http://localhost:8000/api/businesses', {
+        method: 'POST',
+        body: formData,
+      })
+      const res = await (indexHandler.POST as (
+        ctx: { req: Request },
+      ) => Response | Promise<Response>)({ req })
       assertEquals(res.status, 400)
     })
 
@@ -313,84 +354,144 @@ Deno.test('Business API Endpoints Integration', async (t) => {
     })
 
     await t.step('PUT /api/businesses/:id rejects invalid CNPJ', async () => {
-      const req = new Request(`http://localhost:8000/api/businesses/${createdBusinessId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cnpj: '00000000000000' }),
+      const req = new Request(
+        `http://localhost:8000/api/businesses/${createdBusinessId}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cnpj: '00000000000000' }),
+        },
+      )
+      const res = await (detailHandler.PUT as (
+        ctx: { req: Request; params: Record<string, string> },
+      ) => Response | Promise<Response>)({
+        req,
+        params: { id: createdBusinessId },
       })
-      const res = await (detailHandler.PUT as (ctx: { req: Request; params: Record<string, string> }) => Response | Promise<Response>)({ req, params: { id: createdBusinessId } })
       assertEquals(res.status, 400)
     })
 
-    await t.step('PUT /api/businesses/:id returns 404 for non-existent', async () => {
-      const req = new Request('http://localhost:8000/api/businesses/nonexistent', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Ghost' }),
-      })
-      const res = await (detailHandler.PUT as (ctx: { req: Request; params: Record<string, string> }) => Response | Promise<Response>)({ req, params: { id: 'nonexistent' } })
-      assertEquals(res.status, 404)
-    })
+    await t.step(
+      'PUT /api/businesses/:id returns 404 for non-existent',
+      async () => {
+        const req = new Request(
+          'http://localhost:8000/api/businesses/nonexistent',
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'Ghost' }),
+          },
+        )
+        const res = await (detailHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Response | Promise<Response>)({
+          req,
+          params: { id: 'nonexistent' },
+        })
+        assertEquals(res.status, 404)
+      },
+    )
 
-    await t.step('PUT /api/businesses/:id rejects invalid JSON body', async () => {
-      const req = new Request(`http://localhost:8000/api/businesses/${createdBusinessId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: 'null',
-      })
-      const res = await (detailHandler.PUT as (ctx: { req: Request; params: Record<string, string> }) => Response | Promise<Response>)({ req, params: { id: createdBusinessId } })
-      assertEquals(res.status, 400)
-    })
+    await t.step(
+      'PUT /api/businesses/:id rejects invalid JSON body',
+      async () => {
+        const req = new Request(
+          `http://localhost:8000/api/businesses/${createdBusinessId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: 'null',
+          },
+        )
+        const res = await (detailHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Response | Promise<Response>)({
+          req,
+          params: { id: createdBusinessId },
+        })
+        assertEquals(res.status, 400)
+      },
+    )
 
-    await t.step('PUT /api/businesses/:id with multipart updates business', async () => {
-      const formData = new FormData()
-      formData.append('name', 'Updated Multipart Name')
-      formData.append('companyName', 'Updated Company')
-      formData.append('cnpj', '60316817000103')
-      formData.append('category', 'Lazer')
-      formData.append('description', 'Updated via multipart')
-      formData.append('userId', testUserId)
-      formData.append('isActive', 'false')
-      const logoBlob = new Blob(['new-logo-data'], { type: 'image/png' })
-      formData.append('logo', logoBlob, 'logo.png')
+    await t.step(
+      'PUT /api/businesses/:id with multipart updates business',
+      async () => {
+        const formData = new FormData()
+        formData.append('name', 'Updated Multipart Name')
+        formData.append('companyName', 'Updated Company')
+        formData.append('cnpj', '60316817000103')
+        formData.append('category', 'Lazer')
+        formData.append('description', 'Updated via multipart')
+        formData.append('userId', testUserId)
+        formData.append('isActive', 'false')
+        const logoBlob = new Blob(['new-logo-data'], { type: 'image/png' })
+        formData.append('logo', logoBlob, 'logo.png')
 
-      const req = new Request(`http://localhost:8000/api/businesses/${createdBusinessId}`, {
-        method: 'PUT',
-        body: formData,
-      })
-      const res = await (detailHandler.PUT as (ctx: { req: Request; params: Record<string, string> }) => Response | Promise<Response>)({ req, params: { id: createdBusinessId } })
-      assertEquals(res.status, 200)
-      const updated = await res.json()
-      assertEquals(updated.name, 'Updated Multipart Name')
-      assertEquals(updated.companyName, 'Updated Company')
-      assertEquals(updated.cnpj, '60316817000103')
-      assertEquals(updated.category, 'Lazer')
-      assertEquals(updated.description, 'Updated via multipart')
-      assertEquals(updated.isActive, false)
-    })
+        const req = new Request(
+          `http://localhost:8000/api/businesses/${createdBusinessId}`,
+          {
+            method: 'PUT',
+            body: formData,
+          },
+        )
+        const res = await (detailHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Response | Promise<Response>)({
+          req,
+          params: { id: createdBusinessId },
+        })
+        assertEquals(res.status, 200)
+        const updated = await res.json()
+        assertEquals(updated.name, 'Updated Multipart Name')
+        assertEquals(updated.companyName, 'Updated Company')
+        assertEquals(updated.cnpj, '60316817000103')
+        assertEquals(updated.category, 'Lazer')
+        assertEquals(updated.description, 'Updated via multipart')
+        assertEquals(updated.isActive, false)
+      },
+    )
 
     await t.step('PUT multipart with invalid CNPJ returns 400', async () => {
       const formData = new FormData()
       formData.append('cnpj', '00000000000000')
-      const req = new Request(`http://localhost:8000/api/businesses/${createdBusinessId}`, {
-        method: 'PUT',
-        body: formData,
+      const req = new Request(
+        `http://localhost:8000/api/businesses/${createdBusinessId}`,
+        {
+          method: 'PUT',
+          body: formData,
+        },
+      )
+      const res = await (detailHandler.PUT as (
+        ctx: { req: Request; params: Record<string, string> },
+      ) => Response | Promise<Response>)({
+        req,
+        params: { id: createdBusinessId },
       })
-      const res = await (detailHandler.PUT as (ctx: { req: Request; params: Record<string, string> }) => Response | Promise<Response>)({ req, params: { id: createdBusinessId } })
       assertEquals(res.status, 400)
       assertEquals(await res.text(), 'Invalid CNPJ')
     })
 
-    await t.step('PUT with invalid multipart form data returns 400', async () => {
-      const req = new Request(`http://localhost:8000/api/businesses/${createdBusinessId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'multipart/form-data' },
-        body: 'not a valid form data body',
-      })
-      const res = await (detailHandler.PUT as (ctx: { req: Request; params: Record<string, string> }) => Response | Promise<Response>)({ req, params: { id: createdBusinessId } })
-      assertEquals(res.status, 400)
-      assertEquals(await res.text(), 'Invalid multipart form data')
-    })
+    await t.step(
+      'PUT with invalid multipart form data returns 400',
+      async () => {
+        const req = new Request(
+          `http://localhost:8000/api/businesses/${createdBusinessId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'multipart/form-data' },
+            body: 'not a valid form data body',
+          },
+        )
+        const res = await (detailHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Response | Promise<Response>)({
+          req,
+          params: { id: createdBusinessId },
+        })
+        assertEquals(res.status, 400)
+        assertEquals(await res.text(), 'Invalid multipart form data')
+      },
+    )
 
     await t.step(
       'DELETE /api/businesses/:id removes business profile',

@@ -236,25 +236,28 @@ Deno.test('POST /api/users/register', async (t) => {
     assertEquals(body.error, 'Invalid multipart form data')
   })
 
-  await t.step('returns upload error when uploadFile fails (empty file)', async () => {
-    const cpf = '12345678909'
-    const email = 'uploadfail@example.com'
-    await cleanupCpf(cpf)
-    await kv.delete(['users_by_email', email])
-    const req = makeRegisterRequest({
-      name: 'João Silva',
-      cpf,
-      email,
-      whatsappDial: '+55',
-      whatsappNumber: '48912345678',
-      idPhoto: new File([], 'empty.jpg', { type: 'image/jpeg' }),
-      residenceProof: makeFile('proof.jpg'),
-    })
-    const res = await handleRegister(req)
-    assertEquals(res.status, 400)
-    const body = await res.json()
-    assertEquals(body.error, 'File is empty')
-  })
+  await t.step(
+    'returns upload error when uploadFile fails (empty file)',
+    async () => {
+      const cpf = '12345678909'
+      const email = 'uploadfail@example.com'
+      await cleanupCpf(cpf)
+      await kv.delete(['users_by_email', email])
+      const req = makeRegisterRequest({
+        name: 'João Silva',
+        cpf,
+        email,
+        whatsappDial: '+55',
+        whatsappNumber: '48912345678',
+        idPhoto: new File([], 'empty.jpg', { type: 'image/jpeg' }),
+        residenceProof: makeFile('proof.jpg'),
+      })
+      const res = await handleRegister(req)
+      assertEquals(res.status, 400)
+      const body = await res.json()
+      assertEquals(body.error, 'File is empty')
+    },
+  )
 
   await t.step('rejects duplicate CPF with 409', async () => {
     const cpf = '12345678909'
@@ -440,7 +443,8 @@ Deno.test('POST /api/users/register', async (t) => {
         min: () => mockAtomic,
         max: () => mockAtomic,
         enqueue: () => mockAtomic,
-        commit: () => Promise.resolve({ ok: false } as unknown as Deno.KvCommitResult),
+        commit: () =>
+          Promise.resolve({ ok: false } as unknown as Deno.KvCommitResult),
       }
       const atomicStub = stub(moduleKv, 'atomic', () => mockAtomic)
       try {

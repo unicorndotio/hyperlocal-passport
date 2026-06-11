@@ -63,7 +63,9 @@ export async function getCategoryCounts(
     const countEntry = await kvInstance.get<number>(countKey)
     const total = countEntry.value ?? 0
 
-    const unreviewedIter = kvInstance.list<{ signalId: string; reviewed: boolean }>({
+    const unreviewedIter = kvInstance.list<
+      { signalId: string; reviewed: boolean }
+    >({
       prefix: ['signals_by_category', category],
     })
 

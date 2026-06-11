@@ -74,7 +74,10 @@ Deno.test('Mobile Catalog Integration', async (t) => {
   try {
     await t.step('Browse Catalog', async () => {
       const req = new Request('http://localhost:8000/catalog')
-      const res = await (catalogHandler as CatalogHandler).GET({ req, state: defaultState })
+      const res = await (catalogHandler as CatalogHandler).GET({
+        req,
+        state: defaultState,
+      })
 
       assertEquals(typeof res.data, 'object')
       assertEquals(Array.isArray(res.data.businesses), true)
@@ -82,7 +85,10 @@ Deno.test('Mobile Catalog Integration', async (t) => {
 
     await t.step('Filter by Category', async () => {
       const req = new Request('http://localhost:8000/catalog?category=Lazer')
-      const res = await (catalogHandler as CatalogHandler).GET({ req, state: defaultState })
+      const res = await (catalogHandler as CatalogHandler).GET({
+        req,
+        state: defaultState,
+      })
 
       assertEquals(typeof res.data, 'object')
       assertEquals(Array.isArray(res.data.businesses), true)

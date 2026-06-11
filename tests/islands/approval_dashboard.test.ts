@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { act } from 'npm:preact@^10.27.2/test-utils'
-import { render, h } from 'npm:preact@^10.27.2'
+import { h, render } from 'npm:preact@^10.27.2'
 import { renderToString } from 'npm:preact-render-to-string@^6.5.13'
 import { setupDom } from './dom_setup.ts'
 
@@ -12,7 +12,10 @@ function makeUsers() {
       cpf: '12345678901',
       email: 'joao@test.com',
       status: 'pending',
-      documents: { idPhotoUrl: '/uploads/id.jpg', residenceProofUrl: '/uploads/proof.pdf' },
+      documents: {
+        idPhotoUrl: '/uploads/id.jpg',
+        residenceProofUrl: '/uploads/proof.pdf',
+      },
       createdAt: Date.now() - 86400000,
     },
     {
@@ -27,7 +30,9 @@ function makeUsers() {
 }
 
 Deno.test('ApprovalDashboard - renders loading state on initial render', async () => {
-  const html = renderToString(h((await import('../../islands/ApprovalDashboard.tsx')).default, {}))
+  const html = renderToString(
+    h((await import('../../islands/ApprovalDashboard.tsx')).default, {}),
+  )
   assertEquals(html.includes('Carregando moradores pendentes...'), true)
 })
 
@@ -37,14 +42,22 @@ Deno.test('ApprovalDashboard - async: renders empty state', async () => {
   let fetchCalled = false
   globalThis.fetch = () => {
     fetchCalled = true
-    return Promise.resolve(new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json' } }))
+    return Promise.resolve(
+      new Response(JSON.stringify([]), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
   }
 
-  const { default: ApprovalDashboard } = await import('../../islands/ApprovalDashboard.tsx')
+  const { default: ApprovalDashboard } = await import(
+    '../../islands/ApprovalDashboard.tsx'
+  )
   const root = document.createElement('div')
   document.body.appendChild(root)
 
-  act(() => { render(h(ApprovalDashboard, {}), root) })
+  act(() => {
+    render(h(ApprovalDashboard, {}), root)
+  })
   await act(async () => {})
   await act(async () => {})
 
@@ -62,11 +75,15 @@ Deno.test('ApprovalDashboard - async: renders error state', async () => {
     return Promise.resolve(new Response('Not Found', { status: 404 }))
   }
 
-  const { default: ApprovalDashboard } = await import('../../islands/ApprovalDashboard.tsx')
+  const { default: ApprovalDashboard } = await import(
+    '../../islands/ApprovalDashboard.tsx'
+  )
   const root = document.createElement('div')
   document.body.appendChild(root)
 
-  act(() => { render(h(ApprovalDashboard, {}), root) })
+  act(() => {
+    render(h(ApprovalDashboard, {}), root)
+  })
   await act(async () => {})
   await act(async () => {})
 
@@ -81,14 +98,22 @@ Deno.test('ApprovalDashboard - async: renders user table', async () => {
   let fetchCalled = false
   globalThis.fetch = () => {
     fetchCalled = true
-    return Promise.resolve(new Response(JSON.stringify(makeUsers()), { headers: { 'Content-Type': 'application/json' } }))
+    return Promise.resolve(
+      new Response(JSON.stringify(makeUsers()), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
   }
 
-  const { default: ApprovalDashboard } = await import('../../islands/ApprovalDashboard.tsx')
+  const { default: ApprovalDashboard } = await import(
+    '../../islands/ApprovalDashboard.tsx'
+  )
   const root = document.createElement('div')
   document.body.appendChild(root)
 
-  act(() => { render(h(ApprovalDashboard, {}), root) })
+  act(() => {
+    render(h(ApprovalDashboard, {}), root)
+  })
   await act(async () => {})
   await act(async () => {})
 
