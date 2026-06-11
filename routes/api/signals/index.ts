@@ -4,6 +4,8 @@ import {
   type DemandSignal,
   getCategoryCountKey,
   getCategoryIndexKey,
+  getCurrentHourKey,
+  getHourlyRateLimitKey,
   getRateLimitKey,
   getSignalKey,
   getTodayDate,
@@ -11,6 +13,7 @@ import {
 } from '../../../lib/signals.ts'
 
 const MAX_SIGNALS_PER_DAY = 5
+const MAX_SIGNALS_PER_HOUR = 3
 
 export async function handleCreateSignal(
   kvInstance: Deno.Kv,
@@ -28,16 +31,35 @@ export async function handleCreateSignal(
   const category = body.category!.trim()
   const description = body.description!.trim()
   const today = getTodayDate()
+  const hourKey = getCurrentHourKey()
   const rateLimitKey = getRateLimitKey(residentId, today)
+  const hourlyRateLimitKey = getHourlyRateLimitKey(residentId, hourKey)
 
-  const rateLimitEntry = await kvInstance.get<number>(rateLimitKey)
-  const currentCount = rateLimitEntry.value ?? 0
+  const [dailyEntry, hourlyEntry] = await Promise.all([
+    kvInstance.get<number>(rateLimitKey),
+    kvInstance.get<number>(hourlyRateLimitKey),
+  ])
+  const currentCount = dailyEntry.value ?? 0
+  const currentHourlyCount = hourlyEntry.value ?? 0
 
   if (currentCount >= MAX_SIGNALS_PER_DAY) {
     return new Response(
       JSON.stringify({
         error:
           `Rate limit exceeded. Maximum ${MAX_SIGNALS_PER_DAY} signals per day.`,
+      }),
+      {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+  }
+
+  if (currentHourlyCount >= MAX_SIGNALS_PER_HOUR) {
+    return new Response(
+      JSON.stringify({
+        error:
+          `Rate limit exceeded. Maximum ${MAX_SIGNALS_PER_HOUR} signals per hour.`,
       }),
       {
         status: 429,
@@ -69,6 +91,7 @@ export async function handleCreateSignal(
       reviewed: false,
     })
     .set(rateLimitKey, currentCount + 1)
+    .set(hourlyRateLimitKey, currentHourlyCount + 1)
     .set(countKey, (countEntry.value ?? 0) + 1)
 
   const result = await atomic.commit()

@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 1
 round_created_at: 2026-06-10T20:00:00Z
-status: pending
+status: resolved
 file: routes/api/signals/index.ts
 line: 30
 severity: low
@@ -28,5 +28,5 @@ const rateLimitKey = getRateLimitKey(residentId, getTodayDate())
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID` — Midnight burst is a real concern for a calendar-day rate limiter.
+- Resolution: Added an hourly sub-limit (`MAX_SIGNALS_PER_HOUR = 3`) alongside the existing daily calendar-date limit. A new `getHourlyRateLimitKey()` function generates a key per resident per hour (formatted as `YYYY-MM-DDTHH`). The handler now checks both the daily and hourly counters before allowing signal creation. Both counters are incremented atomically. This prevents a resident from submitting 5 signals at 23:59 and another 5 at 00:01 — the hourly cap catches the burst within any single clock hour. The daily 5-signal limit is preserved as the primary cap.

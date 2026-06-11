@@ -30,8 +30,24 @@ export function getRateLimitKey(
   return ['signal_rate_limit', residentId, date]
 }
 
+export function getHourlyRateLimitKey(
+  residentId: string,
+  hourKey: string,
+): string[] {
+  return ['signal_rate_limit_hourly', residentId, hourKey]
+}
+
 export function getTodayDate(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+export function getCurrentHourKey(): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  const h = String(now.getHours()).padStart(2, '0')
+  return `${y}-${m}-${d}T${h}`
 }
 
 export const VALID_CATEGORIES = [

@@ -9,6 +9,8 @@ import {
   type DemandSignal,
   getCategoryCountKey,
   getCategoryIndexKey,
+  getCurrentHourKey,
+  getHourlyRateLimitKey,
   getSignalKey,
 } from '../lib/signals.ts'
 
@@ -122,10 +124,22 @@ Deno.test('Signal creation', async (t) => {
   await t.step('enforces 5/day rate limit per resident', async () => {
     const kv = await Deno.openKv(':memory:')
     try {
-      for (let i = 0; i < 5; i++) {
+      const hourKey = getCurrentHourKey()
+
+      for (let i = 0; i < 3; i++) {
         const res = await handleCreateSignal(kv, {
           category: 'Esporte',
           description: `Signal number ${i + 1} for rate limit testing purposes`,
+        }, 'resident_rate_test')
+        assertEquals(res.status, 201)
+      }
+
+      await kv.set(getHourlyRateLimitKey('resident_rate_test', hourKey), 0)
+
+      for (let i = 0; i < 2; i++) {
+        const res = await handleCreateSignal(kv, {
+          category: 'Esporte',
+          description: `Signal number ${i + 4} for rate limit testing purposes`,
         }, 'resident_rate_test')
         assertEquals(res.status, 201)
       }
@@ -147,7 +161,9 @@ Deno.test('Signal creation', async (t) => {
     async () => {
       const kv = await Deno.openKv(':memory:')
       try {
-        for (let i = 0; i < 5; i++) {
+        const hourKey = getCurrentHourKey()
+
+        for (let i = 0; i < 3; i++) {
           const r = await handleCreateSignal(kv, {
             category: 'Casa',
             description: `Signal ${
@@ -157,10 +173,75 @@ Deno.test('Signal creation', async (t) => {
           assertEquals(r.status, 201)
         }
 
+        await kv.set(getHourlyRateLimitKey('resident_a', hourKey), 0)
+
+        for (let i = 0; i < 2; i++) {
+          const r = await handleCreateSignal(kv, {
+            category: 'Casa',
+            description: `Signal ${
+              i + 4
+            } for resident A for rate limit testing`,
+          }, 'resident_a')
+          assertEquals(r.status, 201)
+        }
+
         const res = await handleCreateSignal(kv, {
           category: 'Casa',
           description: 'First signal for resident B should succeed',
         }, 'resident_b')
+        assertEquals(res.status, 201)
+      } finally {
+        kv.close()
+      }
+    },
+  )
+
+  await t.step(
+    'enforces 3/hour sub-limit to prevent midnight burst',
+    async () => {
+      const kv = await Deno.openKv(':memory:')
+      try {
+        for (let i = 0; i < 3; i++) {
+          const res = await handleCreateSignal(kv, {
+            category: 'Esporte',
+            description: `Hourly signal ${i + 1} for rate limit test`,
+          }, 'resident_hourly')
+          assertEquals(res.status, 201)
+        }
+
+        const res = await handleCreateSignal(kv, {
+          category: 'Esporte',
+          description: '4th signal within the same hour should be rate limited',
+        }, 'resident_hourly')
+        assertEquals(res.status, 429)
+        const body = await res.json()
+        assertEquals(
+          body.error,
+          'Rate limit exceeded. Maximum 3 signals per hour.',
+        )
+      } finally {
+        kv.close()
+      }
+    },
+  )
+
+  await t.step(
+    'hourly rate limit is per-resident (different residents unaffected)',
+    async () => {
+      const kv = await Deno.openKv(':memory:')
+      try {
+        for (let i = 0; i < 3; i++) {
+          const r = await handleCreateSignal(kv, {
+            category: 'Corpo',
+            description: `Signal ${i + 1} for resident A hourly limit test`,
+          }, 'resident_hourly_a')
+          assertEquals(r.status, 201)
+        }
+
+        const res = await handleCreateSignal(kv, {
+          category: 'Corpo',
+          description: 'First signal for resident B should still succeed',
+        }, 'resident_hourly_b')
         assertEquals(res.status, 201)
       } finally {
         kv.close()
