@@ -141,6 +141,7 @@ export async function handleRegister(req: Request): Promise<Response> {
   }
 
   const result = await kv.atomic()
+    .check(existingCnpj)
     .set(['businesses', businessId], business)
     .set(['businesses_by_cnpj', cnpj], businessId)
     .commit()

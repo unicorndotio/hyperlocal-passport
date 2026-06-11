@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 1
 round_created_at: 2026-06-10T20:00:00Z
-status: pending
+status: resolved
 file: routes/api/businesses/register.ts
 line: 79
 severity: medium
@@ -39,5 +39,7 @@ If `.check()` fails, the commit returns `{ ok: false }` and the 500 error path h
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Root cause: `kv.atomic()` at line 143 does not use `.check(existingCnpj)` to verify the `businesses_by_cnpj` key is still absent at commit time. Two concurrent requests with the same CNPJ can both pass the `kv.get()` null check and both successfully commit their `set()` — the second silently overwrites the index entry.
+- Fix: Pass `existingCnpj` (the result of `kv.get(['businesses_by_cnpj', cnpj])`) through `.check()` in the atomic chain. If the key was taken between the read and the commit, the check fails, `result.ok` is `false`, and the existing cleanup + 500 path handles it correctly.
+- Email case is already mitigated by `auth.api.signUpEmail` enforcing uniqueness server-side (caught via `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`), so only the CNPJ index needs `.check()`.
