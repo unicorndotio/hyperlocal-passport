@@ -53,13 +53,13 @@ Deno.test('POST /api/businesses/register', async (t) => {
       await kv.delete(['businesses_by_cnpj', cnpj])
     }
     const emailEntry = await kv.get<string>([
-      'users_by_email',
+      'user_by_email',
       email.toLowerCase(),
     ])
     if (emailEntry.value) {
       const uid = emailEntry.value
       await kv.delete(['user', uid])
-      await kv.delete(['users_by_email', email.toLowerCase()])
+      await kv.delete(['user_by_email', email.toLowerCase()])
     }
   }
 
@@ -340,7 +340,7 @@ Deno.test('POST /api/businesses/register', async (t) => {
         assertExists(body.error)
         assertEquals(body.error, 'Conflict or system error, please retry')
 
-        const emailEntry = await kv.get(['users_by_email', email])
+        const emailEntry = await kv.get(['user_by_email', email])
         assertEquals(emailEntry.value, null)
       } finally {
         atomicStub.restore()

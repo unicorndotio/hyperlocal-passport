@@ -1,25 +1,47 @@
 import { useSignal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
-import QRCode from 'qrcode'
+import qrcode from 'qrcode-generator'
 
 export default function QRCodeDisplay({ code }: { code: string }) {
   const dataUrl = useSignal<string | null>(null)
 
   useEffect(() => {
-    QRCode.toDataURL(code, {
-      width: 400,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#ffffff',
-      },
-    })
-      .then((url) => {
-        dataUrl.value = url
-      })
-      .catch((err) => {
-        console.error('Failed to generate QR Code', err)
-      })
+    try {
+      const qr = qrcode(0, 'M')
+      qr.addData(code)
+      qr.make()
+
+      const size = qr.getModuleCount()
+      const margin = 2
+      const cellSize = Math.floor(400 / (size + margin * 2))
+      const canvasSize = size * cellSize + margin * 2 * cellSize
+
+      const canvas = document.createElement('canvas')
+      canvas.width = canvasSize
+      canvas.height = canvasSize
+
+      const ctx = canvas.getContext('2d')!
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvasSize, canvasSize)
+
+      ctx.fillStyle = '#000000'
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect(
+              c * cellSize + margin * cellSize,
+              r * cellSize + margin * cellSize,
+              cellSize,
+              cellSize,
+            )
+          }
+        }
+      }
+
+      dataUrl.value = canvas.toDataURL()
+    } catch (err) {
+      console.error('Failed to generate QR Code', err)
+    }
   }, [code])
 
   if (!dataUrl.value) {

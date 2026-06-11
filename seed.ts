@@ -51,6 +51,50 @@ if (!userId) {
       break
     }
   }
+
+  // If the user exists but has no credential account, sign-in will fail
+  // with "Credential account not found".  Delete the stale user and its
+  // indexes so the sign-up retry writes everything fresh.
+  if (userId) {
+    const accountIdx = await kv.get<string>(['account_by_userId', userId])
+    if (!accountIdx.value) {
+      console.log('   ⚠️  No credential account — re-creating from scratch…')
+      const batch = kv.atomic()
+        .delete(['user', userId])
+        .delete(['user_by_email', ADMIN_EMAIL.toLowerCase()])
+      for await (const entry of kv.list({ prefix: ['account'] })) {
+        if ((entry.value as Record<string, unknown>)?.userId === userId) {
+          batch.delete(entry.key)
+        }
+      }
+      for await (const entry of kv.list({ prefix: ['session'] })) {
+        if ((entry.value as Record<string, unknown>)?.userId === userId) {
+          batch.delete(entry.key)
+        }
+      }
+      await batch.commit()
+
+      const retryRes = await auth.handler(
+        new Request('http://localhost:8000/api/auth/sign-up/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: ADMIN_EMAIL,
+            password: ADMIN_PASSWORD,
+            name: ADMIN_NAME,
+          }),
+        }),
+      )
+      const retryBody = await retryRes.json()
+      userId = retryBody.user?.id
+      if (!userId) {
+        console.error(`❌ Re-create failed: ${JSON.stringify(retryBody)}`)
+        kv.close()
+        Deno.exit(1)
+      }
+      console.log('   ✅ User re-created with credential account.')
+    }
+  }
 }
 
 if (!userId) {

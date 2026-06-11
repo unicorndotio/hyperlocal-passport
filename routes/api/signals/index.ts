@@ -32,6 +32,11 @@ export async function handleCreateSignal(
   const description = body.description!.trim()
   const today = getTodayDate()
   const hourKey = getCurrentHourKey()
+  // Note: Rate-limit KV keys accumulate over time since Deno KV has no TTL
+  // support. Each resident leaves a daily + hourly key per signal. At V1 scale
+  // (< 1000 residents, < 100 signals/day) the storage impact is negligible
+  // (a few bytes per key). If scale grows, replace with in-memory counters or
+  // add periodic cleanup of keys older than 48 hours.
   const rateLimitKey = getRateLimitKey(residentId, today)
   const hourlyRateLimitKey = getHourlyRateLimitKey(residentId, hourKey)
 

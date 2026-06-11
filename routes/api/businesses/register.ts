@@ -83,7 +83,7 @@ export async function handleRegister(req: Request): Promise<Response> {
 
   const normalizedEmail = email.trim().toLowerCase()
 
-  const existingEmail = await kv.get(['users_by_email', normalizedEmail])
+  const existingEmail = await kv.get(['user_by_email', normalizedEmail])
   if (existingEmail.value !== null) {
     return json({ error: 'Email already registered' }, 409)
   }
@@ -157,7 +157,8 @@ export async function handleRegister(req: Request): Promise<Response> {
     await Promise.allSettled([
       deleteFile(logoFilename),
       kv.delete(['user', userId]),
-      kv.delete(['users_by_email', normalizedEmail]),
+      kv.delete(['user_by_email', normalizedEmail]),
+      kv.delete(['account_by_userId', userId]),
     ])
     return json({ error: 'Conflict or system error, please retry' }, 500)
   }
