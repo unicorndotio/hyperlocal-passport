@@ -111,9 +111,17 @@ export async function handleRegister(req: Request): Promise<Response> {
       },
     })
     userId = user.id
-  } catch {
+  } catch (err) {
     await deleteFile(logoFilename).catch(() => {})
-    return json({ error: 'Email already registered or system error' }, 409)
+    if (
+      err && typeof err === 'object' && 'body' in err &&
+      err.body && typeof err.body === 'object' && 'code' in err.body &&
+      err.body.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL'
+    ) {
+      return json({ error: 'Email already registered' }, 409)
+    }
+    const message = err instanceof Error ? err.message : 'System error'
+    return json({ error: `Registration failed: ${message}` }, 500)
   }
 
   const businessId = crypto.randomUUID()

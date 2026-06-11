@@ -190,6 +190,27 @@ Deno.test('POST /api/businesses/register', async (t) => {
     assertEquals(body.error, 'Missing required file: logo')
   })
 
+  // --- Auth error differentiation tests ---
+
+  await t.step(
+    'returns 500 for auth failure (short password), not misleading 409',
+    async () => {
+      const email = `short_pwd_${Date.now()}@test.com`
+      await cleanupBusiness('11222333000181', email)
+      const res = await handleRegister(
+        makeRegisterRequest({
+          ...validFields,
+          email,
+          password: 'ab', // shorter than default minPasswordLength (8)
+        }),
+      )
+      assertEquals(res.status, 500)
+      const body = await res.json()
+      assertExists(body.error)
+      assertEquals(body.error.includes('Registration failed'), true)
+    },
+  )
+
   // --- Duplicate detection tests ---
 
   await t.step('rejects duplicate email with 409', async () => {

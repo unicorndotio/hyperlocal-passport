@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 1
 round_created_at: 2026-06-10T20:00:00Z
-status: pending
+status: resolved
 file: routes/api/businesses/register.ts
 line: 114
 severity: medium
@@ -40,5 +40,5 @@ try {
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Notes: The bare `catch {}` at line 114 discards the error from `auth.api.signUpEmail`, always returning a 409 with "Email already registered or system error". This is misleading for invalid passwords (should be 400/500, not 409) and transient server errors (should be 500, not 409). The auth library throws `APIError` instances with a `body.code` property. The fix: differentiate `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL` (→ 409) from all other errors (→ 500 with actual error message).
