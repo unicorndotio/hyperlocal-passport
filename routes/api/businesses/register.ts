@@ -149,6 +149,7 @@ export async function handleRegister(req: Request): Promise<Response> {
     await Promise.allSettled([
       deleteFile(logoFilename),
       kv.delete(['user', userId]),
+      kv.delete(['users_by_email', normalizedEmail]),
     ])
     return json({ error: 'Conflict or system error, please retry' }, 500)
   }

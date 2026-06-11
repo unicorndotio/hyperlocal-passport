@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 1
 round_created_at: 2026-06-10T20:00:00Z
-status: pending
+status: resolved
 file: routes/api/businesses/register.ts
 line: 140
 severity: medium
@@ -37,5 +37,6 @@ Alternatively, use a `kv.atomic()` for the rollback operations so they are appli
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `valid`
+- Root cause: When `kv.atomic().commit()` fails at register.ts:143-146, the rollback at lines 148-152 deletes `['user', userId]` and the uploaded logo, but does not clean up `['users_by_email', normalizedEmail]`. The auth adapter (kv-adapter.ts) creates this secondary index during `signUpEmail`, so when the user record is deleted but the index remains, the duplicate email check at line 79 permanently blocks re-registration with the same email.
+- Fix: Add `kv.delete(['users_by_email', normalizedEmail])` to the rollback `Promise.allSettled` array. Also optionally add `kv.delete(['users_by_cpf', cpf])` if CPF was passed, though the business register route does not pass CPF.

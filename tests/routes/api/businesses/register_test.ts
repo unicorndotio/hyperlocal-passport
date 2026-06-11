@@ -2,6 +2,7 @@ import {
   assertEquals,
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
 import { handleRegister } from '../../../../routes/api/businesses/register.ts'
 import { kv } from '../../../../lib/kv.ts'
 
@@ -275,6 +276,49 @@ Deno.test('POST /api/businesses/register', async (t) => {
     await cleanupBusiness(cnpj, email1)
     await cleanupBusiness(cnpj, email2)
   })
+
+  await t.step(
+    'rollback cleans up users_by_email index on atomic commit failure',
+    async () => {
+      const email = `rollback_${Date.now()}@test.com`
+      const cnpj = '11222333000181'
+      await cleanupBusiness(cnpj, email)
+
+      const { kv: moduleKv } = await import('../../../../lib/kv.ts')
+      const mockAtomic: Deno.AtomicOperation = {
+        check: () => mockAtomic,
+        set: () => mockAtomic,
+        delete: () => mockAtomic,
+        mutate: () => mockAtomic,
+        sum: () => mockAtomic,
+        min: () => mockAtomic,
+        max: () => mockAtomic,
+        enqueue: () => mockAtomic,
+        commit: () =>
+          Promise.resolve({ ok: false } as unknown as Deno.KvCommitResult),
+      }
+      const atomicStub = stub(moduleKv, 'atomic', () => mockAtomic)
+      try {
+        const res = await handleRegister(
+          makeRegisterRequest({
+            ...validFields,
+            email,
+            cnpj,
+            password: 'Test@123',
+          }),
+        )
+        assertEquals(res.status, 500)
+        const body = await res.json()
+        assertExists(body.error)
+        assertEquals(body.error, 'Conflict or system error, please retry')
+
+        const emailEntry = await kv.get(['users_by_email', email])
+        assertEquals(emailEntry.value, null)
+      } finally {
+        atomicStub.restore()
+      }
+    },
+  )
 
   // --- Integration test ---
 
