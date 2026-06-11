@@ -2,7 +2,7 @@ import { define } from '../../../utils.ts'
 import { kv } from '../../../lib/kv.ts'
 import { getDenoKvAdapterRaw } from '../../../lib/kv-adapter.ts'
 import { uploadFile } from '../../../lib/storage.ts'
-import { isValidCnpj } from '../../../lib/business.ts'
+import { isValidCnpj, normalizeCnpj } from '../../../lib/business.ts'
 const adapter = getDenoKvAdapterRaw(kv)
 
 export const handler = define.handlers({
@@ -31,7 +31,7 @@ export const handler = define.handlers({
         if (!isValidCnpj(cnpj)) {
           return new Response('Invalid CNPJ', { status: 400 })
         }
-        updateData.cnpj = cnpj
+        updateData.cnpj = normalizeCnpj(cnpj)
       }
 
       const category = formData.get('category') as string
@@ -104,8 +104,11 @@ export const handler = define.handlers({
       }
 
       const cnpj = updateData.cnpj
-      if (typeof cnpj === 'string' && !isValidCnpj(cnpj)) {
-        return new Response('Invalid CNPJ', { status: 400 })
+      if (typeof cnpj === 'string') {
+        if (!isValidCnpj(cnpj)) {
+          return new Response('Invalid CNPJ', { status: 400 })
+        }
+        updateData.cnpj = normalizeCnpj(cnpj)
       }
 
       const userId = updateData.userId

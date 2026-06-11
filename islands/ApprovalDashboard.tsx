@@ -140,15 +140,22 @@ export default function ApprovalDashboard() {
         throw new Error(data.error || 'Falha ao revisar sinal')
       }
 
-      setSignals((prev) =>
-        prev.map((s) => (s.id === signalId ? { ...s, reviewed: true } : s))
-      )
-      setCategoryCounts((prev) =>
-        prev.map((cc) => ({
-          ...cc,
-          unreviewed: cc.unreviewed > 0 ? cc.unreviewed - 1 : 0,
-        }))
-      )
+      setSignals((prev) => {
+        const updated = prev.map((s) =>
+          s.id === signalId ? { ...s, reviewed: true } : s
+        )
+        const signal = updated.find((s) => s.id === signalId)
+        if (signal) {
+          setCategoryCounts((prevCounts) =>
+            prevCounts.map((cc) =>
+              cc.category === signal.category
+                ? { ...cc, unreviewed: Math.max(0, cc.unreviewed - 1) }
+                : cc
+            )
+          )
+        }
+        return updated
+      })
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erro ao revisar sinal')
     } finally {

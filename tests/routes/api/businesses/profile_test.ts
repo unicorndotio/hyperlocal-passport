@@ -417,4 +417,56 @@ Deno.test('PUT /api/businesses/[id]/profile', async (t) => {
       await cleanupBusiness(biz.id as string)
     }
   })
+
+  // --- Atomic: .check() prevents lost concurrent writes ---
+
+  await t.step(
+    'atomic check rejects stale versionstamp from concurrent write',
+    async () => {
+      const biz = await seedBusiness()
+      try {
+        const res1 = await kv.get<Record<string, unknown>>([
+          'businesses',
+          biz.id as string,
+        ])
+        const res2 = await kv.get<Record<string, unknown>>([
+          'businesses',
+          biz.id as string,
+        ])
+
+        const oldValue = res1.value!
+
+        // First concurrent commit succeeds
+        const commit1 = await kv.atomic()
+          .check(res1)
+          .set(['businesses', biz.id as string], {
+            ...oldValue,
+            description: 'First concurrent write',
+          })
+          .commit()
+        assertEquals(commit1.ok, true)
+
+        // Second concurrent commit with stale versionstamp fails
+        const commit2 = await kv.atomic()
+          .check(res2)
+          .set(['businesses', biz.id as string], {
+            ...oldValue,
+            description: 'Second concurrent write (lost)',
+          })
+          .commit()
+        assertEquals(commit2.ok, false)
+
+        const stored = await kv.get<Record<string, unknown>>([
+          'businesses',
+          biz.id as string,
+        ])
+        assertEquals(
+          (stored.value as Record<string, unknown>).description,
+          'First concurrent write',
+        )
+      } finally {
+        await cleanupBusiness(biz.id as string)
+      }
+    },
+  )
 })

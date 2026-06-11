@@ -134,6 +134,7 @@ export async function handleProfileUpdate(
 
   const updated = { ...business, ...updateData }
   const result = await kv.atomic()
+    .check(bizEntry)
     .set(['businesses', businessId], updated)
     .commit()
 

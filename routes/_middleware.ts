@@ -38,11 +38,13 @@ export async function applyMiddleware(
       })
     }
 
-    // Admin-only API paths — exempt business profile route
+    // Admin-only API paths — exempt business profile & coupon routes
     if (
       url.pathname.startsWith('/api/admin/') ||
       (url.pathname.startsWith('/api/businesses') &&
-        !url.pathname.match(/^\/api\/businesses\/[^/]+\/profile$/) &&
+        !url.pathname.match(
+          /^\/api\/businesses\/[^/]+\/(profile|coupons)$/,
+        ) &&
         (req.method === 'POST' || req.method === 'PUT' ||
           req.method === 'DELETE'))
     ) {
@@ -61,7 +63,7 @@ export async function applyMiddleware(
     if (
       url.pathname.startsWith('/api/coupons') ||
       url.pathname.startsWith('/api/transactions/') ||
-      url.pathname.match(/^\/api\/businesses\/[^/]+\/profile$/)
+      url.pathname.match(/^\/api\/businesses\/[^/]+\/(profile|coupons)$/)
     ) {
       if (session.user.role !== 'business' && session.user.role !== 'admin') {
         return new Response(

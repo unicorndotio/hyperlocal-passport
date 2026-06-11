@@ -518,7 +518,123 @@ Deno.test('Admin Middleware', async (t) => {
       () => Promise.resolve(new Response('OK')),
     )
     assertEquals(res.status, 200)
+    assertEquals(await res.text(), 'OK')
   })
+
+  await t.step(
+    'blocks POST /api/businesses/:id/coupons as resident',
+    async () => {
+      ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
+        Promise.resolve({
+          session: {
+            id: 's21',
+            userId: 'u21',
+            expiresAt: new Date(Date.now() + 100000),
+            token: 't21',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          user: {
+            id: 'u21',
+            email: 'resident@test.com',
+            emailVerified: true,
+            name: 'Resident',
+            role: 'resident',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        } as unknown)
+
+      const req = new Request(
+        'http://localhost:8000/api/businesses/biz-1/coupons',
+        { method: 'POST' },
+      )
+      const res = await applyMiddleware(
+        req,
+        () => Promise.resolve(new Response('OK')),
+      )
+      assertEquals(res.status, 403)
+      const body = await res.json()
+      assertEquals(
+        body.error,
+        'Forbidden: Business or Admin access required',
+      )
+    },
+  )
+
+  await t.step(
+    'allows POST /api/businesses/:id/coupons as business',
+    async () => {
+      ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
+        Promise.resolve({
+          session: {
+            id: 's22',
+            userId: 'u22',
+            expiresAt: new Date(Date.now() + 100000),
+            token: 't22',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          user: {
+            id: 'u22',
+            email: 'business@test.com',
+            emailVerified: true,
+            name: 'Business',
+            role: 'business',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        } as unknown)
+
+      const req = new Request(
+        'http://localhost:8000/api/businesses/biz-1/coupons',
+        { method: 'POST' },
+      )
+      const res = await applyMiddleware(
+        req,
+        () => Promise.resolve(new Response('OK')),
+      )
+      assertEquals(res.status, 200)
+      assertEquals(await res.text(), 'OK')
+    },
+  )
+
+  await t.step(
+    'allows POST /api/businesses/:id/coupons as admin',
+    async () => {
+      ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
+        Promise.resolve({
+          session: {
+            id: 's23',
+            userId: 'u23',
+            expiresAt: new Date(Date.now() + 100000),
+            token: 't23',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          user: {
+            id: 'u23',
+            email: 'admin@test.com',
+            emailVerified: true,
+            name: 'Admin',
+            role: 'admin',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        } as unknown)
+
+      const req = new Request(
+        'http://localhost:8000/api/businesses/biz-1/coupons',
+        { method: 'POST' },
+      )
+      const res = await applyMiddleware(
+        req,
+        () => Promise.resolve(new Response('OK')),
+      )
+      assertEquals(res.status, 200)
+      assertEquals(await res.text(), 'OK')
+    },
+  )
 
   await t.step('blocks resident from /business page', async () => {
     ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
