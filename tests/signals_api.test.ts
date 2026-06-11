@@ -7,6 +7,7 @@ import { handleListSignals } from '../routes/api/admin/signals/index.ts'
 import { handleReviewSignal } from '../routes/api/admin/signals/[id]/review.ts'
 import {
   type DemandSignal,
+  getCategoryIndexKey,
   getSignalKey,
   getCategoryCountKey,
 } from '../lib/signals.ts'
@@ -173,9 +174,13 @@ Deno.test('Signal creation', async (t) => {
       const catCount = await kv.get<number>(getCategoryCountKey('Náutica'))
       assertEquals(catCount.value, 2)
 
-      const indexIter = kv.list({ prefix: ['signals_by_category', 'Náutica'] })
+      const indexIter = kv.list<{ signalId: string; reviewed: boolean }>(
+        { prefix: ['signals_by_category', 'Náutica'] },
+      )
       let idxCount = 0
-      for await (const _ of indexIter) {
+      for await (const entry of indexIter) {
+        assertEquals(typeof entry.value.signalId, 'string')
+        assertEquals(entry.value.reviewed, false)
         idxCount++
       }
       assertEquals(idxCount, 2)
@@ -276,6 +281,10 @@ Deno.test('Signal review', async (t) => {
 
       const stored = await kv.get<DemandSignal>(getSignalKey(signal.id))
       assertEquals(stored.value!.reviewed, true)
+
+      const catIdxKey = getCategoryIndexKey(signal.category, signal.createdAt, signal.id)
+      const catIdxEntry = await kv.get<{ signalId: string; reviewed: boolean }>(catIdxKey)
+      assertEquals(catIdxEntry.value!.reviewed, true)
     } finally {
       kv.close()
     }

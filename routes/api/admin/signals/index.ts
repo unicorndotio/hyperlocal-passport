@@ -63,17 +63,13 @@ export async function getCategoryCounts(
     const countEntry = await kvInstance.get<number>(countKey)
     const total = countEntry.value ?? 0
 
-    const unreviewedIter = kvInstance.list<DemandSignal>({
+    const unreviewedIter = kvInstance.list<{ signalId: string; reviewed: boolean }>({
       prefix: ['signals_by_category', category],
     })
 
     let unreviewedCount = 0
     for await (const entry of unreviewedIter) {
-      const signalId = entry.value as unknown as string
-      const signalEntry = await kvInstance.get<DemandSignal>(
-        ['signals', signalId],
-      )
-      if (signalEntry.value && !signalEntry.value.reviewed) {
+      if (!entry.value.reviewed) {
         unreviewedCount++
       }
     }

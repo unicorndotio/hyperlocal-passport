@@ -2,6 +2,7 @@ import { define } from '../../../../../utils.ts'
 import { kv } from '../../../../../lib/kv.ts'
 import {
   type DemandSignal,
+  getCategoryIndexKey,
   getSignalKey,
 } from '../../../../../lib/signals.ts'
 
@@ -29,9 +30,11 @@ export async function handleReviewSignal(
 
   signal.reviewed = true
 
+  const categoryIndexKey = getCategoryIndexKey(signal.category, signal.createdAt, signalId)
   const atomic = kvInstance.atomic()
     .check(signalEntry)
     .set(getSignalKey(signalId), signal)
+    .set(categoryIndexKey, { signalId, reviewed: true })
 
   const result = await atomic.commit()
   if (!result.ok) {

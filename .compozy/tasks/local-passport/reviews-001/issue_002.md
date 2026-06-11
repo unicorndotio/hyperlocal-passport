@@ -3,7 +3,7 @@ provider: manual
 pr:
 round: 1
 round_created_at: 2026-06-10T20:00:00Z
-status: pending
+status: resolved
 file: routes/api/admin/signals/index.ts
 line: 66
 severity: high
@@ -33,5 +33,11 @@ Option A is simpler and recommended for V1.
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Root cause: `getCategoryCounts` iterates all category index entries and fetches each full signal record just to read the `reviewed` boolean. With 7 categories and N signals, this is C + N = 7 + N KV round-trips.
+- Fix approach (Option A): Change the category index value from `signalId` (string) to `{ signalId, reviewed }` (object). Then:
+  1. **Write path** (`routes/api/signals/index.ts`): Store `{ signalId, reviewed: false }` in the index entry.
+  2. **Read path** (`routes/api/admin/signals/index.ts`): Read `reviewed` directly from the index entry value — eliminates N individual signal fetches.
+  3. **Review path** (`routes/api/admin/signals/[id]/review.ts`): When a signal is reviewed, also update the category index entry to set `reviewed: true`.
+- Result: `getCategoryCounts` drops from C + S KV ops to C + S list iterations (no individual signal gets). The list iteration does not count as individual KV round-trips since Deno KV `list` batches results.
+- Verification: all 110 tests pass (0 failed). `deno lint` passes. Pre-existing type-check errors (2, unrelated: `main.ts` and `routes/index.tsx` `ctx.state.shared`) and `deno fmt --check` issues (30 files, pre-existing) are unrelated to these changes.
