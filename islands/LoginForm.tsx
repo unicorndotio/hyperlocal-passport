@@ -25,15 +25,19 @@ export default function LoginForm() {
       const { data, error: authError } = await signIn.email({
         email,
         password,
-        callbackURL: '/admin/approvals', // Default for now, can be improved
       })
 
       if (authError) {
         setError(authError.message || 'Credenciais inválidas')
       } else if (data) {
-        // Successful login - Better Auth handles the redirect if callbackURL is provided
-        // or we can manually redirect if needed.
-        globalThis.location.href = '/admin/approvals'
+        const role = (data.user as { role?: string })?.role
+        if (role === 'admin') {
+          globalThis.location.href = '/admin/approvals'
+        } else if (role === 'business') {
+          globalThis.location.href = '/business/profile'
+        } else {
+          globalThis.location.href = '/'
+        }
       }
     } catch (err) {
       setError('Erro ao tentar entrar. Tente novamente.')

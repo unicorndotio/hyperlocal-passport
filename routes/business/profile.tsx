@@ -4,6 +4,7 @@ import { kv } from '@/lib/kv.ts'
 import { getDenoKvAdapterRaw } from '@/lib/kv-adapter.ts'
 import type { Business } from '@/lib/business.ts'
 import BusinessProfileEditor from '@/islands/BusinessProfileEditor.tsx'
+import BusinessHeader from '@/components/BusinessHeader.tsx'
 import {
   Card,
   CardContent,
@@ -59,40 +60,7 @@ export default define.page(async function BusinessProfilePage(ctx) {
 
   return (
     <div className='min-h-screen bg-slate-50'>
-      <header className='bg-white border-b sticky top-0 z-10'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between'>
-          <div className='flex items-center gap-8'>
-            <h1 className='text-xl font-bold text-slate-900'>
-              Painel do Lojista
-            </h1>
-            <nav className='flex items-center gap-4'>
-              <a
-                href='/business/coupons'
-                className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
-              >
-                Meus Cupons
-              </a>
-              <span className='text-slate-300'>|</span>
-              <a
-                href='/business/checkout'
-                className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
-              >
-                Validar Cupom
-              </a>
-              <span className='text-slate-300'>|</span>
-              <a
-                href='/business/profile'
-                className='text-sm font-semibold text-blue-600 transition-colors'
-              >
-                Meu Perfil
-              </a>
-            </nav>
-          </div>
-          <div className='flex items-center gap-4 text-sm font-medium text-slate-700'>
-            <span>{business.name}</span>
-          </div>
-        </div>
-      </header>
+      <BusinessHeader active='profile' businessName={business.name} />
 
       <main className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <BusinessProfileEditor business={business} />
