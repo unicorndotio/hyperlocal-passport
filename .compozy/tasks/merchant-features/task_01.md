@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Coupon Data Model + CouponEngine
 type: backend
 complexity: medium

@@ -1,6 +1,7 @@
 import { define } from '../../../../utils.ts'
 import { kv } from '../../../../lib/kv.ts'
 import { getDenoKvAdapterRaw } from '../../../../lib/kv-adapter.ts'
+import { validateBehavior } from '../../../../lib/coupon.ts'
 const adapter = getDenoKvAdapterRaw(kv)
 
 export const handler = define.handlers({
@@ -26,18 +27,25 @@ export const handler = define.handlers({
       return new Response('Title is required', { status: 400 })
     }
 
+    let behavior
+    if (data.behavior !== undefined) {
+      const result = validateBehavior(data.behavior)
+      if (!result.valid) {
+        return new Response(result.message, { status: 400 })
+      }
+      behavior = result.behavior
+    } else {
+      behavior = { type: 'percentage_discount', percent: 10 }
+    }
+
     const coupon = await adapter.create({
       model: 'coupons',
       data: {
         businessId,
-        type: data.type || 'basic',
         title: data.title,
-        discountPercent: data.discountPercent,
         description: data.description,
-        globalLimit: data.globalLimit,
-        globalClaimedCount: 0,
-        userMonthlyLimit: data.userMonthlyLimit,
-        validUntil: data.validUntil,
+        behavior,
+        restrictions: data.restrictions || {},
         isActive: data.isActive !== false,
         createdAt: new Date().toISOString(),
       },

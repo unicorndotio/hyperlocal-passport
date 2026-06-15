@@ -4,6 +4,12 @@ import { kv } from '@/lib/kv.ts'
 import { getDenoKvAdapterRaw } from '@/lib/kv-adapter.ts'
 import type { Business } from '@/lib/business.ts'
 import { Coupon, Redemption, Transaction } from '@/lib/coupon.ts'
+import {
+  calculate as couponCalculate,
+  checkMinimumPurchase,
+  validateRedemption,
+} from '@/lib/coupon-engine.ts'
+import { validationCountKey } from '@/lib/analytics.ts'
 
 const adapter = getDenoKvAdapterRaw(kv)
 
@@ -28,14 +34,9 @@ export const handler = define.handlers({
       return new Response('Invalid JSON body', { status: 400 })
     }
 
-    const { code, amountCents } = body
+    const { code, amountCents, quantity } = body
     if (!code) {
       return new Response('Missing redemption code', { status: 400 })
-    }
-    if (typeof amountCents !== 'number' || amountCents <= 0) {
-      return new Response('Invalid amountCents: must be a positive number', {
-        status: 400,
-      })
     }
 
     // 1. Find business associated with the user
@@ -89,19 +90,79 @@ export const handler = define.handlers({
     }
 
     // 5. Verify Coupon validity
-    if (!coupon.isActive) {
-      return new Response('Coupon is no longer active', { status: 400 })
-    }
-    if (coupon.validUntil && coupon.validUntil < Date.now()) {
-      return new Response('Coupon has expired', { status: 400 })
+    const validityCheck = validateRedemption(coupon)
+    if (!validityCheck.valid) {
+      return new Response(validityCheck.reason, { status: 400 })
     }
 
-    // 6. Calculate Math
-    const discountPercent = coupon.discountPercent || 0
-    const discountApplied = Math.floor(amountCents * (discountPercent / 100))
-    const finalAmount = amountCents - discountApplied
+    // 6. Validate amountCents/quantity based on behavior type
+    const behaviorType = coupon.behavior.type
+    const isQuantityBased = behaviorType === 'bogo' ||
+      behaviorType === 'item_specific'
 
-    // 7. Atomic Update
+    if (isQuantityBased) {
+      if (
+        typeof quantity !== 'number' || quantity <= 0 ||
+        !Number.isInteger(quantity)
+      ) {
+        return new Response(
+          `Quantity is required for ${behaviorType} coupons and must be a positive integer`,
+          { status: 400 },
+        )
+      }
+      if (amountCents !== undefined && amountCents !== null) {
+        if (typeof amountCents !== 'number' || amountCents <= 0) {
+          return new Response(
+            'Invalid amountCents: must be a positive number',
+            { status: 400 },
+          )
+        }
+        const unitPrice = 'unitPriceCents' in coupon.behavior
+          ? coupon.behavior.unitPriceCents
+          : 0
+        const expectedCents = unitPrice * quantity
+        if (amountCents !== expectedCents) {
+          return new Response(
+            `amountCents mismatch: expected ${expectedCents}, got ${amountCents}`,
+            { status: 400 },
+          )
+        }
+      }
+    } else {
+      if (typeof amountCents !== 'number' || amountCents <= 0) {
+        return new Response('Invalid amountCents: must be a positive number', {
+          status: 400,
+        })
+      }
+    }
+
+    // 7. Calculate discount using CouponEngine
+    const calcResult = couponCalculate({
+      behavior: coupon.behavior,
+      amountCents: amountCents ?? 0,
+      quantity: quantity ?? undefined,
+    })
+
+    // 8. Check minimum purchase value
+    if (
+      !checkMinimumPurchase(
+        calcResult.totalAmountCents,
+        coupon.restrictions.minimumPurchaseValueCents,
+      )
+    ) {
+      const minVal = coupon.restrictions.minimumPurchaseValueCents!
+      return new Response(
+        `Minimum purchase value of R$ ${(minVal / 100).toFixed(2)} not met`,
+        { status: 400 },
+      )
+    }
+
+    // 9. Read analytics validation counter
+    const validationKey = validationCountKey(coupon.id)
+    const validationRes = await kv.get<number>(validationKey)
+    const validationCount = validationRes.value ?? 0
+
+    // 10. Atomic Update
     const transactionId = crypto.randomUUID()
     const now = Date.now()
 
@@ -111,9 +172,9 @@ export const handler = define.handlers({
       couponId: coupon.id,
       businessId: businessId,
       userId: redemption.userId,
-      totalAmount: amountCents,
-      discountApplied,
-      finalAmount,
+      totalAmountCents: calcResult.totalAmountCents,
+      discountAppliedCents: calcResult.discountAppliedCents,
+      finalAmountCents: calcResult.finalAmountCents,
       timestamp: now,
     }
 
@@ -125,6 +186,7 @@ export const handler = define.handlers({
 
     const atomic = kv.atomic()
       .check(redemptionRes)
+      .check(validationRes)
       .set(['redemptions', code], updatedRedemption)
       .set(
         ['user_redemptions', redemption.userId, redemption.redeemedAt],
@@ -133,6 +195,7 @@ export const handler = define.handlers({
       .set(['transactions', transactionId], transaction)
       .set(['business_transactions', businessId, now], transaction)
       .set(['user_transactions', redemption.userId, now], transaction)
+      .set(validationKey, validationCount + 1)
 
     const result = await atomic.commit()
     if (!result.ok) {
@@ -142,9 +205,20 @@ export const handler = define.handlers({
       )
     }
 
+    const responseQuantity =
+      behaviorType === 'bogo' || behaviorType === 'item_specific'
+        ? (quantity ?? undefined)
+        : undefined
+    const unitPriceCents = 'unitPriceCents' in coupon.behavior
+      ? coupon.behavior.unitPriceCents
+      : undefined
+
     return Response.json({
       transaction,
       redemption: updatedRedemption,
+      behaviorType,
+      quantity: responseQuantity,
+      unitPriceCents,
     })
   },
 })

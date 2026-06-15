@@ -54,6 +54,19 @@ export function validateOpeningHourOrder(open: string, close: string): boolean {
   return open < close
 }
 
+export function filterOpeningHours(
+  openingHours: OpeningHours,
+  removedDays: Set<string>,
+): OpeningHours {
+  const result: OpeningHours = {}
+  for (const [day, entry] of Object.entries(openingHours)) {
+    if (!removedDays.has(day) && entry?.open && entry?.close) {
+      result[day] = entry
+    }
+  }
+  return result
+}
+
 export default function BusinessProfileEditor({ business }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -70,6 +83,7 @@ export default function BusinessProfileEditor({ business }: Props) {
     business.openingHours || {},
   )
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [removedDays, setRemovedDays] = useState<Set<string>>(new Set())
 
   function handleLogoChange(e: JSX.TargetedEvent<HTMLInputElement, Event>) {
     const file = e.currentTarget.files?.[0] || null
@@ -98,6 +112,18 @@ export default function BusinessProfileEditor({ business }: Props) {
     })
   }
 
+  function removeDay(day: string) {
+    setRemovedDays((prev) => new Set([...prev, day]))
+  }
+
+  function addDay(day: string) {
+    setRemovedDays((prev) => {
+      const next = new Set(prev)
+      next.delete(day)
+      return next
+    })
+  }
+
   function validate(): boolean {
     const errors: Record<string, string> = {}
 
@@ -108,6 +134,7 @@ export default function BusinessProfileEditor({ business }: Props) {
     }
 
     for (const day of DAYS) {
+      if (removedDays.has(day)) continue
       const entry = openingHours[day]
       if (entry?.open || entry?.close) {
         if (!validateOpeningHourTime(entry.open || '')) {
@@ -150,13 +177,7 @@ export default function BusinessProfileEditor({ business }: Props) {
       }
       formData.append('socialLinks', JSON.stringify(sl))
 
-      const oh: Record<string, OpeningHoursEntry> = {}
-      for (const day of DAYS) {
-        const entry = openingHours[day]
-        if (entry?.open && entry?.close) {
-          oh[day] = entry
-        }
-      }
+      const oh = filterOpeningHours(openingHours, removedDays)
       formData.append('openingHours', JSON.stringify(oh))
 
       if (logoFile) {
@@ -320,6 +341,25 @@ export default function BusinessProfileEditor({ business }: Props) {
             </label>
             <div className='space-y-2'>
               {DAYS.map((day) => {
+                if (removedDays.has(day)) {
+                  return (
+                    <div
+                      key={day}
+                      className='grid grid-cols-[140px_1fr] gap-3 items-start'
+                    >
+                      <span className='text-sm font-medium text-slate-700 pt-2'>
+                        {DAY_LABELS[day]}
+                      </span>
+                      <button
+                        type='button'
+                        onClick={() => addDay(day)}
+                        className='text-sm text-blue-600 hover:text-blue-800 font-medium pt-2 text-left'
+                      >
+                        + Add {DAY_LABELS[day]}
+                      </button>
+                    </div>
+                  )
+                }
                 const entry = openingHours[day] || { open: '', close: '' }
                 const openErr = formErrors[`hours_${day}_open`]
                 const closeErr = formErrors[`hours_${day}_close`]
@@ -328,7 +368,7 @@ export default function BusinessProfileEditor({ business }: Props) {
                 return (
                   <div
                     key={day}
-                    className='grid grid-cols-[140px_1fr_1fr] gap-3 items-start'
+                    className='grid grid-cols-[140px_1fr_1fr_auto] gap-3 items-start'
                   >
                     <span className='text-sm font-medium text-slate-700 pt-2'>
                       {DAY_LABELS[day]}
@@ -383,8 +423,15 @@ export default function BusinessProfileEditor({ business }: Props) {
                         </p>
                       )}
                     </div>
+                    <button
+                      type='button'
+                      onClick={() => removeDay(day)}
+                      className='text-sm text-red-600 hover:text-red-800 font-medium pt-2 whitespace-nowrap'
+                    >
+                      Remove
+                    </button>
                     {dayErr && (
-                      <div className='col-span-3'>
+                      <div className='col-span-4'>
                         <p className='text-xs text-red-500'>{dayErr}</p>
                       </div>
                     )}

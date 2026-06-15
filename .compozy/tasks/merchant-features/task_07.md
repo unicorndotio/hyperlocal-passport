@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: CheckoutCalculator Island with Quantity Input
 type: frontend
 complexity: medium
@@ -33,12 +33,12 @@ Update the CheckoutCalculator island to conditionally show a quantity input fiel
 
 ## Subtasks
 
-- [ ] 7.1 Add conditional rendering logic that shows quantity input for BOGO/item-specific coupons
-- [ ] 7.2 Implement quantity input component with validation (positive integer, min 1)
-- [ ] 7.3 Update the API call to include quantity in the request body when applicable
-- [ ] 7.4 Redesign the success display to show itemized discount breakdown
-- [ ] 7.5 Add error display for server-side validation messages
-- [ ] 7.6 Write island component tests
+- [x] 7.1 Add conditional rendering logic that shows quantity input for BOGO/item-specific coupons
+- [x] 7.2 Implement quantity input component with validation (positive integer, min 1)
+- [x] 7.3 Update the API call to include quantity in the request body when applicable
+- [x] 7.4 Redesign the success display to show itemized discount breakdown
+- [x] 7.5 Add error display for server-side validation messages
+- [x] 7.6 Write island component tests
 
 ## Implementation Details
 
@@ -76,15 +76,15 @@ See TechSpec "Component Overview" section for CheckoutCalculator responsibility.
 ## Tests
 
 - Component tests:
-  - [ ] Amount input shown for percentage_discount coupon
-  - [ ] Amount input shown for fixed_amount coupon
-  - [ ] Quantity input shown for bogo coupon
-  - [ ] Quantity input shown for item_specific coupon
-  - [ ] Quantity input rejects non-positive values
-  - [ ] Success display shows unit price, quantity, subtotal, discount, final amount
-  - [ ] API call includes quantity in body when quantity input is shown
-  - [ ] API call omits quantity when amount input is shown
-  - [ ] Server error messages are displayed to the user
+  - [x] Amount input shown for percentage_discount coupon
+  - [x] Amount input shown for fixed_amount coupon
+  - [x] Quantity input shown for bogo coupon
+  - [x] Quantity input shown for item_specific coupon
+  - [x] Quantity input rejects non-positive values
+  - [x] Success display shows unit price, quantity, subtotal, discount, final amount
+  - [x] API call includes quantity in body when quantity input is shown
+  - [x] API call omits quantity when amount input is shown
+  - [x] Server error messages are displayed to the user
 - Test coverage target: >=80%
 - All tests must pass
 

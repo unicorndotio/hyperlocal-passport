@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Validate API with Multi-Behavior Dispatch
 type: backend
 complexity: high
@@ -36,13 +36,13 @@ Rewrite the checkout validation endpoint (`POST /api/transactions/validate`) to 
 
 ## Subtasks
 
-- [ ] 4.1 Update request body type to accept optional `quantity` field alongside `code` and `amountCents`
-- [ ] 4.2 Add behavior-type-aware dispatch: `percent`/`fixed` use `amountCents` as-is; `bogo`/`item-specific` require `quantity` and calculate server-side
-- [ ] 4.3 Integrate `CouponEngine.calculate()` for discount computation
-- [ ] 4.4 Add minimum purchase value check before processing validation
-- [ ] 4.5 Add analytics validation counter increment to the atomic transaction
-- [ ] 4.6 Update atomic transaction to use the new Transaction shape
-- [ ] 4.7 Write comprehensive integration tests covering all behavior types and error paths
+- [x] 4.1 Update request body type to accept optional `quantity` field alongside `code` and `amountCents`
+- [x] 4.2 Add behavior-type-aware dispatch: `percent`/`fixed` use `amountCents` as-is; `bogo`/`item-specific` require `quantity` and calculate server-side
+- [x] 4.3 Integrate `CouponEngine.calculate()` for discount computation
+- [x] 4.4 Add minimum purchase value check before processing validation
+- [x] 4.5 Add analytics validation counter increment to the atomic transaction
+- [x] 4.6 Update atomic transaction to use the new Transaction shape
+- [x] 4.7 Write comprehensive integration tests covering all behavior types and error paths
 
 ## Implementation Details
 
@@ -84,19 +84,19 @@ See TechSpec ADR-004 for the quantity field design and TechSpec "Data Flow" sect
 ## Tests
 
 - Integration tests (`tests/checkout_api.test.ts`):
-  - [ ] `percentage_discount` validation with amountCents — works as before
-  - [ ] `fixed_amount` validation with amountCents — discount capped at amountCents
-  - [ ] `bogo` validation with quantity — server-calculates total and discount
-  - [ ] `item_specific` validation with quantity — server-calculates per-unit discount
-  - [ ] BOGO without quantity returns 400
-  - [ ] Item-specific without quantity returns 400
-  - [ ] Minimum purchase value below threshold returns 400 with descriptive message
-  - [ ] Minimum purchase value at/above threshold succeeds
-  - [ ] Minimum purchase value not set — no check performed
-  - [ ] Analytics validation counter increments on success
-  - [ ] Already-used redemption returns appropriate error
-  - [ ] Expired coupon returns appropriate error
-  - [ ] Unauthorized role returns 403
+  - [x] `percentage_discount` validation with amountCents — works as before
+  - [x] `fixed_amount` validation with amountCents — discount capped at amountCents
+  - [x] `bogo` validation with quantity — server-calculates total and discount
+  - [x] `item_specific` validation with quantity — server-calculates per-unit discount
+  - [x] BOGO without quantity returns 400
+  - [x] Item-specific without quantity returns 400
+  - [x] Minimum purchase value below threshold returns 400 with descriptive message
+  - [x] Minimum purchase value at/above threshold succeeds
+  - [x] Minimum purchase value not set — no check performed
+  - [x] Analytics validation counter increments on success
+  - [x] Already-used redemption returns appropriate error
+  - [x] Expired coupon returns appropriate error
+  - [x] Unauthorized role returns 403
 - Test coverage target: >=80%
 - All tests must pass
 

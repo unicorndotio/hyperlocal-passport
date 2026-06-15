@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Admin Coupon Management
 type: backend
 complexity: medium
@@ -34,12 +34,12 @@ Implement admin coupon management endpoints and UI for cross-business coupon CRU
 
 ## Subtasks
 
-- [ ] 11.1 Implement `GET /api/admin/coupons` API handler with filtering and pagination
-- [ ] 11.2 Implement `PUT /api/admin/coupons/[id]` API handler for admin updates
-- [ ] 11.3 Implement `DELETE /api/admin/coupons/[id]` API handler for admin deletes
-- [ ] 11.4 Build AdminCoupons island with coupon table, filters, and inline actions
-- [ ] 11.5 Create `/admin/coupons` page route
-- [ ] 11.6 Write integration tests for admin coupon API endpoints
+- [x] 11.1 Implement `GET /api/admin/coupons` API handler with filtering and pagination
+- [x] 11.2 Implement `PUT /api/admin/coupons/[id]` API handler for admin updates
+- [x] 11.3 Implement `DELETE /api/admin/coupons/[id]` API handler for admin deletes
+- [x] 11.4 Build AdminCoupons island with coupon table, filters, and inline actions
+- [x] 11.5 Create `/admin/coupons` page route
+- [x] 11.6 Write integration tests for admin coupon API endpoints
 
 ## Implementation Details
 
@@ -77,12 +77,12 @@ The page route at `routes/admin/coupons.tsx` renders the AdminCoupons island. It
 ## Tests
 
 - Integration tests:
-  - [ ] GET `/api/admin/coupons` lists all coupons with correct shape
-  - [ ] GET with businessId filter returns only that business's coupons
-  - [ ] GET with status filter returns only active/inactive coupons
-  - [ ] PUT updates any coupon regardless of ownership
-  - [ ] DELETE removes any coupon regardless of ownership
-  - [ ] Unauthorized (non-admin) returns 403
+  - [x] GET `/api/admin/coupons` lists all coupons with correct shape
+  - [x] GET with businessId filter returns only that business's coupons
+  - [x] GET with status filter returns only active/inactive coupons
+  - [x] PUT updates any coupon regardless of ownership
+  - [x] DELETE removes any coupon regardless of ownership
+  - [x] Unauthorized (non-admin) returns 403
 - Component tests:
   - [ ] AdminCoupons renders coupon table with all columns
   - [ ] Inline edit updates coupon correctly

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Coupon CRUD API + Tests
 type: backend
 complexity: medium
@@ -33,10 +33,10 @@ Update the coupon creation (POST) and update (PATCH) API endpoints to validate a
 
 ## Subtasks
 
-- [ ] 2.1 Update POST handler validation in `routes/api/businesses/[id]/coupons.ts` for behavior-type-specific required fields
-- [ ] 2.2 Update PATCH handler validation in `routes/api/coupons/[id].ts` for partial updates on new shape
-- [ ] 2.3 Verify GET and DELETE handlers work correctly with new shape (no logic change expected)
-- [ ] 2.4 Write comprehensive test cases for CRUD with all behavior types
+- [x] 2.1 Update POST handler validation in `routes/api/businesses/[id]/coupons.ts` for behavior-type-specific required fields
+- [x] 2.2 Update PATCH handler validation in `routes/api/coupons/[id].ts` for partial updates on new shape
+- [x] 2.3 Verify GET and DELETE handlers work correctly with new shape (no logic change expected)
+- [x] 2.4 Write comprehensive test cases for CRUD with all behavior types
 
 ## Implementation Details
 
@@ -70,16 +70,16 @@ Reference TechSpec "API Endpoints" section for the modified endpoint list.
 ## Tests
 
 - Integration tests (`tests/coupon_api.test.ts`):
-  - [ ] Create coupon with `percentage_discount` behavior succeeds
-  - [ ] Create coupon with `fixed_amount` behavior succeeds
-  - [ ] Create coupon with `bogo` behavior succeeds (requires buyQuantity, freeQuantity, unitPriceCents)
-  - [ ] Create coupon with `item_specific` behavior succeeds (requires unitPriceCents, discountPerUnitCents)
-  - [ ] Create coupon with all restriction fields succeeds
-  - [ ] Create coupon omitting required behavior field returns 400
-  - [ ] Create coupon with invalid behavior type returns 400
-  - [ ] Update behavior on existing coupon succeeds
-  - [ ] Update restrictions partially succeeds
-  - [ ] Delete coupon with new shape succeeds
+  - [x] Create coupon with `percentage_discount` behavior succeeds
+  - [x] Create coupon with `fixed_amount` behavior succeeds
+  - [x] Create coupon with `bogo` behavior succeeds (requires buyQuantity, freeQuantity, unitPriceCents)
+  - [x] Create coupon with `item_specific` behavior succeeds (requires unitPriceCents, discountPerUnitCents)
+  - [x] Create coupon with all restriction fields succeeds
+  - [x] Create coupon omitting required behavior field returns 400
+  - [x] Create coupon with invalid behavior type returns 400
+  - [x] Update behavior on existing coupon succeeds
+  - [x] Update restrictions partially succeeds
+  - [x] Delete coupon with new shape succeeds
 - Test coverage target: >=80%
 - All tests must pass
 

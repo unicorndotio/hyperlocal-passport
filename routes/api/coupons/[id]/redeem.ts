@@ -1,11 +1,13 @@
 import { define } from '../../../../utils.ts'
 import { auth } from '../../../../lib/auth.ts'
 import { kv } from '../../../../lib/kv.ts'
+import { redemptionCountKey } from '../../../../lib/analytics.ts'
 import {
   Coupon,
   generateRedemptionCode,
   Redemption,
 } from '../../../../lib/coupon.ts'
+import { validateRedemption } from '../../../../lib/coupon-engine.ts'
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -30,16 +32,17 @@ export const handler = define.handlers({
       return new Response('Coupon is not active', { status: 400 })
     }
 
-    // 2. Check validUntil
-    if (coupon.validUntil && coupon.validUntil < Date.now()) {
-      return new Response('Coupon has expired', { status: 400 })
-    }
+    // 2. Read analytics redemption counter for global cap enforcement
+    const analyticsKey = redemptionCountKey(couponId)
+    const analyticsRes = await kv.get<number>(analyticsKey)
+    const redemptionCount = analyticsRes.value ?? 0
 
-    // 3. Check globalLimit (pre-check, will be atomic later)
-    if (coupon.globalLimit !== undefined && coupon.globalLimit !== null) {
-      if (coupon.globalClaimedCount >= coupon.globalLimit) {
-        return new Response('Global limit reached', { status: 400 })
-      }
+    // 3. Check validity via CouponEngine
+    const validation = validateRedemption(coupon, {
+      globalRedemptionCount: redemptionCount,
+    })
+    if (!validation.valid) {
+      return new Response(validation.reason, { status: 400 })
     }
 
     // 4. Check userMonthlyLimit
@@ -55,9 +58,10 @@ export const handler = define.handlers({
     const currentMonthlyCount = monthlyCounterRes.value || 0
 
     if (
-      coupon.userMonthlyLimit && currentMonthlyCount >= coupon.userMonthlyLimit
+      coupon.restrictions.userCap &&
+      currentMonthlyCount >= coupon.restrictions.userCap
     ) {
-      return new Response('User monthly limit reached', { status: 400 })
+      return new Response('User limit reached', { status: 400 })
     }
 
     // 5. Generate redemption code and attempt atomic update
@@ -75,18 +79,13 @@ export const handler = define.handlers({
 
     const atomic = kv.atomic()
       .check(couponRes) // Ensure coupon hasn't changed since we read it
+      .check(analyticsRes) // Ensure analytics counter hasn't changed
       .check(monthlyCounterRes) // Ensure user limit hasn't changed
       .check({ key: ['redemptions', redemptionId], versionstamp: null }) // Ensure code is unique
       .set(['redemptions', redemptionId], redemption)
       .set(['user_redemptions', userId, nowMs], redemption)
       .set(monthlyCounterKey, currentMonthlyCount + 1)
-
-    // Increment globalClaimedCount if limit exists
-    const updatedCoupon = {
-      ...coupon,
-      globalClaimedCount: coupon.globalClaimedCount + 1,
-    }
-    atomic.set(['coupons', couponId], updatedCoupon)
+      .set(analyticsKey, redemptionCount + 1)
 
     const result = await atomic.commit()
 

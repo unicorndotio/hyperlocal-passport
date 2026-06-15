@@ -4,190 +4,300 @@ import {
   assertNotMatch,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { generateRedemptionCode } from '../lib/coupon.ts'
-import { Coupon, Redemption } from '../lib/coupon.ts'
+import type { BehaviorType, Coupon } from '../lib/coupon.ts'
+import {
+  calculate,
+  checkMinimumPurchase,
+  validateRedemption,
+} from '../lib/coupon-engine.ts'
 
 Deno.test('Coupon Engine - Code Generator', () => {
   const code = generateRedemptionCode(6)
   assertEquals(code.length, 6)
-  // Should only contain allowed chars (no 0, 1, O, I, L)
   assertMatch(code, /^[2-9ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/)
   assertNotMatch(code, /[01OIL]/)
 })
 
-Deno.test('Coupon Engine - Atomic Redemption Logic', async (t) => {
-  const testKv = await Deno.openKv(':memory:')
+Deno.test('CouponEngine - calculate - percentage_discount', async (t) => {
+  await t.step('exact percent', () => {
+    const behavior: BehaviorType = { type: 'percentage_discount', percent: 10 }
+    const result = calculate({ behavior, amountCents: 10000 })
+    assertEquals(result.totalAmountCents, 10000)
+    assertEquals(result.discountAppliedCents, 1000)
+    assertEquals(result.finalAmountCents, 9000)
+  })
 
-  try {
-    const couponId = 'test_coupon_1'
-    const userId = 'test_user_1'
+  await t.step('floor rounding', () => {
+    const behavior: BehaviorType = { type: 'percentage_discount', percent: 33 }
+    const result = calculate({ behavior, amountCents: 100 })
+    assertEquals(result.discountAppliedCents, 33) // Math.floor(100 * 33 / 100) = 33
+    assertEquals(result.finalAmountCents, 67)
+  })
 
-    const coupon: Coupon = {
-      id: couponId,
-      businessId: 'biz_1',
-      type: 'special',
-      title: 'Limited Coupon',
-      globalLimit: 2,
-      globalClaimedCount: 0,
-      isActive: true,
-      createdAt: new Date().toISOString(),
+  await t.step('zero amountCents', () => {
+    const behavior: BehaviorType = { type: 'percentage_discount', percent: 10 }
+    const result = calculate({ behavior, amountCents: 0 })
+    assertEquals(result.discountAppliedCents, 0)
+    assertEquals(result.finalAmountCents, 0)
+  })
+
+  await t.step('over 100%', () => {
+    const behavior: BehaviorType = { type: 'percentage_discount', percent: 150 }
+    const result = calculate({ behavior, amountCents: 1000 })
+    assertEquals(result.discountAppliedCents, 1500)
+    assertEquals(result.finalAmountCents, -500)
+  })
+})
+
+Deno.test('CouponEngine - calculate - fixed_amount', async (t) => {
+  await t.step('under total', () => {
+    const behavior: BehaviorType = { type: 'fixed_amount', amountCents: 500 }
+    const result = calculate({ behavior, amountCents: 10000 })
+    assertEquals(result.discountAppliedCents, 500)
+    assertEquals(result.finalAmountCents, 9500)
+  })
+
+  await t.step('over total (capped)', () => {
+    const behavior: BehaviorType = { type: 'fixed_amount', amountCents: 5000 }
+    const result = calculate({ behavior, amountCents: 3000 })
+    assertEquals(result.discountAppliedCents, 3000)
+    assertEquals(result.finalAmountCents, 0)
+  })
+
+  await t.step('exact match', () => {
+    const behavior: BehaviorType = { type: 'fixed_amount', amountCents: 5000 }
+    const result = calculate({ behavior, amountCents: 5000 })
+    assertEquals(result.discountAppliedCents, 5000)
+    assertEquals(result.finalAmountCents, 0)
+  })
+
+  await t.step('zero amountCents', () => {
+    const behavior: BehaviorType = { type: 'fixed_amount', amountCents: 500 }
+    const result = calculate({ behavior, amountCents: 0 })
+    assertEquals(result.discountAppliedCents, 0)
+    assertEquals(result.finalAmountCents, 0)
+  })
+})
+
+Deno.test('CouponEngine - calculate - bogo', async (t) => {
+  await t.step('exact sets (buy 2 get 1 free x 3 = 3 free)', () => {
+    const behavior: BehaviorType = {
+      type: 'bogo',
+      buyQuantity: 2,
+      freeQuantity: 1,
+      unitPriceCents: 1000,
     }
+    const result = calculate({ behavior, amountCents: 0, quantity: 9 })
+    // 9 items, groups of (2+1)=3 → 3 sets × 1 free = 3 free
+    // total = 9 × 1000 = 9000
+    // discount = 3 × 1000 = 3000
+    assertEquals(result.totalAmountCents, 9000)
+    assertEquals(result.discountAppliedCents, 3000)
+    assertEquals(result.finalAmountCents, 6000)
+  })
 
-    await testKv.set(['coupons', couponId], coupon)
+  await t.step('partial sets with remainder', () => {
+    const behavior: BehaviorType = {
+      type: 'bogo',
+      buyQuantity: 2,
+      freeQuantity: 1,
+      unitPriceCents: 1000,
+    }
+    const result = calculate({ behavior, amountCents: 0, quantity: 7 })
+    // 7 items, groups of (2+1)=3 → 2 sets × 1 free = 2 free, 1 remainder
+    // total = 7 × 1000 = 7000
+    // discount = 2 × 1000 = 2000
+    assertEquals(result.totalAmountCents, 7000)
+    assertEquals(result.discountAppliedCents, 2000)
+    assertEquals(result.finalAmountCents, 5000)
+  })
 
-    await t.step('successful redemption', async () => {
-      const redemptionId = generateRedemptionCode()
-      const now = Date.now()
+  await t.step('single unit (no free)', () => {
+    const behavior: BehaviorType = {
+      type: 'bogo',
+      buyQuantity: 2,
+      freeQuantity: 1,
+      unitPriceCents: 1000,
+    }
+    const result = calculate({ behavior, amountCents: 0, quantity: 1 })
+    // 1 item, groups of (2+1)=3 → 0 sets
+    assertEquals(result.discountAppliedCents, 0)
+    assertEquals(result.finalAmountCents, 1000)
+  })
 
-      const res = await testKv.get<Coupon>(['coupons', couponId])
-      const c = res.value!
+  await t.step('default quantity = 1 when not provided', () => {
+    const behavior: BehaviorType = {
+      type: 'bogo',
+      buyQuantity: 1,
+      freeQuantity: 1,
+      unitPriceCents: 500,
+    }
+    const result = calculate({ behavior, amountCents: 0 })
+    // 1 item (default), groups of (1+1)=2 → 0 sets
+    assertEquals(result.discountAppliedCents, 0)
+    assertEquals(result.finalAmountCents, 500)
+  })
+})
 
-      const atomic = testKv.atomic()
-        .check(res)
-        .set(['redemptions', redemptionId], {
-          id: redemptionId,
-          couponId,
-          userId,
-          status: 'active',
-          redeemedAt: now,
-        })
-        .set(['user_redemptions', userId, now], {
-          id: redemptionId,
-          couponId,
-          userId,
-          status: 'active',
-          redeemedAt: now,
-        })
-        .set(['coupons', couponId], {
-          ...c,
-          globalClaimedCount: c.globalClaimedCount + 1,
-        })
+Deno.test('CouponEngine - calculate - item_specific', async (t) => {
+  await t.step('single unit', () => {
+    const behavior: BehaviorType = {
+      type: 'item_specific',
+      unitPriceCents: 2000,
+      discountPerUnitCents: 500,
+    }
+    const result = calculate({ behavior, amountCents: 0, quantity: 1 })
+    assertEquals(result.totalAmountCents, 2000)
+    assertEquals(result.discountAppliedCents, 500)
+    assertEquals(result.finalAmountCents, 1500)
+  })
 
-      const commit = await atomic.commit()
-      assertEquals(commit.ok, true)
+  await t.step('multiple units', () => {
+    const behavior: BehaviorType = {
+      type: 'item_specific',
+      unitPriceCents: 2000,
+      discountPerUnitCents: 500,
+    }
+    const result = calculate({ behavior, amountCents: 0, quantity: 4 })
+    assertEquals(result.totalAmountCents, 8000)
+    assertEquals(result.discountAppliedCents, 2000)
+    assertEquals(result.finalAmountCents, 6000)
+  })
 
-      const updatedCoupon = await testKv.get<Coupon>(['coupons', couponId])
-      assertEquals(updatedCoupon.value!.globalClaimedCount, 1)
-    })
+  await t.step('zero quantity', () => {
+    const behavior: BehaviorType = {
+      type: 'item_specific',
+      unitPriceCents: 2000,
+      discountPerUnitCents: 500,
+    }
+    const result = calculate({ behavior, amountCents: 0, quantity: 0 })
+    assertEquals(result.totalAmountCents, 0)
+    assertEquals(result.discountAppliedCents, 0)
+    assertEquals(result.finalAmountCents, 0)
+  })
 
-    await t.step('concurrent redemption - last one wins', async () => {
-      // Current count is 1, limit is 2.
-      // We'll simulate two concurrent reads.
-      const res1 = await testKv.get<Coupon>(['coupons', couponId])
-      const res2 = await testKv.get<Coupon>(['coupons', couponId])
+  await t.step('discount > unit price', () => {
+    const behavior: BehaviorType = {
+      type: 'item_specific',
+      unitPriceCents: 500,
+      discountPerUnitCents: 1000,
+    }
+    const result = calculate({ behavior, amountCents: 0, quantity: 1 })
+    assertEquals(result.totalAmountCents, 500)
+    assertEquals(result.discountAppliedCents, 1000)
+    assertEquals(result.finalAmountCents, -500)
+  })
+})
 
-      const c1 = res1.value!
-      const c2 = res2.value!
-
-      // First one commits
-      const id1 = 'CODE1'
-      const now1 = Date.now()
-      const atomic1 = testKv.atomic()
-        .check(res1)
-        .set(['redemptions', id1], {
-          id: id1,
-          couponId,
-          userId,
-          status: 'active',
-          redeemedAt: now1,
-        })
-        .set(['coupons', couponId], {
-          ...c1,
-          globalClaimedCount: c1.globalClaimedCount + 1,
-        })
-
-      const commit1 = await atomic1.commit()
-      assertEquals(commit1.ok, true)
-
-      // Second one tries to commit with stale versionstamp
-      const id2 = 'CODE2'
-      const now2 = Date.now() + 1
-      const atomic2 = testKv.atomic()
-        .check(res2)
-        .set(['redemptions', id2], {
-          id: id2,
-          couponId,
-          userId,
-          status: 'active',
-          redeemedAt: now2,
-        })
-        .set(['coupons', couponId], {
-          ...c2,
-          globalClaimedCount: c2.globalClaimedCount + 1,
-        })
-
-      const commit2 = await atomic2.commit()
-      assertEquals(commit2.ok, false) // Should fail due to versionstamp mismatch
-    })
-
-    await t.step('reject if expired', async () => {
-      const expCouponId = 'expired_coupon'
-      const expiredCoupon: Coupon = {
-        id: expCouponId,
-        businessId: 'biz_1',
-        type: 'basic',
-        title: 'Expired',
-        globalClaimedCount: 0,
-        validUntil: Date.now() - 1000,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      }
-      await testKv.set(['coupons', expCouponId], expiredCoupon)
-
-      const res = await testKv.get<Coupon>(['coupons', expCouponId])
-      const c = res.value!
-
-      // In the actual handler we check this before atomic.
-      // Here we just verify our logic for rejection.
-      const isExpired = c.validUntil && c.validUntil < Date.now()
-      assertEquals(!!isExpired, true)
-    })
-
-    await t.step('reject if userMonthlyLimit reached', async () => {
-      const limitCouponId = 'limit_coupon'
-      const limitCoupon: Coupon = {
-        id: limitCouponId,
-        businessId: 'biz_1',
-        type: 'basic',
-        title: 'Limited',
-        globalClaimedCount: 0,
-        userMonthlyLimit: 1,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      }
-      await testKv.set(['coupons', limitCouponId], limitCoupon)
-
-      const now = Date.now()
-      const startOfMonth = new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        1,
-      ).getTime()
-
-      // Simulate existing redemption this month
-      await testKv.set(['user_redemptions', userId, now - 1000], {
-        id: 'OLD',
-        couponId: limitCouponId,
-        userId,
-        status: 'active',
-        redeemedAt: now - 1000,
-      })
-
-      // Verification logic as in handler
-      const userRedemptions = testKv.list<Redemption>({
-        prefix: ['user_redemptions', userId],
-      })
-
-      let count = 0
-      for await (const entry of userRedemptions) {
-        const r = entry.value
-        if (r.couponId === limitCouponId && r.redeemedAt >= startOfMonth) {
-          count++
-        }
-      }
-
-      assertEquals(count >= limitCoupon.userMonthlyLimit!, true)
-    })
-  } finally {
-    testKv.close()
+Deno.test('CouponEngine - validateRedemption', async (t) => {
+  const baseCoupon: Coupon = {
+    id: 'test',
+    businessId: 'biz',
+    title: 'Test',
+    behavior: { type: 'percentage_discount', percent: 10 },
+    restrictions: {},
+    isActive: true,
+    createdAt: new Date().toISOString(),
   }
+
+  await t.step('active coupon passes', () => {
+    const result = validateRedemption(baseCoupon)
+    assertEquals(result.valid, true)
+  })
+
+  await t.step('inactive coupon fails', () => {
+    const result = validateRedemption({ ...baseCoupon, isActive: false })
+    assertEquals(result.valid, false)
+    assertEquals(result.reason, 'Coupon is not active')
+  })
+
+  await t.step('expired coupon fails', () => {
+    const result = validateRedemption({
+      ...baseCoupon,
+      restrictions: { validUntil: Date.now() - 10000 },
+    })
+    assertEquals(result.valid, false)
+    assertEquals(result.reason, 'Coupon has expired')
+  })
+
+  await t.step('not yet valid coupon fails', () => {
+    const result = validateRedemption({
+      ...baseCoupon,
+      restrictions: { validFrom: Date.now() + 10000 },
+    })
+    assertEquals(result.valid, false)
+    assertEquals(result.reason, 'Coupon is not yet valid')
+  })
+
+  await t.step('global cap reached fails', () => {
+    const result = validateRedemption(
+      {
+        ...baseCoupon,
+        restrictions: { globalCap: 5 },
+      },
+      { globalRedemptionCount: 5 },
+    )
+    assertEquals(result.valid, false)
+    assertEquals(result.reason, 'Global limit reached')
+  })
+
+  await t.step('global cap not reached passes', () => {
+    const result = validateRedemption(
+      {
+        ...baseCoupon,
+        restrictions: { globalCap: 5 },
+      },
+      { globalRedemptionCount: 3 },
+    )
+    assertEquals(result.valid, true)
+  })
+
+  await t.step('no cap passes regardless of count', () => {
+    const result = validateRedemption(baseCoupon, {
+      globalRedemptionCount: 999,
+    })
+    assertEquals(result.valid, true)
+  })
+
+  await t.step('user cap reached fails', () => {
+    const result = validateRedemption(
+      {
+        ...baseCoupon,
+        restrictions: { userCap: 2 },
+      },
+      { userRedemptionCount: 2 },
+    )
+    assertEquals(result.valid, false)
+    assertEquals(result.reason, 'User limit reached')
+  })
+
+  await t.step('user cap not reached passes', () => {
+    const result = validateRedemption(
+      {
+        ...baseCoupon,
+        restrictions: { userCap: 2 },
+      },
+      { userRedemptionCount: 1 },
+    )
+    assertEquals(result.valid, true)
+  })
+})
+
+Deno.test('CouponEngine - checkMinimumPurchase', async (t) => {
+  await t.step('above threshold passes', () => {
+    assertEquals(checkMinimumPurchase(5000, 3000), true)
+  })
+
+  await t.step('below threshold fails', () => {
+    assertEquals(checkMinimumPurchase(2000, 3000), false)
+  })
+
+  await t.step('no threshold set passes', () => {
+    assertEquals(checkMinimumPurchase(100, undefined), true)
+    assertEquals(checkMinimumPurchase(0, undefined), true)
+  })
+
+  await t.step('exact threshold passes', () => {
+    assertEquals(checkMinimumPurchase(3000, 3000), true)
+  })
 })

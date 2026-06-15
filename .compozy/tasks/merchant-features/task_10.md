@@ -1,10 +1,10 @@
 ---
-status: pending
+status: completed
 title: Business Onboarding Walkthrough
 type: frontend
 complexity: medium
 dependencies:
-  - task_06
+    - task_06
 ---
 
 # Task 10: Business Onboarding Walkthrough

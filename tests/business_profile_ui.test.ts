@@ -129,6 +129,7 @@ Deno.test('BusinessProfileEditor - renders all expected form fields', async () =
   assertStringIncludes(html, 'Sábado')
   assertStringIncludes(html, 'Domingo')
   assertStringIncludes(html, 'Salvar Alterações')
+  assertEquals(html.match(/Remove/g)?.length, 7)
 })
 
 Deno.test(
@@ -201,6 +202,90 @@ Deno.test(
     assertStringIncludes(html, 'Editar Perfil')
   },
 )
+
+// ── filterOpeningHours Pure Logic Tests ─────────────────────────────
+
+Deno.test('BusinessProfileEditor - filterOpeningHours: removes specified days', async () => {
+  const { filterOpeningHours } = await import(
+    '../islands/BusinessProfileEditor.tsx'
+  )
+
+  const oh = {
+    monday: { open: '09:00', close: '18:00' },
+    tuesday: { open: '09:00', close: '18:00' },
+    wednesday: { open: '09:00', close: '18:00' },
+  }
+
+  const removed = new Set(['tuesday'])
+  const result = filterOpeningHours(oh, removed)
+
+  assertEquals(Object.keys(result).length, 2)
+  assertEquals(result.monday, oh.monday)
+  assertEquals(result.wednesday, oh.wednesday)
+  assertEquals(result.tuesday, undefined)
+})
+
+Deno.test('BusinessProfileEditor - filterOpeningHours: keeps all days when none removed', async () => {
+  const { filterOpeningHours } = await import(
+    '../islands/BusinessProfileEditor.tsx'
+  )
+
+  const oh = {
+    monday: { open: '09:00', close: '18:00' },
+    tuesday: { open: '09:00', close: '18:00' },
+  }
+
+  const result = filterOpeningHours(oh, new Set())
+  assertEquals(Object.keys(result).length, 2)
+  assertEquals(result.monday, oh.monday)
+  assertEquals(result.tuesday, oh.tuesday)
+})
+
+Deno.test('BusinessProfileEditor - filterOpeningHours: skips entries without open/close', async () => {
+  const { filterOpeningHours } = await import(
+    '../islands/BusinessProfileEditor.tsx'
+  )
+
+  const oh = {
+    monday: { open: '09:00', close: '18:00' },
+    tuesday: { open: '', close: '' },
+    wednesday: { open: '10:00', close: '' },
+  }
+
+  const result = filterOpeningHours(oh, new Set())
+  assertEquals(Object.keys(result).length, 1)
+  assertEquals(result.monday, oh.monday)
+  assertEquals(result.tuesday, undefined)
+  assertEquals(result.wednesday, undefined)
+})
+
+Deno.test('BusinessProfileEditor - filterOpeningHours: returns empty for all days removed', async () => {
+  const { filterOpeningHours } = await import(
+    '../islands/BusinessProfileEditor.tsx'
+  )
+
+  const oh = {
+    monday: { open: '09:00', close: '18:00' },
+    tuesday: { open: '10:00', close: '19:00' },
+  }
+
+  const result = filterOpeningHours(oh, new Set(['monday', 'tuesday']))
+  assertEquals(Object.keys(result).length, 0)
+})
+
+Deno.test('BusinessProfileEditor - filterOpeningHours: not affected by removal of non-existent days', async () => {
+  const { filterOpeningHours } = await import(
+    '../islands/BusinessProfileEditor.tsx'
+  )
+
+  const oh = {
+    friday: { open: '09:00', close: '18:00' },
+  }
+
+  const result = filterOpeningHours(oh, new Set(['sunday']))
+  assertEquals(Object.keys(result).length, 1)
+  assertEquals(result.friday, oh.friday)
+})
 
 // ── API Submit Logic Tests (Mocked) ─────────────────────────────────
 

@@ -1,9 +1,21 @@
 export default function BusinessHeader(
-  { active, businessName }: { active: 'coupons' | 'checkout' | 'profile'; businessName: string },
+  { active, businessName }: {
+    active: 'coupons' | 'checkout' | 'profile' | 'analytics'
+    businessName: string
+  },
 ) {
   const links = [
     { href: '/business/coupons', label: 'Meus Cupons', id: 'coupons' as const },
-    { href: '/business/checkout', label: 'Validar Cupom', id: 'checkout' as const },
+    {
+      href: '/business/checkout',
+      label: 'Validar Cupom',
+      id: 'checkout' as const,
+    },
+    {
+      href: '/business/analytics',
+      label: 'Analytics',
+      id: 'analytics' as const,
+    },
     { href: '/business/profile', label: 'Meu Perfil', id: 'profile' as const },
   ]
 
@@ -20,11 +32,9 @@ export default function BusinessHeader(
                 {i > 0 && <span className='text-slate-300'>|</span>}
                 <a
                   href={link.href}
-                  className={
-                    active === link.id
-                      ? 'text-sm font-semibold text-blue-600 transition-colors'
-                      : 'text-sm text-slate-500 hover:text-slate-900 transition-colors'
-                  }
+                  className={active === link.id
+                    ? 'text-sm font-semibold text-blue-600 transition-colors'
+                    : 'text-sm text-slate-500 hover:text-slate-900 transition-colors'}
                 >
                   {link.label}
                 </a>

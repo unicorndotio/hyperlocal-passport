@@ -126,6 +126,13 @@ export async function handleProfileUpdate(
       if (err) return json({ error: err }, 400)
       updateData.openingHours = body.openingHours
     }
+
+    if ('hasSeenMerchantOnboarding' in body) {
+      if (typeof body.hasSeenMerchantOnboarding !== 'boolean') {
+        return json({ error: 'hasSeenMerchantOnboarding must be a boolean' }, 400)
+      }
+      updateData.hasSeenMerchantOnboarding = body.hasSeenMerchantOnboarding
+    }
   }
 
   if (Object.keys(updateData).length === 0) {

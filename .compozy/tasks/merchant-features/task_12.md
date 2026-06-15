@@ -1,10 +1,10 @@
 ---
-status: pending
+status: completed
 title: Admin Analytics UI
 type: backend
 complexity: medium
 dependencies:
-  - task_08
+    - task_08
 ---
 
 # Task 12: Admin Analytics UI

@@ -44,12 +44,13 @@ Deno.test('Coupon Management API', async (t) => {
 
       const couponData = {
         title: 'Desconto de Teste',
-        type: 'basic',
-        discountPercent: 15,
+        behavior: { type: 'percentage_discount', percent: 15 },
         description: 'Descrição de teste',
-        globalLimit: 100,
-        userMonthlyLimit: 1,
-        validUntil: Date.now() + 86400000,
+        restrictions: {
+          globalCap: 100,
+          userCap: 1,
+          validUntil: Date.now() + 86400000,
+        },
       }
 
       const req = new Request(
@@ -71,8 +72,8 @@ Deno.test('Coupon Management API', async (t) => {
       const coupon = await res.json()
       assertEquals(coupon.title, couponData.title)
       assertEquals(coupon.businessId, businessId)
-      assertEquals(coupon.discountPercent, 15)
-      assertEquals(coupon.globalClaimedCount, 0)
+      assertEquals(coupon.behavior.percent, 15)
+      assertEquals(coupon.restrictions.globalCap, 100)
       assertExists(coupon.id)
 
       // Verify in KV
@@ -92,7 +93,9 @@ Deno.test('Coupon Management API', async (t) => {
         `http://localhost:8000/api/businesses/${businessId}/coupons`,
         {
           method: 'POST',
-          body: JSON.stringify({ discountPercent: 10 }),
+          body: JSON.stringify({
+            behavior: { type: 'percentage_discount', percent: 10 },
+          }),
         },
       )
 
@@ -145,7 +148,6 @@ Deno.test('CouponManager UI Integration (Mocked)', async (t) => {
             JSON.stringify({
               id: 'new-id',
               ...(capturedBody as Record<string, unknown>),
-              globalClaimedCount: 0,
               isActive: true,
               createdAt: new Date().toISOString(),
             }),

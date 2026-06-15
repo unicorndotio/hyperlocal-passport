@@ -8,6 +8,7 @@ import { auth } from '../lib/auth.ts'
 import { kv } from '../lib/kv.ts'
 import { Coupon, Redemption, Transaction } from '../lib/coupon.ts'
 import { Business } from '../lib/business.ts'
+import { validationCountKey } from '../lib/analytics.ts'
 
 Deno.test('Checkout Validation API', async (t) => {
   const userId = 'user_' + Math.random().toString(36).slice(2)
@@ -33,10 +34,9 @@ Deno.test('Checkout Validation API', async (t) => {
   const coupon: Coupon = {
     id: couponId,
     businessId,
-    type: 'basic',
     title: '15% OFF',
-    discountPercent: 15,
-    globalClaimedCount: 1,
+    behavior: { type: 'percentage_discount', percent: 15 },
+    restrictions: {},
     isActive: true,
     createdAt: new Date().toISOString(),
   }
@@ -100,9 +100,9 @@ Deno.test('Checkout Validation API', async (t) => {
 
       const { transaction, redemption: updatedRedemption } = body
       assertEquals(updatedRedemption.status, 'used')
-      assertEquals(transaction.totalAmount, 10000)
-      assertEquals(transaction.discountApplied, 1500) // 15% of 10000
-      assertEquals(transaction.finalAmount, 8500)
+      assertEquals(transaction.totalAmountCents, 10000)
+      assertEquals(transaction.discountAppliedCents, 1500) // 15% of 10000
+      assertEquals(transaction.finalAmountCents, 8500)
       assertEquals(transaction.businessId, businessId)
 
       // Verify KV
@@ -181,7 +181,10 @@ Deno.test('Checkout Validation API', async (t) => {
         await kv.set(['coupons', expCouponId], {
           ...coupon,
           id: expCouponId,
-          validUntil: Date.now() - 10000,
+          restrictions: {
+            ...coupon.restrictions,
+            validUntil: Date.now() - 10000,
+          },
         })
         await kv.set(['redemptions', expCode], {
           ...redemption,
@@ -245,11 +248,22 @@ Deno.test('Checkout Validation API', async (t) => {
         assertEquals(res.status, 400)
         assertEquals(await res.text(), 'Missing redemption code')
 
+        // Setup a known redemption to test missing amountCents
+        const knownCode = 'AMTCNT'
+        await kv.set(['redemptions', knownCode], {
+          id: knownCode,
+          couponId,
+          businessId,
+          userId,
+          status: 'active',
+          redeemedAt: Date.now(),
+        })
+
         const req2 = new Request(
           'http://localhost:8000/api/transactions/validate',
           {
             method: 'POST',
-            body: JSON.stringify({ code: 'ABC' }), // missing amountCents
+            body: JSON.stringify({ code: knownCode }), // missing amountCents
           },
         )
         const res2 = await (validateHandler as unknown as {
@@ -260,6 +274,8 @@ Deno.test('Checkout Validation API', async (t) => {
           await res2.text(),
           'Invalid amountCents: must be a positive number',
         )
+
+        await kv.delete(['redemptions', knownCode])
       },
     )
 
@@ -347,7 +363,7 @@ Deno.test('Checkout Validation API', async (t) => {
         }).POST({ req })
 
         assertEquals(res.status, 400)
-        assertEquals(await res.text(), 'Coupon is no longer active')
+        assertEquals(await res.text(), 'Coupon is not active')
 
         await kv.delete(['coupons', inactCouponId])
         await kv.delete(['redemptions', inactCode])
@@ -358,5 +374,337 @@ Deno.test('Checkout Validation API', async (t) => {
     await kv.delete(['businesses', businessId])
     await kv.delete(['coupons', couponId])
     await kv.delete(['redemptions', code])
+  }
+})
+
+Deno.test('Checkout Validation API - Multi-Behavior Dispatch', async (t) => {
+  const businessUserId = 'bizuser_mbd_' + Math.random().toString(36).slice(2)
+  const businessId = 'biz_mbd_' + Math.random().toString(36).slice(2)
+
+  const business: Business = {
+    id: businessId,
+    userId: businessUserId,
+    name: 'Multi-Behavior Test Shop',
+    companyName: 'MBD Shop LTDA',
+    cnpj: '12345678000199',
+    category: 'Food',
+    logoUrl: '/logo.png',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  }
+  await kv.set(['businesses', businessId], business)
+
+  let currentRole = 'business'
+  let currentUserId = businessUserId
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    (() => {
+      return Promise.resolve({
+        user: {
+          id: currentUserId,
+          role: currentRole,
+          email: 'business@example.com',
+          emailVerified: true,
+          name: 'Business User',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } satisfies typeof auth.$Infer.Session['user'],
+        session: {
+          id: 'sess_mbd_1',
+          userId: currentUserId,
+          expiresAt: new Date(Date.now() + 3600000),
+          token: 'token_mbd',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } satisfies typeof auth.$Infer.Session['session'],
+      })
+    }) as (...args: unknown[]) => ReturnType<typeof auth.api.getSession>,
+  )
+
+  const createdKeys: string[][] = []
+
+  function makeCoupon(overrides: Partial<Coupon> = {}): Coupon {
+    return {
+      id: 'c_' + Math.random().toString(36).slice(2),
+      businessId,
+      title: 'Test Coupon',
+      behavior: { type: 'percentage_discount', percent: 10 },
+      restrictions: {},
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      ...overrides,
+    }
+  }
+
+  function makeRedemption(
+    couponId: string,
+  ): { code: string; redemption: Redemption } {
+    const code = 'MBD_' + Math.random().toString(36).slice(2, 8).toUpperCase()
+    const redemption: Redemption = {
+      id: code,
+      couponId,
+      businessId,
+      userId: 'user_' + Math.random().toString(36).slice(2),
+      status: 'active',
+      redeemedAt: Date.now(),
+    }
+    return { code, redemption }
+  }
+
+  async function setupCouponAndRedemption(
+    couponOverrides: Partial<Coupon> = {},
+  ): Promise<{ couponId: string; code: string }> {
+    const coupon = makeCoupon(couponOverrides)
+    const { code, redemption } = makeRedemption(coupon.id)
+    await kv.set(['coupons', coupon.id], coupon)
+    await kv.set(['redemptions', code], redemption)
+    createdKeys.push(['coupons', coupon.id], ['redemptions', code])
+    return { couponId: coupon.id, code }
+  }
+
+  async function validateRequest(
+    code: string,
+    body: Record<string, unknown>,
+  ): Promise<Response> {
+    const req = new Request(
+      'http://localhost:8000/api/transactions/validate',
+      {
+        method: 'POST',
+        body: JSON.stringify({ code, ...body }),
+      },
+    )
+    return await (validateHandler as unknown as {
+      POST: (ctx: unknown) => Promise<Response>
+    }).POST({ req })
+  }
+
+  try {
+    await t.step(
+      'fixed_amount validation - discount capped at amountCents',
+      async () => {
+        const { code } = await setupCouponAndRedemption({
+          behavior: { type: 'fixed_amount', amountCents: 500 },
+        })
+        const res = await validateRequest(code, { amountCents: 10000 })
+        assertEquals(res.status, 200)
+        const body = await res.json()
+        assertEquals(body.transaction.totalAmountCents, 10000)
+        assertEquals(body.transaction.discountAppliedCents, 500)
+        assertEquals(body.transaction.finalAmountCents, 9500)
+      },
+    )
+
+    await t.step(
+      'bogo validation with quantity - server-calculated',
+      async () => {
+        const { code } = await setupCouponAndRedemption({
+          behavior: {
+            type: 'bogo',
+            buyQuantity: 2,
+            freeQuantity: 1,
+            unitPriceCents: 1000,
+          },
+        })
+        const res = await validateRequest(code, { quantity: 6 })
+        assertEquals(res.status, 200)
+        const body = await res.json()
+        // 6 items, groups of (2+1)=3 → 2 sets × 1 free = 2 free
+        // total = 6 × 1000 = 6000
+        // discount = 2 × 1000 = 2000
+        // final = 6000 - 2000 = 4000
+        assertEquals(body.transaction.totalAmountCents, 6000)
+        assertEquals(body.transaction.discountAppliedCents, 2000)
+        assertEquals(body.transaction.finalAmountCents, 4000)
+      },
+    )
+
+    await t.step(
+      'item_specific validation with quantity - server-calculated',
+      async () => {
+        const { code } = await setupCouponAndRedemption({
+          behavior: {
+            type: 'item_specific',
+            unitPriceCents: 2000,
+            discountPerUnitCents: 500,
+          },
+        })
+        const res = await validateRequest(code, { quantity: 3 })
+        assertEquals(res.status, 200)
+        const body = await res.json()
+        // total = 3 × 2000 = 6000
+        // discount = 3 × 500 = 1500
+        // final = 6000 - 1500 = 4500
+        assertEquals(body.transaction.totalAmountCents, 6000)
+        assertEquals(body.transaction.discountAppliedCents, 1500)
+        assertEquals(body.transaction.finalAmountCents, 4500)
+      },
+    )
+
+    await t.step('bogo without quantity returns 400', async () => {
+      const { code } = await setupCouponAndRedemption({
+        behavior: {
+          type: 'bogo',
+          buyQuantity: 2,
+          freeQuantity: 1,
+          unitPriceCents: 1000,
+        },
+      })
+      const res = await validateRequest(code, {})
+      assertEquals(res.status, 400)
+      const text = await res.text()
+      assertEquals(
+        text,
+        'Quantity is required for bogo coupons and must be a positive integer',
+      )
+    })
+
+    await t.step('item_specific without quantity returns 400', async () => {
+      const { code } = await setupCouponAndRedemption({
+        behavior: {
+          type: 'item_specific',
+          unitPriceCents: 2000,
+          discountPerUnitCents: 500,
+        },
+      })
+      const res = await validateRequest(code, {})
+      assertEquals(res.status, 400)
+      const text = await res.text()
+      assertEquals(
+        text,
+        'Quantity is required for item_specific coupons and must be a positive integer',
+      )
+    })
+
+    await t.step('bogo with mismatched amountCents returns 400', async () => {
+      const { code } = await setupCouponAndRedemption({
+        behavior: {
+          type: 'bogo',
+          buyQuantity: 1,
+          freeQuantity: 1,
+          unitPriceCents: 1000,
+        },
+      })
+      // quantity = 3 → expected = 1000 * 3 = 3000, send 9999
+      const res = await validateRequest(code, {
+        quantity: 3,
+        amountCents: 9999,
+      })
+      assertEquals(res.status, 400)
+      const text = await res.text()
+      assertEquals(text, 'amountCents mismatch: expected 3000, got 9999')
+    })
+
+    await t.step(
+      'item_specific with mismatched amountCents returns 400',
+      async () => {
+        const { code } = await setupCouponAndRedemption({
+          behavior: {
+            type: 'item_specific',
+            unitPriceCents: 2000,
+            discountPerUnitCents: 500,
+          },
+        })
+        // quantity = 2 → expected = 2000 * 2 = 4000, send 9999
+        const res = await validateRequest(code, {
+          quantity: 2,
+          amountCents: 9999,
+        })
+        assertEquals(res.status, 400)
+        const text = await res.text()
+        assertEquals(text, 'amountCents mismatch: expected 4000, got 9999')
+      },
+    )
+
+    await t.step('minimum purchase below threshold returns 400', async () => {
+      const { code } = await setupCouponAndRedemption({
+        behavior: { type: 'percentage_discount', percent: 10 },
+        restrictions: { minimumPurchaseValueCents: 5000 },
+      })
+      const res = await validateRequest(code, { amountCents: 3000 })
+      assertEquals(res.status, 400)
+      const text = await res.text()
+      assertEquals(text, 'Minimum purchase value of R$ 50.00 not met')
+    })
+
+    await t.step('minimum purchase at threshold succeeds', async () => {
+      const { code } = await setupCouponAndRedemption({
+        behavior: { type: 'percentage_discount', percent: 10 },
+        restrictions: { minimumPurchaseValueCents: 5000 },
+      })
+      const res = await validateRequest(code, { amountCents: 5000 })
+      assertEquals(res.status, 200)
+      const body = await res.json()
+      assertEquals(body.transaction.totalAmountCents, 5000)
+      assertEquals(body.transaction.discountAppliedCents, 500)
+    })
+
+    await t.step('minimum purchase above threshold succeeds', async () => {
+      const { code } = await setupCouponAndRedemption({
+        behavior: { type: 'percentage_discount', percent: 15 },
+        restrictions: { minimumPurchaseValueCents: 5000 },
+      })
+      const res = await validateRequest(code, { amountCents: 8000 })
+      assertEquals(res.status, 200)
+      const body = await res.json()
+      assertEquals(body.transaction.totalAmountCents, 8000)
+      assertEquals(body.transaction.discountAppliedCents, 1200)
+    })
+
+    await t.step('minimum purchase not set - no check performed', async () => {
+      const { code } = await setupCouponAndRedemption({
+        behavior: { type: 'percentage_discount', percent: 10 },
+        restrictions: {}, // no minimumPurchaseValueCents
+      })
+      const res = await validateRequest(code, { amountCents: 1 })
+      assertEquals(res.status, 200)
+    })
+
+    await t.step(
+      'analytics validation counter increments on success',
+      async () => {
+        const couponId = 'c_ac_' + Math.random().toString(36).slice(2)
+        const { code, redemption } = makeRedemption(couponId)
+        await kv.set(['coupons', couponId], {
+          id: couponId,
+          businessId,
+          title: 'Analytics Test Coupon',
+          behavior: { type: 'percentage_discount', percent: 10 },
+          restrictions: {},
+          isActive: true,
+          createdAt: new Date().toISOString(),
+        })
+        await kv.set(['redemptions', code], redemption)
+        createdKeys.push(['coupons', couponId], ['redemptions', code])
+
+        const res = await validateRequest(code, { amountCents: 10000 })
+        assertEquals(res.status, 200)
+
+        const analyticsKey = validationCountKey(couponId)
+        const analyticsRes = await kv.get<number>(analyticsKey)
+        assertEquals(analyticsRes.value, 1)
+      },
+    )
+
+    await t.step(
+      'percentage_discount validation still works as before',
+      async () => {
+        const { code } = await setupCouponAndRedemption({
+          behavior: { type: 'percentage_discount', percent: 15 },
+        })
+        const res = await validateRequest(code, { amountCents: 10000 })
+        assertEquals(res.status, 200)
+        const body = await res.json()
+        assertEquals(body.transaction.totalAmountCents, 10000)
+        assertEquals(body.transaction.discountAppliedCents, 1500)
+        assertEquals(body.transaction.finalAmountCents, 8500)
+      },
+    )
+  } finally {
+    getSessionStub.restore()
+    await kv.delete(['businesses', businessId])
+    for (const key of createdKeys) {
+      await kv.delete(key)
+    }
   }
 })

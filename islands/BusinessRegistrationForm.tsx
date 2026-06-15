@@ -51,7 +51,10 @@ export default function BusinessRegistrationForm() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
-  function setFieldError(field: keyof BusinessRegistrationErrors, message: string | undefined) {
+  function setFieldError(
+    field: keyof BusinessRegistrationErrors,
+    message: string | undefined,
+  ) {
     setErrors((prev) => {
       const next = { ...prev }
       if (message) next[field] = message as never
@@ -61,10 +64,16 @@ export default function BusinessRegistrationForm() {
   }
 
   function validateNameField(v: string) {
-    setFieldError('name', v.trim() ? undefined : 'Nome do negócio é obrigatório.')
+    setFieldError(
+      'name',
+      v.trim() ? undefined : 'Nome do negócio é obrigatório.',
+    )
   }
   function validateCompanyNameField(v: string) {
-    setFieldError('companyName', v.trim() ? undefined : 'Razão social é obrigatória.')
+    setFieldError(
+      'companyName',
+      v.trim() ? undefined : 'Razão social é obrigatória.',
+    )
   }
   function validateCnpjField(v: string) {
     setFieldError('cnpj', isValidCnpj(v) ? undefined : 'CNPJ inválido.')
@@ -78,7 +87,9 @@ export default function BusinessRegistrationForm() {
   function validatePasswordField(v: string) {
     setFieldError(
       'password',
-      validatePassword(v) ? undefined : 'Senha deve ter no mínimo 8 caracteres.',
+      validatePassword(v)
+        ? undefined
+        : 'Senha deve ter no mínimo 8 caracteres.',
     )
   }
 
@@ -89,7 +100,9 @@ export default function BusinessRegistrationForm() {
     if (!companyName.trim()) errs.companyName = 'Razão social é obrigatória.'
     if (!isValidCnpj(cnpj)) errs.cnpj = 'CNPJ inválido.'
     if (!validateEmail(email)) errs.email = 'E-mail inválido.'
-    if (!validatePassword(password)) errs.password = 'Senha deve ter no mínimo 8 caracteres.'
+    if (!validatePassword(password)) {
+      errs.password = 'Senha deve ter no mínimo 8 caracteres.'
+    }
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
       return
@@ -186,7 +199,8 @@ export default function BusinessRegistrationForm() {
           type='text'
           value={name}
           onInput={(e) => setName((e.target as HTMLInputElement).value)}
-          onBlur={(e) => validateNameField((e.target as HTMLInputElement).value)}
+          onBlur={(e) =>
+            validateNameField((e.target as HTMLInputElement).value)}
           placeholder='Minha Empresa'
           class={inputClass(!!errors.name)}
           aria-invalid={!!errors.name}
@@ -199,7 +213,8 @@ export default function BusinessRegistrationForm() {
           type='text'
           value={companyName}
           onInput={(e) => setCompanyName((e.target as HTMLInputElement).value)}
-          onBlur={(e) => validateCompanyNameField((e.target as HTMLInputElement).value)}
+          onBlur={(e) =>
+            validateCompanyNameField((e.target as HTMLInputElement).value)}
           placeholder='Minha Empresa Ltda'
           class={inputClass(!!errors.companyName)}
           aria-invalid={!!errors.companyName}
@@ -213,7 +228,8 @@ export default function BusinessRegistrationForm() {
           inputMode='numeric'
           value={formatCnpjDisplay(cnpj)}
           onInput={(e) => setCnpj((e.target as HTMLInputElement).value)}
-          onBlur={(e) => validateCnpjField((e.target as HTMLInputElement).value)}
+          onBlur={(e) =>
+            validateCnpjField((e.target as HTMLInputElement).value)}
           placeholder='00.000.000/0000-00'
           maxLength={18}
           class={inputClass(!!errors.cnpj)}
@@ -227,7 +243,8 @@ export default function BusinessRegistrationForm() {
           type='email'
           value={email}
           onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
-          onBlur={(e) => validateEmailField((e.target as HTMLInputElement).value)}
+          onBlur={(e) =>
+            validateEmailField((e.target as HTMLInputElement).value)}
           placeholder='contato@minhaempresa.com'
           class={inputClass(!!errors.email)}
           aria-invalid={!!errors.email}
@@ -240,7 +257,8 @@ export default function BusinessRegistrationForm() {
           type='password'
           value={password}
           onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
-          onBlur={(e) => validatePasswordField((e.target as HTMLInputElement).value)}
+          onBlur={(e) =>
+            validatePasswordField((e.target as HTMLInputElement).value)}
           placeholder='Mínimo 8 caracteres'
           class={inputClass(!!errors.password)}
           aria-invalid={!!errors.password}

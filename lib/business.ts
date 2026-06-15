@@ -75,6 +75,7 @@ export interface Business {
   openingHours?: OpeningHours
   isActive: boolean
   createdAt: string
+  hasSeenMerchantOnboarding?: boolean
 }
 
 export interface BusinessFormErrors {

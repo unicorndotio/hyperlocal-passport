@@ -4,6 +4,7 @@ import { kv } from '../../lib/kv.ts'
 import { getDenoKvAdapterRaw } from '../../lib/kv-adapter.ts'
 import { Business } from '../../lib/business.ts'
 import { Coupon } from '../../lib/coupon.ts'
+import { viewCountKey } from '../../lib/analytics.ts'
 import { Head } from 'fresh/runtime'
 import {
   Card,
@@ -32,6 +33,11 @@ export const handler = define.handlers({
         value: true,
       }],
     })
+
+    // Fire-and-forget view counter increment for each displayed coupon
+    for (const coupon of coupons) {
+      kv.atomic().sum(viewCountKey(coupon.id), 1n).commit()
+    }
 
     return page({ business, coupons })
   },
@@ -134,9 +140,25 @@ export default define.page<typeof handler>(function BusinessDetailPage(ctx) {
                       <CardTitle className='text-lg font-black text-foreground tracking-tight leading-tight'>
                         {coupon.title}
                       </CardTitle>
-                      {coupon.discountPercent && (
+                      {coupon.behavior.type === 'percentage_discount' && (
                         <span class='bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded-full border border-primary/20'>
-                          -{coupon.discountPercent}% OFF
+                          -{coupon.behavior.percent}% OFF
+                        </span>
+                      )}
+                      {coupon.behavior.type === 'fixed_amount' && (
+                        <span class='bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded-full border border-primary/20'>
+                          -R$ {(coupon.behavior.amountCents / 100).toFixed(2)}
+                        </span>
+                      )}
+                      {coupon.behavior.type === 'bogo' && (
+                        <span class='bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded-full border border-primary/20'>
+                          {coupon.behavior.buyQuantity}+{coupon.behavior
+                            .freeQuantity}
+                        </span>
+                      )}
+                      {coupon.behavior.type === 'item_specific' && (
+                        <span class='bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded-full border border-primary/20'>
+                          Item Específico
                         </span>
                       )}
                     </div>

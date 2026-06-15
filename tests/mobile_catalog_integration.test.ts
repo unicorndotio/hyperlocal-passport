@@ -37,8 +37,9 @@ Deno.test('Mobile Catalog Integration', async (t) => {
     id: couponId,
     businessId,
     title: '10% Off',
+    behavior: { type: 'percentage_discount', percent: 10 },
+    restrictions: {},
     isActive: true,
-    globalClaimedCount: 0,
   }
 
   await kv.set(['businesses', businessId], business)

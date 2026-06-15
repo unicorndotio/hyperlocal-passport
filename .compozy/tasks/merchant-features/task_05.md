@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: View Counter for Coupon Analytics
 type: backend
 complexity: low
@@ -31,9 +31,9 @@ Add an analytics view counter increment to the business detail page route handle
 
 ## Subtasks
 
-- [ ] 5.1 Add view counter increment to the `routes/business/[id].tsx` handler after page render
-- [ ] 5.2 Use the analytics key builder from `lib/analytics.ts` for the KV key
-- [ ] 5.3 Write a test verifying the counter increment
+- [x] 5.1 Add view counter increment to the `routes/business/[id].tsx` handler after page render
+- [x] 5.2 Use the analytics key builder from `lib/analytics.ts` for the KV key
+- [x] 5.3 Write a test verifying the counter increment
 
 ## Implementation Details
 
@@ -63,10 +63,10 @@ Reference TechSpec "Data Flow" section for view counter placement.
 ## Tests
 
 - Integration tests:
-  - [ ] GET `/business/[id]` increments view counter for each coupon on the page
-  - [ ] Repeated views increment the counter monotonically
-  - [ ] Counter increment does not block or delay the page response
-  - [ ] Coupons that were never viewed have zero or no entry in analytics prefix
+  - [x] GET `/business/[id]` increments view counter for each coupon on the page
+  - [x] Repeated views increment the counter monotonically
+  - [x] Counter increment does not block or delay the page response
+  - [x] Coupons that were never viewed have zero or no entry in analytics prefix
 - Test coverage target: >=80%
 - All tests must pass
 

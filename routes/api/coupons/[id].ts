@@ -4,8 +4,17 @@ import { getDenoKvAdapterRaw } from '../../../lib/kv-adapter.ts'
 import { auth } from '../../../lib/auth.ts'
 import type { Business } from '../../../lib/business.ts'
 import type { Coupon } from '../../../lib/coupon.ts'
+import { validateBehavior } from '../../../lib/coupon.ts'
 
 const adapter = getDenoKvAdapterRaw(kv)
+
+function validateUpdateData(data: Record<string, unknown>): string | null {
+  if (data.behavior !== undefined) {
+    const result = validateBehavior(data.behavior)
+    if (!result.valid) return result.message
+  }
+  return null
+}
 
 async function handleUpdate(ctx: {
   req: Request
@@ -38,6 +47,11 @@ async function handleUpdate(ctx: {
     updateData = await ctx.req.json()
   } catch {
     return new Response('Invalid JSON', { status: 400 })
+  }
+
+  const validationError = validateUpdateData(updateData)
+  if (validationError) {
+    return new Response(validationError, { status: 400 })
   }
 
   const updated = await adapter.update({

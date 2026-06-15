@@ -1,10 +1,10 @@
 ---
-status: pending
+status: completed
 title: CouponManager Island with Template Presets
 type: frontend
 complexity: high
 dependencies:
-  - task_02
+    - task_02
 ---
 
 # Task 06: CouponManager Island with Template Presets

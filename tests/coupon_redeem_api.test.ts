@@ -3,6 +3,7 @@ import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
 import { handler as redeemHandler } from '../routes/api/coupons/[id]/redeem.ts'
 import { auth } from '../lib/auth.ts'
 import { kv } from '../lib/kv.ts'
+import { redemptionCountKey } from '../lib/analytics.ts'
 import type { Coupon } from '../lib/coupon.ts'
 
 type RedeemCtx = { req: Request; params: { id: string } }
@@ -81,8 +82,8 @@ Deno.test('Coupon Redeem API - coupon inactive', async () => {
     id: couponId,
     businessId: 'biz',
     isActive: false,
-    globalClaimedCount: 0,
-    type: 'basic',
+    behavior: { type: 'percentage_discount', percent: 10 },
+    restrictions: {},
     title: 'Inactive',
     createdAt: new Date().toISOString(),
   })
@@ -109,9 +110,8 @@ Deno.test('Coupon Redeem API - coupon expired', async () => {
     id: couponId,
     businessId: 'biz',
     isActive: true,
-    validUntil: Date.now() - 10000,
-    globalClaimedCount: 0,
-    type: 'basic',
+    behavior: { type: 'percentage_discount', percent: 10 },
+    restrictions: { validUntil: Date.now() - 10000 },
     title: 'Expired',
     createdAt: new Date().toISOString(),
   })
@@ -134,16 +134,18 @@ Deno.test('Coupon Redeem API - coupon expired', async () => {
 Deno.test('Coupon Redeem API - global limit reached', async () => {
   const userId = 'user_gl_' + Math.random().toString(36).slice(2)
   const couponId = 'coupon_gl_' + Math.random().toString(36).slice(2)
+  const cap = 5
   await kv.set(['coupons', couponId], {
     id: couponId,
     businessId: 'biz',
     isActive: true,
-    globalLimit: 5,
-    globalClaimedCount: 5,
-    type: 'basic',
+    behavior: { type: 'percentage_discount', percent: 10 },
+    restrictions: { globalCap: cap },
     title: 'Full',
     createdAt: new Date().toISOString(),
   })
+  // Preset the analytics counter at the cap so redemption is blocked
+  await kv.set(redemptionCountKey(couponId), cap)
   const getSessionStub = stub(
     auth.api,
     'getSession',
@@ -156,6 +158,7 @@ Deno.test('Coupon Redeem API - global limit reached', async () => {
     assertEquals(res.status, 400)
   } finally {
     getSessionStub.restore()
+    await kv.delete(redemptionCountKey(couponId))
     await cleanup(couponId)
   }
 })
@@ -169,9 +172,8 @@ Deno.test('Coupon Redeem API - user monthly limit reached', async () => {
     id: couponId,
     businessId: 'biz',
     isActive: true,
-    userMonthlyLimit: 1,
-    globalClaimedCount: 0,
-    type: 'basic',
+    behavior: { type: 'percentage_discount', percent: 10 },
+    restrictions: { userCap: 1 },
     title: 'Limited',
     createdAt: new Date().toISOString(),
   })
@@ -200,10 +202,9 @@ Deno.test('Coupon Redeem API - success', async () => {
   const coupon: Coupon = {
     id: couponId,
     businessId: 'biz_' + Math.random().toString(36).slice(2),
-    type: 'special',
     title: 'Redeemable',
-    globalLimit: 5,
-    globalClaimedCount: 0,
+    behavior: { type: 'percentage_discount', percent: 10 },
+    restrictions: { globalCap: 5 },
     isActive: true,
     createdAt: new Date().toISOString(),
   }
@@ -222,8 +223,97 @@ Deno.test('Coupon Redeem API - success', async () => {
     assertEquals(data.couponId, couponId)
     assertEquals(data.userId, userId)
     assertEquals(data.status, 'active')
+
+    // Verify analytics counter was incremented
+    const updatedCount = await kv.get<number>(redemptionCountKey(couponId))
+    assertEquals(updatedCount.value, 1)
   } finally {
     getSessionStub.restore()
+    await cleanup(couponId)
+  }
+})
+
+Deno.test('Coupon Redeem API - analytics counter increments atomically', async () => {
+  const userId = 'user_aci_' + Math.random().toString(36).slice(2)
+  const couponId = 'coupon_aci_' + Math.random().toString(36).slice(2)
+  const coupon: Coupon = {
+    id: couponId,
+    businessId: 'biz',
+    title: 'Atomic',
+    behavior: { type: 'fixed_amount', amountCents: 100 },
+    restrictions: { globalCap: 10 },
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  }
+  await kv.set(['coupons', couponId], coupon)
+  const getSessionStub = stub(
+    auth.api,
+    'getSession',
+    () => resolveSession(userId, 'resident'),
+  )
+  try {
+    const res1 = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+    assertEquals(res1.status, 201)
+
+    const res2 = await (redeemHandler as unknown as {
+      POST: (ctx: RedeemCtx) => Promise<Response>
+    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+    assertEquals(res2.status, 201)
+
+    const count = await kv.get<number>(redemptionCountKey(couponId))
+    assertEquals(count.value, 2)
+  } finally {
+    getSessionStub.restore()
+    await cleanup(couponId)
+  }
+})
+
+Deno.test('Coupon Redeem API - concurrent redemptions respect global cap', async () => {
+  const couponId = 'coupon_conc_' + Math.random().toString(36).slice(2)
+  const cap = 1
+  const coupon: Coupon = {
+    id: couponId,
+    businessId: 'biz',
+    title: 'Concurrent',
+    behavior: { type: 'percentage_discount', percent: 10 },
+    restrictions: { globalCap: cap },
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  }
+  await kv.set(['coupons', couponId], coupon)
+
+  const userId = 'user_conc_' + Math.random().toString(36).slice(2)
+  const sessionStub = stub(
+    auth.api,
+    'getSession',
+    () => resolveSession(userId, 'resident'),
+  )
+  try {
+    // Fire both requests concurrently — same userId, no userCap set, so only globalCap races
+    const [res1, res2] = await Promise.all([
+      (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } }),
+      (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } }),
+    ])
+
+    const statuses = [res1.status, res2.status]
+    const okCount = statuses.filter((s) => s === 201).length
+    const failCount = statuses.filter((s) => s === 409 || s === 400).length
+
+    assertEquals(okCount, 1, 'Exactly one concurrent redemption should succeed')
+    assertEquals(failCount, 1, 'Exactly one concurrent redemption should fail')
+
+    // Final counter should be exactly 1
+    const count = await kv.get<number>(redemptionCountKey(couponId))
+    assertEquals(count.value, cap)
+  } finally {
+    sessionStub.restore()
+    await kv.delete(redemptionCountKey(couponId))
     await cleanup(couponId)
   }
 })

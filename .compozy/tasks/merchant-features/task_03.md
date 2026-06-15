@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Redeem API with Analytics Counters
 type: backend
 complexity: medium
@@ -33,10 +33,10 @@ Update the coupon redemption endpoint to read the redemption counter from the an
 
 ## Subtasks
 
-- [ ] 3.1 Replace `coupon.globalClaimedCount` read with `['analytics', couponId, 'redemptions']` KV read in `redeem.ts`
-- [ ] 3.2 Add analytics counter increment to the atomic transaction in `redeem.ts`
-- [ ] 3.3 Remove `coupon.globalClaimedCount` from the atomic check (no longer tracking on Coupon document)
-- [ ] 3.4 Update existing tests in `tests/coupon_redeem_api.test.ts` for new analytics key pattern
+- [x] 3.1 Replace `coupon.globalClaimedCount` read with `['analytics', couponId, 'redemptions']` KV read in `redeem.ts`
+- [x] 3.2 Add analytics counter increment to the atomic transaction in `redeem.ts`
+- [x] 3.3 Remove `coupon.globalClaimedCount` from the atomic check (no longer tracking on Coupon document)
+- [x] 3.4 Update existing tests in `tests/coupon_redeem_api.test.ts` for new analytics key pattern
 
 ## Implementation Details
 
@@ -68,13 +68,13 @@ See TechSpec "Data Flow" section for the updated redeem flow diagram. Reference 
 ## Tests
 
 - Integration tests (`tests/coupon_redeem_api.test.ts`):
-  - [ ] Redemption succeeds when analytics counter is below global cap
-  - [ ] Redemption fails when analytics counter at or above global cap
-  - [ ] Analytics counter increments atomically on successful redemption
-  - [ ] Concurrent redemptions respect global cap (race condition test)
-  - [ ] Unauthorized access returns 401
-  - [ ] Inactive coupon returns appropriate error
-  - [ ] Expired coupon returns appropriate error
+  - [x] Redemption succeeds when analytics counter is below global cap
+  - [x] Redemption fails when analytics counter at or above global cap
+  - [x] Analytics counter increments atomically on successful redemption
+  - [x] Concurrent redemptions respect global cap (race condition test)
+  - [x] Unauthorized access returns 401
+  - [x] Inactive coupon returns appropriate error
+  - [x] Expired coupon returns appropriate error
 - Test coverage target: >=80%
 - All tests must pass
 

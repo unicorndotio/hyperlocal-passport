@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Opening Hours UI Fix
 type: frontend
 complexity: low
@@ -31,10 +31,10 @@ Add per-day toggle/remove functionality to the BusinessProfileEditor's opening h
 
 ## Subtasks
 
-- [ ] 13.1 Add a toggle/remove button next to each day in the opening hours grid
-- [ ] 13.2 Implement show/hide behavior for removed days (hide inputs, show "Add" button)
-- [ ] 13.3 Update submission logic to omit removed days from the payload
-- [ ] 13.4 Write component tests for the new toggle behavior
+- [x] 13.1 Add a toggle/remove button next to each day in the opening hours grid
+- [x] 13.2 Implement show/hide behavior for removed days (hide inputs, show "Add" button)
+- [x] 13.3 Update submission logic to omit removed days from the payload
+- [x] 13.4 Write component tests for the new toggle behavior
 
 ## Implementation Details
 

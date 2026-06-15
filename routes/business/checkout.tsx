@@ -5,6 +5,7 @@ import { getDenoKvAdapterRaw } from '@/lib/kv-adapter.ts'
 import type { Business } from '@/lib/business.ts'
 import CheckoutCalculator from '@/islands/CheckoutCalculator.tsx'
 import BusinessHeader from '@/components/BusinessHeader.tsx'
+import BusinessOnboarding from '@/islands/BusinessOnboarding.tsx'
 import {
   Card,
   CardContent,
@@ -61,6 +62,7 @@ export default define.page(async function BusinessCheckoutPage(ctx) {
 
   return (
     <div className='min-h-screen bg-slate-50'>
+      <BusinessOnboarding business={business} businessId={business.id} />
       <BusinessHeader active='checkout' businessName={business.name} />
 
       <main className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>

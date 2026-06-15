@@ -31,6 +31,20 @@ export default define.page(function AdminBusinessesPage() {
               >
                 Empresas Parceiras
               </a>
+              <span className='text-slate-300'>|</span>
+              <a
+                href='/admin/coupons'
+                className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
+              >
+                Cupons
+              </a>
+              <span className='text-slate-300'>|</span>
+              <a
+                href='/admin/analytics'
+                className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
+              >
+                Analytics
+              </a>
             </nav>
           </div>
           <div className='flex items-center gap-4'>
