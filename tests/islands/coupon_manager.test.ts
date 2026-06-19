@@ -19,12 +19,12 @@ function makeCoupon(overrides: Partial<Coupon> = {}): Coupon {
 }
 
 const PRESET_NAMES = [
-  'Simple Discount',
-  'Flash Sale',
-  'Loyalty Perk',
-  'Event Promo',
-  'Item Clearance',
-  'Custom',
+  'Desconto Simples',
+  'Promoção Relâmpago',
+  'Benefício Fidelidade',
+  'Promoção de Evento',
+  'Liquidação de Item',
+  'Personalizado',
 ]
 
 const ALL_COUPON_TYPES: Coupon[] = [
@@ -75,10 +75,10 @@ Deno.test('CouponManager - table renders coupons with behavior type badges', asy
     ),
   )
 
-  assertEquals(html.includes('Percentage Discount'), true)
-  assertEquals(html.includes('Fixed Amount'), true)
-  assertEquals(html.includes('Buy X Get Y Free'), true)
-  assertEquals(html.includes('Item-Specific Discount'), true)
+  assertEquals(html.includes('Desconto Percentual'), true)
+  assertEquals(html.includes('Valor Fixo'), true)
+  assertEquals(html.includes('Compre X Leve Y Grátis'), true)
+  assertEquals(html.includes('Desconto por Item'), true)
   assertEquals(html.includes('10% Off'), true)
   assertEquals(html.includes('R$5 Off'), true)
   assertEquals(html.includes('BOGO Chopp'), true)
@@ -96,7 +96,7 @@ Deno.test(
     )
 
     assertEquals(
-      html.includes('No coupons yet'),
+      html.includes('Nenhum cupom ainda'),
       true,
       'Empty state message should be shown',
     )
@@ -113,8 +113,8 @@ Deno.test(
       ),
     )
 
-    assertEquals(html.includes('Coupons'), true)
-    assertEquals(html.includes('New Coupon'), true)
+    assertEquals(html.includes('Cupons'), true)
+    assertEquals(html.includes('Novo Cupom'), true)
   },
 )
 
@@ -129,11 +129,11 @@ Deno.test(
     )
 
     assertEquals(html.includes('<th'), true)
-    assertEquals(html.includes('Type'), true)
-    assertEquals(html.includes('Discount'), true)
-    assertEquals(html.includes('Restrictions'), true)
+    assertEquals(html.includes('Tipo'), true)
+    assertEquals(html.includes('Desconto'), true)
+    assertEquals(html.includes('Restrições'), true)
     assertEquals(html.includes('Status'), true)
-    assertEquals(html.includes('Actions'), true)
+    assertEquals(html.includes('Ações'), true)
   },
 )
 
@@ -147,9 +147,9 @@ Deno.test(
       ),
     )
 
-    assertEquals(html.includes('10% off'), true)
-    assertEquals(html.includes('Buy 1 get 1 free'), true)
-    assertEquals(html.includes('/unit off'), true)
+    assertEquals(html.includes('10% de desconto'), true)
+    assertEquals(html.includes('Compre 1 leve 1 grátis'), true)
+    assertEquals(html.includes('/unidade de desconto'), true)
   },
 )
 
@@ -177,7 +177,7 @@ Deno.test(
       ),
     )
 
-    const editMatches = html.match(/Edit/g) || []
+    const editMatches = html.match(/Editar/g) || []
     assertEquals(
       editMatches.length,
       4,
@@ -211,8 +211,8 @@ Deno.test(
       ),
     )
 
-    assertEquals(html.includes('User: 1'), true)
-    assertEquals(html.includes('one time'), true)
+    assertEquals(html.includes('Usuário: 1'), true)
+    assertEquals(html.includes('Uma vez'), true)
   },
 )
 
@@ -221,9 +221,15 @@ Deno.test(
   async () => {
     const mod = await import('../../islands/CouponManager.tsx')
     const src = mod.default.toString()
-    for (
-      const id of PRESET_NAMES.map((n) => n.toLowerCase().replace(/\s+/g, '-'))
-    ) {
+    const presetIds = [
+      'simple-discount',
+      'flash-sale',
+      'loyalty-perk',
+      'event-promo',
+      'item-clearance',
+      'custom',
+    ]
+    for (const id of presetIds) {
       assertEquals(
         src.includes(id),
         true,
@@ -241,7 +247,7 @@ Deno.test(
   async () => {
     const mod = await import('../../islands/CouponManager.tsx')
     const source = mod.default.toString()
-    assertEquals(source.includes('Title is required'), true)
+    assertEquals(source.includes('Título é obrigatório'), true)
   },
 )
 
@@ -250,7 +256,7 @@ Deno.test(
   async () => {
     const mod = await import('../../islands/CouponManager.tsx')
     const source = mod.default.toString()
-    assertEquals(source.includes('Percentage must be between 1 and 100'), true)
+    assertEquals(source.includes('Percentual deve estar entre 1 e 100'), true)
   },
 )
 
@@ -259,7 +265,7 @@ Deno.test(
   async () => {
     const mod = await import('../../islands/CouponManager.tsx')
     const source = mod.default.toString()
-    assertEquals(source.includes('Amount must be greater than 0'), true)
+    assertEquals(source.includes('Valor deve ser maior que 0'), true)
   },
 )
 
@@ -268,10 +274,10 @@ Deno.test(
   async () => {
     const mod = await import('../../islands/CouponManager.tsx')
     const source = mod.default.toString()
-    assertEquals(source.includes('Buy quantity must be at least 1'), true)
-    assertEquals(source.includes('Free quantity must be at least 1'), true)
+    assertEquals(source.includes('Quantidade para comprar deve ser no mínimo 1'), true)
+    assertEquals(source.includes('Quantidade grátis deve ser no mínimo 1'), true)
     assertEquals(
-      source.includes('Unit price must be greater than 0'),
+      source.includes('Preço unitário deve ser maior que 0'),
       true,
     )
   },
@@ -283,11 +289,11 @@ Deno.test(
     const mod = await import('../../islands/CouponManager.tsx')
     const source = mod.default.toString()
     assertEquals(
-      source.includes('Discount per unit must be greater than 0'),
+      source.includes('Desconto por unidade deve ser maior que 0'),
       true,
     )
     assertEquals(
-      source.includes('Discount per unit cannot exceed unit price'),
+      source.includes('Desconto por unidade não pode exceder o preço unitário'),
       true,
     )
   },

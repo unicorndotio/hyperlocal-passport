@@ -14,5 +14,6 @@ vendor/
 
 cov_*/
 coverage/
+.coverage/
 
 .DS_Store

@@ -22,15 +22,15 @@ interface CouponsResponse {
 }
 
 const BEHAVIOR_LABELS: Record<string, string> = {
-  percentage_discount: 'Percentage Discount',
-  fixed_amount: 'Fixed Amount',
+  percentage_discount: 'Desconto Percentual',
+  fixed_amount: 'Valor Fixo',
   bogo: 'BOGO',
-  item_specific: 'Item Specific',
+  item_specific: 'Item Específico',
 }
 
 function formatDate(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return new Date(dateStr).toLocaleDateString('pt-BR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -70,11 +70,11 @@ export default function AdminCoupons() {
       const query = params.toString()
       const url = `/api/admin/coupons${query ? `?${query}` : ''}`
       const res = await fetch(url)
-      if (!res.ok) throw new Error('Failed to load coupons')
+      if (!res.ok) throw new Error('Falha ao carregar cupons')
       const data: CouponsResponse = await res.json()
       setCoupons(data.coupons)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
     } finally {
       setLoading(false)
     }
@@ -113,13 +113,13 @@ export default function AdminCoupons() {
       )
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed to update coupon')
+        throw new Error(data.error || 'Falha ao atualizar cupom')
       }
       await fetchCoupons()
       closeEdit()
     } catch (err) {
       alert(
-        err instanceof Error ? err.message : 'Error updating coupon',
+        err instanceof Error ? err.message : 'Erro ao atualizar cupom',
       )
     } finally {
       setSaving(false)
@@ -129,7 +129,7 @@ export default function AdminCoupons() {
   async function handleDelete(coupon: CouponData) {
     if (
       !confirm(
-        `Are you sure you want to delete "${coupon.title}"? This action cannot be undone.`,
+        `Tem certeza que deseja excluir "${coupon.title}"? Esta ação não pode ser desfeita.`,
       )
     ) {
       return
@@ -142,12 +142,12 @@ export default function AdminCoupons() {
       })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed to delete coupon')
+        throw new Error(data.error || 'Falha ao excluir cupom')
       }
       setCoupons((prev) => prev.filter((c) => c.id !== coupon.id))
     } catch (err) {
       alert(
-        err instanceof Error ? err.message : 'Error deleting coupon',
+        err instanceof Error ? err.message : 'Erro ao excluir cupom',
       )
     } finally {
       setActionLoadingId(null)
@@ -163,7 +163,7 @@ export default function AdminCoupons() {
             htmlFor='filter-business'
             className='text-sm font-medium text-slate-700'
           >
-            Business ID:
+            ID da Empresa:
           </label>
           <input
             id='filter-business'
@@ -173,7 +173,7 @@ export default function AdminCoupons() {
               setFilterBusinessId(
                 (e.target as HTMLInputElement).value,
               )}
-            placeholder='Filter by business ID'
+            placeholder='Filtrar por ID da empresa'
             className='px-3 py-1.5 text-sm border rounded-md'
           />
         </div>
@@ -194,14 +194,14 @@ export default function AdminCoupons() {
               )}
             className='px-3 py-1.5 text-sm border rounded-md'
           >
-            <option value='all'>All</option>
-            <option value='active'>Active</option>
-            <option value='inactive'>Inactive</option>
+            <option value='all'>Todos</option>
+            <option value='active'>Ativo</option>
+            <option value='inactive'>Inativo</option>
           </select>
         </div>
 
         <Button variant='default' size='sm' onClick={handleFilterChange}>
-          Apply Filters
+          Aplicar Filtros
         </Button>
       </div>
 
@@ -209,19 +209,19 @@ export default function AdminCoupons() {
       {loading
         ? (
           <div className='p-8 text-center text-slate-500'>
-            Loading coupons...
+            Carregando cupons...
           </div>
         )
         : error
         ? (
           <div className='p-8 text-center text-red-500'>
-            Error: {error}
+            Erro: {error}
           </div>
         )
         : coupons.length === 0
         ? (
           <div className='p-12 text-center border-2 border-dashed rounded-lg bg-slate-50'>
-            <p className='text-slate-500'>No coupons found.</p>
+            <p className='text-slate-500'>Nenhum cupom encontrado.</p>
           </div>
         )
         : (
@@ -230,22 +230,22 @@ export default function AdminCoupons() {
               <thead className='bg-slate-50 border-b'>
                 <tr>
                   <th className='px-4 py-3 font-medium text-slate-700'>
-                    Business
+                    Empresa
                   </th>
                   <th className='px-4 py-3 font-medium text-slate-700'>
-                    Title
+                    Título
                   </th>
                   <th className='px-4 py-3 font-medium text-slate-700'>
-                    Behavior Type
+                    Tipo de Comportamento
                   </th>
                   <th className='px-4 py-3 font-medium text-slate-700'>
                     Status
                   </th>
                   <th className='px-4 py-3 font-medium text-slate-700'>
-                    Created
+                    Criado em
                   </th>
                   <th className='px-4 py-3 font-medium text-slate-700 text-right'>
-                    Actions
+                    Ações
                   </th>
                 </tr>
               </thead>
@@ -273,7 +273,7 @@ export default function AdminCoupons() {
                           coupon.isActive ? 'default' : 'secondary'
                         }
                       >
-                        {coupon.isActive ? 'Active' : 'Inactive'}
+                        {coupon.isActive ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </td>
                     <td className='px-4 py-4 text-slate-600'>
@@ -286,7 +286,7 @@ export default function AdminCoupons() {
                         onClick={() => openEdit(coupon)}
                         disabled={!!actionLoadingId}
                       >
-                        Edit
+                        Editar
                       </Button>
                       <Button
                         variant='destructive'
@@ -296,7 +296,7 @@ export default function AdminCoupons() {
                       >
                         {actionLoadingId === coupon.id
                           ? '...'
-                          : 'Delete'}
+                          : 'Excluir'}
                       </Button>
                     </td>
                   </tr>
@@ -317,12 +317,12 @@ export default function AdminCoupons() {
             >
               x
             </button>
-            <h3 className='text-xl font-bold mb-6'>Edit Coupon</h3>
+            <h3 className='text-xl font-bold mb-6'>Editar Cupom</h3>
 
             <div className='space-y-4'>
               <div>
                 <label className='block text-sm font-medium text-slate-700 mb-1'>
-                  Title
+                  Título
                 </label>
                 <input
                   type='text'
@@ -350,33 +350,33 @@ export default function AdminCoupons() {
                   htmlFor='edit-is-active'
                   className='text-sm font-medium text-slate-700'
                 >
-                  Active
+                  Ativo
                 </label>
               </div>
 
               <div className='pt-2 text-xs text-slate-500'>
                 <p>
-                  <strong>Behavior:</strong>{' '}
+                  <strong>Comportamento:</strong>{' '}
                   {BEHAVIOR_LABELS[
                     editingCoupon.behavior.type
                   ] || editingCoupon.behavior.type}
                 </p>
                 <p>
-                  <strong>Business:</strong>{' '}
+                  <strong>Empresa:</strong>{' '}
                   {editingCoupon.businessName}
                 </p>
               </div>
 
               <div className='flex justify-end gap-3 pt-4'>
                 <Button variant='outline' onClick={closeEdit}>
-                  Cancel
+                  Cancelar
                 </Button>
                 <Button
                   variant='default'
                   onClick={handleSave}
                   disabled={saving || !editTitle.trim()}
                 >
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? 'Salvando...' : 'Salvar'}
                 </Button>
               </div>
             </div>

@@ -129,7 +129,7 @@ Deno.test('BusinessProfileEditor - renders all expected form fields', async () =
   assertStringIncludes(html, 'Sábado')
   assertStringIncludes(html, 'Domingo')
   assertStringIncludes(html, 'Salvar Alterações')
-  assertEquals(html.match(/Remove/g)?.length, 7)
+  assertEquals(html.match(/Remover/g)?.length, 7)
 })
 
 Deno.test(

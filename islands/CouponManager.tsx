@@ -26,66 +26,66 @@ interface TemplatePreset {
 const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     id: 'simple-discount',
-    name: 'Simple Discount',
-    description: 'Percentage off, unlimited redemptions, always active',
+    name: 'Desconto Simples',
+    description: 'Desconto percentual, resgates ilimitados, sempre ativo',
     icon: '%',
   },
   {
     id: 'flash-sale',
-    name: 'Flash Sale',
+    name: 'Promoção Relâmpago',
     description:
-      'Percentage off, one-time per user, 7-day validity. For limited-time offers.',
+      'Desconto percentual, uma vez por usuário, validade de 7 dias. Para ofertas por tempo limitado.',
     icon: '\u26A1',
   },
   {
     id: 'loyalty-perk',
-    name: 'Loyalty Perk',
+    name: 'Benefício Fidelidade',
     description:
-      'Percentage off, weekly frequency, no expiry. For ongoing resident loyalty.',
+      'Desconto percentual, frequência semanal, sem expiração. Para fidelidade contínua de moradores.',
     icon: '\u2B50',
   },
   {
     id: 'event-promo',
-    name: 'Event Promo',
+    name: 'Promoção de Evento',
     description:
-      'Fixed amount off, one-time, single-day validity. For events & holidays.',
+      'Desconto em valor fixo, uma vez, validade de 1 dia. Para eventos e feriados.',
     icon: '\uD83C\uDF89',
   },
   {
     id: 'item-clearance',
-    name: 'Item Clearance',
+    name: 'Liquidação de Item',
     description:
-      'Item-specific discount, one-time, global cap. For moving specific products.',
+      'Desconto por item, uma vez, limite global. Para liquidar produtos específicos.',
     icon: '\uD83C\uDFF7\uFE0F',
   },
   {
     id: 'custom',
-    name: 'Custom',
-    description: 'Start from scratch — configure everything manually.',
+    name: 'Personalizado',
+    description: 'Comece do zero — configure tudo manualmente.',
     icon: '\u2699\uFE0F',
   },
 ]
 
 const BEHAVIOR_LABELS: Record<BehaviorTypeName, string> = {
-  percentage_discount: 'Percentage Discount',
-  fixed_amount: 'Fixed Amount',
-  bogo: 'Buy X Get Y Free',
-  item_specific: 'Item-Specific Discount',
+  percentage_discount: 'Desconto Percentual',
+  fixed_amount: 'Valor Fixo',
+  bogo: 'Compre X Leve Y Grátis',
+  item_specific: 'Desconto por Item',
 }
 
 const BEHAVIOR_OPTIONS: { value: BehaviorTypeName; label: string }[] = [
-  { value: 'percentage_discount', label: 'Percentage Discount' },
-  { value: 'fixed_amount', label: 'Fixed Amount (R$)' },
-  { value: 'bogo', label: 'Buy X Get Y Free (BOGO)' },
-  { value: 'item_specific', label: 'Item-Specific Discount' },
+  { value: 'percentage_discount', label: 'Desconto Percentual' },
+  { value: 'fixed_amount', label: 'Valor Fixo (R$)' },
+  { value: 'bogo', label: 'Compre X Leve Y Grátis (BOGO)' },
+  { value: 'item_specific', label: 'Desconto por Item' },
 ]
 
 const FREQUENCY_OPTIONS = [
-  { value: '', label: 'Unlimited' },
-  { value: 'one_time', label: 'One Time' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
+  { value: '', label: 'Ilimitado' },
+  { value: 'one_time', label: 'Uma vez' },
+  { value: 'daily', label: 'Diário' },
+  { value: 'weekly', label: 'Semanal' },
+  { value: 'monthly', label: 'Mensal' },
 ]
 
 function tsToInput(ts: number | undefined): string {
@@ -360,20 +360,20 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
   }
 
   function validate(): string | null {
-    if (!title.value.trim()) return 'Title is required.'
+    if (!title.value.trim()) return 'Título é obrigatório.'
 
     switch (behaviorType.value) {
       case 'percentage_discount': {
         const p = parseInt(percent.value)
         if (isNaN(p) || p < 1 || p > 100) {
-          return 'Percentage must be between 1 and 100.'
+          return 'Percentual deve estar entre 1 e 100.'
         }
         break
       }
       case 'fixed_amount': {
         const a = parseInt(amountCents.value)
         if (isNaN(a) || a <= 0) {
-          return 'Amount must be greater than 0.'
+          return 'Valor deve ser maior que 0.'
         }
         break
       }
@@ -381,20 +381,20 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
         const bq = parseInt(buyQuantity.value)
         const fq = parseInt(freeQuantity.value)
         const up = parseInt(unitPriceCents.value)
-        if (isNaN(bq) || bq < 1) return 'Buy quantity must be at least 1.'
-        if (isNaN(fq) || fq < 1) return 'Free quantity must be at least 1.'
-        if (isNaN(up) || up <= 0) return 'Unit price must be greater than 0.'
+        if (isNaN(bq) || bq < 1) return 'Quantidade para comprar deve ser no mínimo 1.'
+        if (isNaN(fq) || fq < 1) return 'Quantidade grátis deve ser no mínimo 1.'
+        if (isNaN(up) || up <= 0) return 'Preço unitário deve ser maior que 0.'
         break
       }
       case 'item_specific': {
         const up = parseInt(unitPriceCents.value)
         const dp = parseInt(discountPerUnitCents.value)
-        if (isNaN(up) || up <= 0) return 'Unit price must be greater than 0.'
+        if (isNaN(up) || up <= 0) return 'Preço unitário deve ser maior que 0.'
         if (isNaN(dp) || dp <= 0) {
-          return 'Discount per unit must be greater than 0.'
+          return 'Desconto por unidade deve ser maior que 0.'
         }
         if (dp > up) {
-          return 'Discount per unit cannot exceed unit price.'
+          return 'Desconto por unidade não pode exceder o preço unitário.'
         }
         break
       }
@@ -513,11 +513,11 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
         const data = await res.json().catch(() => ({}))
         error.value = data.error ||
           (editingId.value
-            ? 'Failed to update coupon. Check the data and try again.'
-            : 'Failed to create coupon. Check the data and try again.')
+            ? 'Falha ao atualizar cupom. Verifique os dados e tente novamente.'
+            : 'Falha ao criar cupom. Verifique os dados e tente novamente.')
       }
     } catch {
-      error.value = 'Connection error. Check your internet.'
+      error.value = 'Erro de conexão. Verifique sua internet.'
     } finally {
       loading.value = false
     }
@@ -543,23 +543,32 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
   function behaviorTypeSummary(behavior: Coupon['behavior']): string {
     switch (behavior.type) {
       case 'percentage_discount':
-        return `${behavior.percent}% off`
+        return `${behavior.percent}% de desconto`
       case 'fixed_amount':
-        return `${formatBRL(behavior.amountCents)} off`
+        return `${formatBRL(behavior.amountCents)} de desconto`
       case 'bogo':
-        return `Buy ${behavior.buyQuantity} get ${behavior.freeQuantity} free`
+        return `Compre ${behavior.buyQuantity} leve ${behavior.freeQuantity} grátis`
       case 'item_specific':
-        return `${formatBRL(behavior.discountPerUnitCents)}/unit off`
+        return `${formatBRL(behavior.discountPerUnitCents)}/unidade de desconto`
     }
+  }
+
+  const FREQUENCY_LABELS: Record<string, string> = {
+    one_time: 'Uma vez',
+    daily: 'Diário',
+    weekly: 'Semanal',
+    monthly: 'Mensal',
   }
 
   function restrictionSummary(r: CouponRestrictions): string {
     const parts: string[] = []
     if (r.globalCap) parts.push(`Global: ${r.globalCap}`)
-    if (r.userCap) parts.push(`User: ${r.userCap}`)
-    if (r.usageFrequency) parts.push(`${r.usageFrequency.replace('_', ' ')}`)
+    if (r.userCap) parts.push(`Usuário: ${r.userCap}`)
+    if (r.usageFrequency) {
+      parts.push(FREQUENCY_LABELS[r.usageFrequency] || r.usageFrequency.replace('_', ' '))
+    }
     if (r.validUntil) {
-      parts.push(`Until ${new Date(r.validUntil).toLocaleDateString()}`)
+      parts.push(`Até ${new Date(r.validUntil).toLocaleDateString()}`)
     }
     return parts.join(' | ') || '\u221E'
   }
@@ -580,7 +589,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
   return (
     <div class='space-y-6'>
       <div class='flex justify-between items-center'>
-        <h3 class='text-lg font-medium text-slate-900'>Coupons</h3>
+        <h3 class='text-lg font-medium text-slate-900'>Cupons</h3>
         <Button
           onClick={() => {
             if (showForm.value) {
@@ -592,7 +601,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
           }}
           variant={showForm.value ? 'outline' : 'default'}
         >
-          {showForm.value ? 'Cancel' : 'New Coupon'}
+          {showForm.value ? 'Cancelar' : 'Novo Cupom'}
         </Button>
       </div>
 
@@ -603,8 +612,8 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
         >
           <h4 class='font-semibold text-slate-800 text-sm'>
             {editingId.value
-              ? `Edit: ${title.value || 'Coupon'}`
-              : 'New Coupon'}
+              ? `Editar: ${title.value || 'Cupom'}`
+              : 'Novo Cupom'}
           </h4>
 
           {error.value && (
@@ -616,7 +625,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
           {!editingId.value && (
             <div>
               <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2'>
-                Template
+                Modelo
               </label>
               <div class='grid grid-cols-2 md:grid-cols-3 gap-3'>
                 {TEMPLATE_PRESETS.map((preset) => (
@@ -648,14 +657,14 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
           <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div class='space-y-1'>
               <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                Title
+                Título
               </label>
               <input
                 type='text'
                 value={title.value}
                 onInput={(e) =>
                   title.value = (e.target as HTMLInputElement).value}
-                placeholder='e.g. Grand Opening Special'
+                placeholder='ex: Promoção de Inauguração'
                 class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                 required
               />
@@ -663,7 +672,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
 
             <div class='space-y-1'>
               <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                Behavior Type
+                Tipo de Comportamento
               </label>
               <select
                 value={behaviorType.value}
@@ -685,14 +694,14 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
           {behaviorType.value === 'percentage_discount' && (
             <div class='space-y-1'>
               <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                Discount Percentage (%)
+                Percentual de Desconto (%)
               </label>
               <input
                 type='number'
                 value={percent.value}
                 onInput={(e) =>
                   percent.value = (e.target as HTMLInputElement).value}
-                placeholder='e.g. 10'
+                placeholder='ex: 10'
                 min='1'
                 max='100'
                 class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
@@ -704,7 +713,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
           {behaviorType.value === 'fixed_amount' && (
             <div class='space-y-1'>
               <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                Amount Off (cents)
+                Valor de Desconto (centavos)
               </label>
               <div class='relative'>
                 <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
@@ -715,7 +724,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                   value={amountCents.value}
                   onInput={(e) =>
                     amountCents.value = (e.target as HTMLInputElement).value}
-                  placeholder='e.g. 500 for R$5.00 off'
+                  placeholder='ex: 500 para R$5,00 de desconto'
                   min='1'
                   class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                   required
@@ -728,14 +737,14 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
             <div class='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <div class='space-y-1'>
                 <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                  Buy Quantity
+                  Quantidade para Comprar
                 </label>
                 <input
                   type='number'
                   value={buyQuantity.value}
                   onInput={(e) =>
                     buyQuantity.value = (e.target as HTMLInputElement).value}
-                  placeholder='e.g. 1'
+                  placeholder='ex: 1'
                   min='1'
                   class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                   required
@@ -743,14 +752,14 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
               </div>
               <div class='space-y-1'>
                 <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                  Free Quantity
+                  Quantidade Grátis
                 </label>
                 <input
                   type='number'
                   value={freeQuantity.value}
                   onInput={(e) =>
                     freeQuantity.value = (e.target as HTMLInputElement).value}
-                  placeholder='e.g. 1'
+                  placeholder='ex: 1'
                   min='1'
                   class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                   required
@@ -758,7 +767,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
               </div>
               <div class='space-y-1'>
                 <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                  Unit Price (cents)
+                  Preço Unitário (centavos)
                 </label>
                 <div class='relative'>
                   <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
@@ -770,7 +779,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                     onInput={(e) =>
                       unitPriceCents.value =
                         (e.target as HTMLInputElement).value}
-                    placeholder='e.g. 1000'
+                    placeholder='ex: 1000'
                     min='1'
                     class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     required
@@ -784,7 +793,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
             <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div class='space-y-1'>
                 <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                  Unit Price (cents)
+                  Preço Unitário (centavos)
                 </label>
                 <div class='relative'>
                   <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
@@ -796,7 +805,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                     onInput={(e) =>
                       unitPriceCents.value =
                         (e.target as HTMLInputElement).value}
-                    placeholder='e.g. 2000'
+                    placeholder='ex: 2000'
                     min='1'
                     class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     required
@@ -805,7 +814,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
               </div>
               <div class='space-y-1'>
                 <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                  Discount Per Unit (cents)
+                  Desconto por Unidade (centavos)
                 </label>
                 <div class='relative'>
                   <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
@@ -817,7 +826,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                     onInput={(e) =>
                       discountPerUnitCents.value =
                         (e.target as HTMLInputElement).value}
-                    placeholder='e.g. 1000'
+                    placeholder='ex: 1000'
                     min='1'
                     class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     required
@@ -829,13 +838,13 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
 
           <div class='space-y-1'>
             <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-              Description (Optional)
+              Descrição (Opcional)
             </label>
             <textarea
               value={description.value}
               onInput={(e) =>
                 description.value = (e.target as HTMLTextAreaElement).value}
-              placeholder='Describe the promotion terms...'
+              placeholder='Descreva os termos da promoção...'
               rows={2}
               class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
             />
@@ -847,7 +856,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
               onClick={() => restrictionsOpen.value = !restrictionsOpen.value}
               class='w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors'
             >
-              <span>Restrictions (all optional)</span>
+              <span>Restrições (todas opcionais)</span>
               <svg
                 class={cn(
                   'w-4 h-4 transition-transform',
@@ -870,35 +879,35 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                 <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <div class='space-y-1'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Global Cap
+                      Limite Global
                     </label>
                     <input
                       type='number'
                       value={globalCap.value}
                       onInput={(e) =>
                         globalCap.value = (e.target as HTMLInputElement).value}
-                      placeholder='Max total redemptions'
+                      placeholder='Máx. total de resgates'
                       min='1'
                       class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     />
                   </div>
                   <div class='space-y-1'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      User Cap
+                      Limite por Usuário
                     </label>
                     <input
                       type='number'
                       value={userCap.value}
                       onInput={(e) =>
                         userCap.value = (e.target as HTMLInputElement).value}
-                      placeholder='Max per user'
+                      placeholder='Máx. por usuário'
                       min='1'
                       class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     />
                   </div>
                   <div class='space-y-1'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Valid From
+                      Válido De
                     </label>
                     <input
                       type='datetime-local'
@@ -910,7 +919,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                   </div>
                   <div class='space-y-1'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Valid Until
+                      Válido Até
                     </label>
                     <input
                       type='datetime-local'
@@ -922,7 +931,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                   </div>
                   <div class='space-y-1'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Usage Frequency
+                      Frequência de Uso
                     </label>
                     <select
                       value={usageFrequency.value}
@@ -940,7 +949,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                   </div>
                   <div class='space-y-1'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Max Units per Redemption
+                      Máx. Unidades por Resgate
                     </label>
                     <input
                       type='number'
@@ -948,14 +957,14 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                       onInput={(e) =>
                         maxUnitsPerRedemption.value =
                           (e.target as HTMLInputElement).value}
-                      placeholder='Max quantity per use'
+                      placeholder='Máx. por uso'
                       min='1'
                       class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     />
                   </div>
                   <div class='space-y-1'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Min Purchase Value (cents)
+                      Valor Mínimo de Compra (centavos)
                     </label>
                     <div class='relative'>
                       <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
@@ -967,7 +976,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                         onInput={(e) =>
                           minimumPurchaseValueCents.value =
                             (e.target as HTMLInputElement).value}
-                        placeholder='e.g. 3000 for R$30 minimum'
+                        placeholder='ex: 3000 para mínimo de R$30'
                         min='1'
                         class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                       />
@@ -981,7 +990,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
           {editingId.value && (
             <div class='flex items-center gap-2'>
               <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                Active
+                Ativo
               </label>
               <button
                 type='button'
@@ -1007,14 +1016,14 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
               variant='outline'
               onClick={closeForm}
             >
-              Cancel
+              Cancelar
             </Button>
             <Button type='submit' disabled={loading.value}>
               {loading.value
-                ? 'Saving...'
+                ? 'Salvando...'
                 : editingId.value
-                ? 'Save Changes'
-                : 'Create Coupon'}
+                ? 'Salvar Alterações'
+                : 'Criar Cupom'}
             </Button>
           </div>
         </form>
@@ -1024,12 +1033,12 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
         <table class='w-full text-sm text-left'>
           <thead class='bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold tracking-wider'>
             <tr>
-              <th class='px-6 py-3'>Coupon</th>
-              <th class='px-6 py-3'>Type</th>
-              <th class='px-6 py-3'>Discount</th>
-              <th class='px-6 py-3'>Restrictions</th>
+              <th class='px-6 py-3'>Cupom</th>
+              <th class='px-6 py-3'>Tipo</th>
+              <th class='px-6 py-3'>Desconto</th>
+              <th class='px-6 py-3'>Restrições</th>
               <th class='px-6 py-3'>Status</th>
-              <th class='px-6 py-3 text-right'>Actions</th>
+              <th class='px-6 py-3 text-right'>Ações</th>
             </tr>
           </thead>
           <tbody class='divide-y divide-slate-200'>
@@ -1040,7 +1049,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                     colSpan={6}
                     class='px-6 py-10 text-center text-slate-500'
                   >
-                    No coupons yet. Create your first one above.
+                    Nenhum cupom ainda. Crie o primeiro acima.
                   </td>
                 </tr>
               )
@@ -1110,7 +1119,7 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                           openForm()
                         }}
                       >
-                        Edit
+                        Editar
                       </Button>
                     </td>
                   </tr>

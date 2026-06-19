@@ -35,12 +35,12 @@ export default function AdminAnalytics() {
       const res = await fetch('/api/admin/analytics')
       if (!res.ok) {
         const text = await res.text()
-        throw new Error(text || 'Failed to load analytics')
+        throw new Error(text || 'Falha ao carregar analytics')
       }
       const json: AdminAnalyticsData = await res.json()
       setData(json)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
     } finally {
       setLoading(false)
     }
@@ -49,7 +49,7 @@ export default function AdminAnalytics() {
   if (loading && !data) {
     return (
       <div class='p-12 text-center text-slate-400'>
-        Loading analytics...
+        Carregando analytics...
       </div>
     )
   }
@@ -57,7 +57,7 @@ export default function AdminAnalytics() {
   if (error) {
     return (
       <div class='p-12 text-center text-red-500'>
-        Error: {error}
+        Erro: {error}
       </div>
     )
   }
@@ -69,27 +69,27 @@ export default function AdminAnalytics() {
       {/* Summary Cards */}
       <div class='grid grid-cols-2 lg:grid-cols-5 gap-4'>
         <SummaryCard
-          title='Total Coupons'
-          value={data?.totalCoupons.toLocaleString('en-US') ?? '0'}
+          title='Total de Cupons'
+          value={data?.totalCoupons.toLocaleString('pt-BR') ?? '0'}
           color='blue'
         />
         <SummaryCard
-          title='Total Views'
-          value={data?.totalViews.toLocaleString('en-US') ?? '0'}
+          title='Total de Visualizações'
+          value={data?.totalViews.toLocaleString('pt-BR') ?? '0'}
           color='green'
         />
         <SummaryCard
-          title='Total Redemptions'
-          value={data?.totalRedemptions.toLocaleString('en-US') ?? '0'}
+          title='Total de Resgates'
+          value={data?.totalRedemptions.toLocaleString('pt-BR') ?? '0'}
           color='purple'
         />
         <SummaryCard
-          title='Total Validations'
-          value={data?.totalValidations.toLocaleString('en-US') ?? '0'}
+          title='Total de Validações'
+          value={data?.totalValidations.toLocaleString('pt-BR') ?? '0'}
           color='amber'
         />
         <SummaryCard
-          title='Total Discount Given'
+          title='Total de Descontos Concedidos'
           value={data ? formatBRL(data.totalDiscountCents) : 'R$ 0,00'}
           color='red'
         />
@@ -98,17 +98,17 @@ export default function AdminAnalytics() {
       {/* Per-Business Breakdown */}
       <div class='bg-white rounded-xl border border-slate-200 p-6'>
         <h2 class='text-lg font-bold text-slate-900 mb-6'>
-          Per-Business Breakdown
+          Detalhamento por Empresa
         </h2>
 
         {!hasData
           ? (
             <div class='py-12 text-center border-2 border-dashed border-slate-200 rounded-lg bg-slate-50'>
               <p class='text-slate-400 font-medium mb-2'>
-                No data available
+                Nenhum dado disponível
               </p>
               <p class='text-slate-400 text-sm'>
-                Create coupons across businesses to see analytics here.
+                Crie cupons em todas as empresas para ver analytics aqui.
               </p>
             </div>
           )
@@ -118,19 +118,19 @@ export default function AdminAnalytics() {
                 <thead class='border-b border-slate-200'>
                   <tr>
                     <th class='px-3 py-3 font-medium text-slate-500 text-xs uppercase tracking-wider'>
-                      Business
+                      Empresa
                     </th>
                     <th class='px-3 py-3 font-medium text-slate-500 text-xs uppercase tracking-wider text-right'>
-                      Coupons
+                      Cupons
                     </th>
                     <th class='px-3 py-3 font-medium text-slate-500 text-xs uppercase tracking-wider text-right'>
-                      Views
+                      Visualizações
                     </th>
                     <th class='px-3 py-3 font-medium text-slate-500 text-xs uppercase tracking-wider text-right'>
-                      Redemptions
+                      Resgates
                     </th>
                     <th class='px-3 py-3 font-medium text-slate-500 text-xs uppercase tracking-wider text-right'>
-                      Validations
+                      Validações
                     </th>
                   </tr>
                 </thead>
@@ -144,16 +144,16 @@ export default function AdminAnalytics() {
                         {biz.businessName}
                       </td>
                       <td class='px-3 py-3 text-slate-900 text-right'>
-                        {biz.couponCount.toLocaleString('en-US')}
+                        {biz.couponCount.toLocaleString('pt-BR')}
                       </td>
                       <td class='px-3 py-3 text-slate-900 text-right'>
-                        {biz.totalViews.toLocaleString('en-US')}
+                        {biz.totalViews.toLocaleString('pt-BR')}
                       </td>
                       <td class='px-3 py-3 text-slate-900 text-right'>
-                        {biz.totalRedemptions.toLocaleString('en-US')}
+                        {biz.totalRedemptions.toLocaleString('pt-BR')}
                       </td>
                       <td class='px-3 py-3 text-slate-900 text-right'>
-                        {biz.totalValidations.toLocaleString('en-US')}
+                        {biz.totalValidations.toLocaleString('pt-BR')}
                       </td>
                     </tr>
                   ))}

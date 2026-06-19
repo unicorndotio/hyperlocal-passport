@@ -355,7 +355,7 @@ export default function BusinessProfileEditor({ business }: Props) {
                         onClick={() => addDay(day)}
                         className='text-sm text-blue-600 hover:text-blue-800 font-medium pt-2 text-left'
                       >
-                        + Add {DAY_LABELS[day]}
+                        + Adicionar {DAY_LABELS[day]}
                       </button>
                     </div>
                   )
@@ -428,7 +428,7 @@ export default function BusinessProfileEditor({ business }: Props) {
                       onClick={() => removeDay(day)}
                       className='text-sm text-red-600 hover:text-red-800 font-medium pt-2 whitespace-nowrap'
                     >
-                      Remove
+                      Remover
                     </button>
                     {dayErr && (
                       <div className='col-span-4'>

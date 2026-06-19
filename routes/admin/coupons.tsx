@@ -15,28 +15,28 @@ export default define.page(function AdminCouponsPage() {
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between'>
           <div className='flex items-center gap-8'>
             <h1 className='text-xl font-bold text-slate-900'>
-              Admin Panel
+              Painel Administrativo
             </h1>
             <nav className='flex items-center gap-4'>
               <a
                 href='/admin/approvals'
                 className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
               >
-                Approvals
+                Aprovações
               </a>
               <span className='text-slate-300'>|</span>
               <a
                 href='/admin/businesses'
                 className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
               >
-                Businesses
+                Empresas Parceiras
               </a>
               <span className='text-slate-300'>|</span>
               <a
                 href='/admin/coupons'
                 className='text-sm font-semibold text-blue-600 transition-colors'
               >
-                Coupons
+                Cupons
               </a>
               <span className='text-slate-300'>|</span>
               <a
@@ -52,7 +52,7 @@ export default define.page(function AdminCouponsPage() {
               href='/'
               className='text-sm text-slate-500 hover:text-slate-900 transition-colors'
             >
-              Back to site
+              Voltar para o site
             </a>
           </div>
         </div>
@@ -61,9 +61,9 @@ export default define.page(function AdminCouponsPage() {
       <main className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <Card>
           <CardHeader>
-            <CardTitle>Coupon Management</CardTitle>
+            <CardTitle>Gerenciamento de Cupons</CardTitle>
             <CardDescription>
-              View, filter, edit, and delete coupons across all businesses.
+              Visualize, filtre, edite e exclua cupons em todas as empresas.
             </CardDescription>
           </CardHeader>
           <CardContent>
