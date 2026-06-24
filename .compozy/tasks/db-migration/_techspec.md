@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Migrate Passaporte Local's data layer from Deno KV to PostgreSQL 18 Alpine using Drizzle ORM. A single `drizzle-kit generate` run produces the initial migration from a centralized `src/db/schema.ts` file. The migration is **schema-first with drop-and-recreate**: existing KV data is discarded, and the seed script is rewritten for Drizzle inserts.
+Migrate Passaporte Local's data layer from Deno KV to PostgreSQL 18 Alpine using Drizzle ORM. A single `drizzle-kit generate` run produces the initial migration from a centralized `db/schema.ts` file. The migration is **schema-first with drop-and-recreate**: existing KV data is discarded, and the seed script is rewritten for Drizzle inserts.
 
 The Drizzle client connects via `pg.Pool` (1–10 connections, configurable). Better Auth switches from the custom KV adapter to its official Drizzle adapter. All route handlers, islands, and tests replace KV calls with Drizzle queries. Atomic KV transactions become Drizzle transactions. Rate limiting is removed for V1. The `coupon_analytics` table uses pre-aggregated counters with atomic SQL increments; the monthly user cap is computed via `COUNT` on the `redemptions` table.
 
@@ -55,7 +55,7 @@ All three services (web app, PostgreSQL, Drizzle Gateway) run under Docker Compo
 
 During the migration window (no new feature work), files are updated in place. The order of changes ensures `deno check` always passes at each commit boundary:
 
-1. `lib/db.ts` created, `src/db/schema.ts` created, migration generated
+1. `lib/db.ts` created, `db/schema.ts` created, migration generated
 2. Better Auth switched to Drizzle adapter (auth still works)
 3. Route handlers migrated one by one (each commit keeps the app runnable with remaining KV calls)
 4. `lib/kv.ts` and `lib/kv-adapter.ts` deleted at the end
@@ -71,7 +71,7 @@ During the migration window (no new feature work), files are updated in place. T
 ```ts
 import { drizzle } from 'npm:drizzle-orm/node-postgres@0.38.2'
 import { Pool } from 'npm:pg@8.13.1'
-import * as schema from '../src/db/schema.ts'
+import * as schema from '../db/schema.ts'
 
 const pool = new Pool({
   connectionString: Deno.env.get('PG_CONNECTION'),
@@ -82,7 +82,7 @@ const pool = new Pool({
 export const db = drizzle({ client: pool, schema })
 ```
 
-#### `src/db/schema.ts` — Centralized Schema
+#### `db/schema.ts` — Centralized Schema
 
 All tables defined with `pgTable` from `drizzle-orm/pg-core`. Relations use Drizzle's `relations` API for relational queries.
 
@@ -252,7 +252,7 @@ Unchanged. Files remain on the local filesystem under `UPLOADS_DIR`. Only `file_
 | `lib/analytics.ts` | Modified | Replaces KV key builders with Drizzle queries | Rewrite to use `db.update(analytics).set(...)` |
 | `lib/storage.ts` | Modified | Replaces `kv.set/delete` with Drizzle | Replace KV calls |
 | `lib/db.ts` | New | Drizzle client singleton | Create file |
-| `src/db/schema.ts` | New | All table definitions | Create file |
+| `db/schema.ts` | New | All table definitions | Create file |
 | `drizzle.config.ts` | New | Drizzle Kit config | Create file |
 | `routes/api/coupons/[id]/redeem.ts` | Modified | KV → Drizzle transaction | Rewrite atomic block |
 | `routes/api/transactions/validate.ts` | Modified | KV → Drizzle transaction | Rewrite atomic block |
@@ -286,7 +286,7 @@ Same strategy as before: pure functions (validation, formatting, calculation) ar
 
 ```ts
 import { db } from '../lib/db.ts'
-import * as schema from '../src/db/schema.ts'
+import * as schema from '../db/schema.ts'
 
 Deno.test('coupon redemption', async (t) => {
   await db.delete(schema.redemptions)
@@ -319,7 +319,7 @@ Deno.test('coupon redemption', async (t) => {
 ### Build Order
 
 1. **Infrastructure** — `docker-compose.yml` updated, `drizzle.config.ts` created, PostgreSQL health check, `PG_CONNECTION` env var
-2. **Schema** — `src/db/schema.ts` defined, `drizzle-kit generate` produces `0000_initial.sql`, `drizzle-kit migrate` creates tables
+2. **Schema** — `db/schema.ts` defined, `drizzle-kit generate` produces `0000_initial.sql`, `drizzle-kit migrate` creates tables
 3. **Drizzle client** — `lib/db.ts` created, `main.ts` updated to initialize Drizzle (KV still works in parallel)
 4. **Better Auth** — switch to Drizzle adapter in `lib/auth.ts`, verify sign-up/sign-in against PostgreSQL
 5. **File metadata** — `lib/storage.ts` updated, `file_metadata` table used

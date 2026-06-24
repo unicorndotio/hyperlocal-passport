@@ -1,11 +1,12 @@
 import { define } from '../../utils.ts'
 import { page } from 'fresh'
-import { kv } from '../../lib/kv.ts'
-import { getDenoKvAdapterRaw } from '../../lib/kv-adapter.ts'
 import { Business } from '../../lib/business.ts'
 import { Coupon } from '../../lib/coupon.ts'
-import { viewCountKey } from '../../lib/analytics.ts'
+import { incrementViewCount } from '../../lib/analytics.ts'
 import { Head } from 'fresh/runtime'
+import { db } from '@/lib/db.ts'
+import * as schema from '@/db/schema.ts'
+import { and, eq } from 'drizzle-orm'
 import {
   Card,
   CardContent,
@@ -18,25 +19,21 @@ import RedeemButton from '../../islands/RedeemButton.tsx'
 export const handler = define.handlers({
   async GET(ctx) {
     const { id } = ctx.params
-    const businessRes = await kv.get<Business>(['businesses', id])
+    const [business] = await db.select().from(schema.businesses).where(
+      eq(schema.businesses.id, id),
+    ).limit(1) as unknown as Business[]
 
-    if (!businessRes.value) {
+    if (!business) {
       return new Response('Not Found', { status: 404 })
     }
 
-    const business = businessRes.value
-    const adapter = getDenoKvAdapterRaw(kv)
-    const coupons = await adapter.findMany<Coupon>({
-      model: 'coupons',
-      where: [{ field: 'businessId', value: id }, {
-        field: 'isActive',
-        value: true,
-      }],
-    })
+    const coupons = await db.select().from(schema.coupons).where(
+      and(eq(schema.coupons.businessId, id), eq(schema.coupons.isActive, true)),
+    ) as unknown as Coupon[]
 
     // Fire-and-forget view counter increment for each displayed coupon
     for (const coupon of coupons) {
-      kv.atomic().sum(viewCountKey(coupon.id), 1n).commit()
+      incrementViewCount(coupon.id)
     }
 
     return page({ business, coupons })

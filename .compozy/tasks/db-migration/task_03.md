@@ -1,10 +1,10 @@
 ---
-status: pending
+status: completed
 title: Drizzle Client Singleton
 type: backend
 complexity: low
 dependencies:
-  - task_02
+    - task_02
 ---
 
 # Drizzle Client Singleton
@@ -28,7 +28,7 @@ Create `lib/db.ts` as the single Drizzle ORM client singleton shared across the 
 
 1. `lib/db.ts` MUST export a single `db` instance created with `drizzle()` from `npm:drizzle-orm/node-postgres`.
 2. The underlying pool MUST use `npm:pg`'s `Pool` class with `connectionString` from `Deno.env.get('PG_CONNECTION')`, `min: 1`, `max: 10`.
-3. The schema object MUST be imported from `../src/db/schema.ts`.
+3. The schema object MUST be imported from `../db/schema.ts`.
 4. `main.ts` MUST be updated to await PostgreSQL readiness before starting the Fresh server.
 5. The Drizzle client MUST coexist with the existing KV singleton — KV is NOT removed in this task.
 6. A pooled connection MUST be tested at startup and log a warning if the database is unreachable (log event: "DB connection failed" with masked connection string).
@@ -77,7 +77,7 @@ Create `lib/db.ts` as the single Drizzle ORM client singleton shared across the 
 
 - [ ] `lib/db.ts` compiles with zero type errors via `deno check`
 - [ ] Pool configuration matches spec (min=1, max=10, connectionString from env)
-- [ ] Import path to `../src/db/schema.ts` resolves correctly
+- [ ] Import path to `../db/schema.ts` resolves correctly
 
 ### Integration Tests
 

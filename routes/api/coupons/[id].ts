@@ -1,12 +1,10 @@
 import { define } from '../../../utils.ts'
-import { kv } from '../../../lib/kv.ts'
-import { getDenoKvAdapterRaw } from '../../../lib/kv-adapter.ts'
+import { db } from '../../../lib/db.ts'
+import * as schema from '../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { auth } from '../../../lib/auth.ts'
-import type { Business } from '../../../lib/business.ts'
 import type { Coupon } from '../../../lib/coupon.ts'
 import { validateBehavior } from '../../../lib/coupon.ts'
-
-const adapter = getDenoKvAdapterRaw(kv)
 
 function validateUpdateData(data: Record<string, unknown>): string | null {
   if (data.behavior !== undefined) {
@@ -24,17 +22,13 @@ async function handleUpdate(ctx: {
   if (!session) return new Response('Unauthorized', { status: 401 })
 
   const { id } = ctx.params
-  const coupon = await adapter.findOne<Coupon>({
-    model: 'coupons',
-    where: [{ field: 'id', value: id }],
-  })
+  const [coupon] = await db.select().from(schema.coupons)
+    .where(eq(schema.coupons.id, id))
   if (!coupon) return new Response('Coupon Not Found', { status: 404 })
 
   if (session.user.role !== 'admin') {
-    const business = await adapter.findOne<Business>({
-      model: 'businesses',
-      where: [{ field: 'userId', value: session.user.id }],
-    })
+    const [business] = await db.select().from(schema.businesses)
+      .where(eq(schema.businesses.userId, session.user.id))
     if (!business || business.id !== coupon.businessId) {
       return new Response('Forbidden: You do not own this coupon', {
         status: 403,
@@ -54,11 +48,10 @@ async function handleUpdate(ctx: {
     return new Response(validationError, { status: 400 })
   }
 
-  const updated = await adapter.update({
-    model: 'coupons',
-    where: [{ field: 'id', value: id }],
-    update: updateData,
-  })
+  const [updated] = await db.update(schema.coupons)
+    .set(updateData)
+    .where(eq(schema.coupons.id, id))
+    .returning()
 
   return Response.json(updated)
 }
@@ -66,10 +59,8 @@ async function handleUpdate(ctx: {
 export const handler = define.handlers({
   async GET(ctx) {
     const { id } = ctx.params
-    const coupon = await adapter.findOne<Coupon>({
-      model: 'coupons',
-      where: [{ field: 'id', value: id }],
-    })
+    const [coupon] = await db.select().from(schema.coupons)
+      .where(eq(schema.coupons.id, id))
     if (!coupon) return new Response('Not Found', { status: 404 })
     return Response.json(coupon)
   },
@@ -87,17 +78,13 @@ export const handler = define.handlers({
     if (!session) return new Response('Unauthorized', { status: 401 })
 
     const { id } = ctx.params
-    const coupon = await adapter.findOne<Coupon>({
-      model: 'coupons',
-      where: [{ field: 'id', value: id }],
-    })
+    const [coupon] = await db.select().from(schema.coupons)
+      .where(eq(schema.coupons.id, id))
     if (!coupon) return new Response('Coupon Not Found', { status: 404 })
 
     if (session.user.role !== 'admin') {
-      const business = await adapter.findOne<Business>({
-        model: 'businesses',
-        where: [{ field: 'userId', value: session.user.id }],
-      })
+      const [business] = await db.select().from(schema.businesses)
+        .where(eq(schema.businesses.userId, session.user.id))
       if (!business || business.id !== coupon.businessId) {
         return new Response('Forbidden: You do not own this coupon', {
           status: 403,
@@ -105,10 +92,8 @@ export const handler = define.handlers({
       }
     }
 
-    await adapter.delete({
-      model: 'coupons',
-      where: [{ field: 'id', value: id }],
-    })
+    await db.delete(schema.coupons)
+      .where(eq(schema.coupons.id, id))
     return new Response(null, { status: 204 })
   },
 })

@@ -18,6 +18,7 @@ export interface SessionSession {
 export interface State {
   user: SessionUser | null
   session: SessionSession | null
+  shared?: string
 }
 
 export const define = createDefine<State>()

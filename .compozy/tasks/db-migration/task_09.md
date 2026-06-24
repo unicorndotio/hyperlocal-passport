@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Transaction Validation Route
 type: backend
 complexity: medium
@@ -36,10 +36,10 @@ Migrate the transaction validation endpoint from Deno KV to Drizzle. This route 
 
 ## Subtasks
 
-- [ ] Update `routes/api/transactions/validate.ts`: replace atomic KV block with Drizzle transaction
-- [ ] Remove `kv` import; add `db` and `schema` imports
-- [ ] Verify `deno check` on modified file
-- [ ] Update checkout API tests for PostgreSQL
+- [x] Update `routes/api/transactions/validate.ts`: replace atomic KV block with Drizzle transaction
+- [x] Remove `kv` import; add `db` and `schema` imports
+- [x] Verify `deno check` on modified file
+- [x] Update checkout API tests for PostgreSQL
 
 ## Implementation Details
 
@@ -67,16 +67,16 @@ Migrate the transaction validation endpoint from Deno KV to Drizzle. This route 
 
 ### Unit Tests
 
-- [ ] `deno check routes/api/transactions/validate.ts` passes with zero errors
+- [x] `deno check routes/api/transactions/validate.ts` passes with zero errors
 
 ### Integration Tests
 
-- [ ] POST validate with valid active redemption creates transaction and sets redemption status to 'used'
-- [ ] POST validate with already-used redemption returns 409
-- [ ] POST validate with expired redemption returns 400
-- [ ] POST validate with non-existent redemption code returns 404
-- [ ] Analytics `validations` counter incremented correctly after validation
-- [ ] Transaction includes all fields: totalAmountCents, discountAppliedCents, finalAmountCents
+- [x] POST validate with valid active redemption creates transaction and sets redemption status to 'used'
+- [x] POST validate with already-used redemption returns 409
+- [x] POST validate with expired redemption returns 400
+- [x] POST validate with non-existent redemption code returns 404
+- [x] Analytics `validations` counter incremented correctly after validation
+- [x] Transaction includes all fields: totalAmountCents, discountAppliedCents, finalAmountCents
 - [ ] Two concurrent validations of the same redemption: first succeeds, second gets 409
 - [ ] If transaction INSERT fails (e.g., constraint violation), redemption status is unchanged (transaction rollback)
 

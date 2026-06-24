@@ -3,6 +3,9 @@ import { h } from 'npm:preact@^10.27.2'
 import { renderToString } from 'npm:preact-render-to-string@^6.5.13'
 import type { Coupon } from '../../lib/coupon.ts'
 import { handler as couponsHandler } from '../../routes/api/businesses/[id]/coupons.ts'
+import { db } from '../../lib/db.ts'
+import * as schema from '../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 function makeCoupon(overrides: Partial<Coupon> = {}): Coupon {
   return {
@@ -274,8 +277,14 @@ Deno.test(
   async () => {
     const mod = await import('../../islands/CouponManager.tsx')
     const source = mod.default.toString()
-    assertEquals(source.includes('Quantidade para comprar deve ser no mínimo 1'), true)
-    assertEquals(source.includes('Quantidade grátis deve ser no mínimo 1'), true)
+    assertEquals(
+      source.includes('Quantidade para comprar deve ser no mínimo 1'),
+      true,
+    )
+    assertEquals(
+      source.includes('Quantidade grátis deve ser no mínimo 1'),
+      true,
+    )
     assertEquals(
       source.includes('Preço unitário deve ser maior que 0'),
       true,
@@ -299,20 +308,37 @@ Deno.test(
   },
 )
 
-// API INTEGRATION TESTS (using existing test pattern from coupon_management_ui.test.ts)
-Deno.test(
-  'CouponManager API - POST creates coupon with all behavior types',
-  async (t) => {
-    const kv = await Deno.openKv(':memory:')
+// API INTEGRATION TESTS (using Drizzle/passport_test)
+Deno.test({
+  name: 'CouponManager API - POST creates coupon with all behavior types',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    await db.delete(schema.couponAnalytics)
+    await db.delete(schema.transactions)
+    await db.delete(schema.redemptions)
+    await db.delete(schema.coupons)
+    await db.delete(schema.businesses)
+    await db.delete(schema.users)
+
     const businessId = crypto.randomUUID()
     const userId = crypto.randomUUID()
 
-    await kv.set(['businesses', businessId], {
+    await db.insert(schema.users).values({
+      id: userId,
+      email: userId + '@test.com',
+      name: 'Test User',
+    })
+    await db.insert(schema.businesses).values({
       id: businessId,
       userId,
       name: 'Test Business',
+      companyName: 'Test Business Ltda',
+      cnpj: Date.now().toString(36).slice(-8) +
+        Math.random().toString(36).slice(2, 8),
+      category: 'Test',
+      logoUrl: 'http://localhost/logo.png',
       isActive: true,
-      createdAt: new Date().toISOString(),
     })
 
     await t.step('creates percentage_discount coupon', async () => {
@@ -422,27 +448,46 @@ Deno.test(
     })
 
     // Cleanup
-    for await (const entry of kv.list({ prefix: ['coupons'] })) {
-      await kv.delete(entry.key)
-    }
-    await kv.delete(['businesses', businessId])
-    kv.close()
+    await db.delete(schema.coupons).where(
+      eq(schema.coupons.businessId, businessId),
+    )
+    await db.delete(schema.businesses).where(
+      eq(schema.businesses.id, businessId),
+    )
+    await db.delete(schema.users).where(eq(schema.users.id, userId))
   },
-)
+})
 
-Deno.test(
-  'CouponManager API - POST validates behavior type',
-  async (t) => {
-    const kv = await Deno.openKv(':memory:')
+Deno.test({
+  name: 'CouponManager API - POST validates behavior type',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    await db.delete(schema.couponAnalytics)
+    await db.delete(schema.transactions)
+    await db.delete(schema.redemptions)
+    await db.delete(schema.coupons)
+    await db.delete(schema.businesses)
+    await db.delete(schema.users)
+
     const businessId = crypto.randomUUID()
     const userId = crypto.randomUUID()
 
-    await kv.set(['businesses', businessId], {
+    await db.insert(schema.users).values({
+      id: userId,
+      email: userId + '@test.com',
+      name: 'Test User',
+    })
+    await db.insert(schema.businesses).values({
       id: businessId,
       userId,
       name: 'Test Business',
+      companyName: 'Test Business Ltda',
+      cnpj: Date.now().toString(36).slice(-8) +
+        Math.random().toString(36).slice(2, 8),
+      category: 'Test',
+      logoUrl: 'http://localhost/logo.png',
       isActive: true,
-      createdAt: new Date().toISOString(),
     })
 
     await t.step('rejects missing behavior', async () => {
@@ -465,10 +510,12 @@ Deno.test(
     })
 
     // Cleanup
-    for await (const entry of kv.list({ prefix: ['coupons'] })) {
-      await kv.delete(entry.key)
-    }
-    await kv.delete(['businesses', businessId])
-    kv.close()
+    await db.delete(schema.coupons).where(
+      eq(schema.coupons.businessId, businessId),
+    )
+    await db.delete(schema.businesses).where(
+      eq(schema.businesses.id, businessId),
+    )
+    await db.delete(schema.users).where(eq(schema.users.id, userId))
   },
-)
+})

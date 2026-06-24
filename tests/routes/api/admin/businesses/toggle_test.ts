@@ -5,7 +5,9 @@ import {
 } from '../../../../../routes/api/admin/businesses/[id]/toggle.ts'
 import { applyMiddleware } from '../../../../../routes/_middleware.ts'
 import { auth } from '../../../../../lib/auth.ts'
-import { kv } from '../../../../../lib/kv.ts'
+import { db } from '../../../../../lib/db.ts'
+import * as schema from '../../../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 const testBusinessId = 'biz-toggle-test-1'
 
@@ -20,7 +22,6 @@ function makeBusiness(overrides: Record<string, unknown> = {}) {
     description: 'Uma empresa para teste de toggle',
     logoUrl: 'http://localhost:8000/api/uploads/logo.png',
     isActive: true,
-    createdAt: new Date().toISOString(),
     ...overrides,
   }
 }
@@ -29,125 +30,153 @@ async function seedBusiness(
   data: Record<string, unknown> = {},
 ): Promise<Record<string, unknown>> {
   const biz = makeBusiness(data)
-  await kv.set(['businesses', biz.id as string], biz)
+  // Ensure parent user exists
+  const [existing] = await db
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.id, biz.userId as string))
+    .limit(1)
+  if (!existing) {
+    await db.insert(schema.users).values({
+      id: biz.userId as string,
+      email: biz.userId + '@test.com',
+      name: 'Owner',
+    })
+  }
+  await db.insert(schema.businesses).values(biz as Record<string, unknown>)
   return biz
 }
 
 async function cleanupBusiness(id: string) {
-  await kv.delete(['businesses', id])
+  const [biz] = await db
+    .select()
+    .from(schema.businesses)
+    .where(eq(schema.businesses.id, id))
+    .limit(1)
+  if (biz) {
+    await db.delete(schema.businesses).where(eq(schema.businesses.id, id))
+  }
 }
 
-Deno.test('PUT /api/admin/businesses/[id]/toggle', async (t) => {
-  // --- Unit: valid toggle isActive: true → false ---
+async function cleanupAll() {
+  await db.delete(schema.couponAnalytics)
+  await db.delete(schema.transactions)
+  await db.delete(schema.redemptions)
+  await db.delete(schema.coupons)
+  await db.delete(schema.businesses)
+  await db.delete(schema.users)
+}
 
-  await t.step('toggles isActive from true to false', async () => {
-    const biz = await seedBusiness({ isActive: true })
-    try {
-      const res = await handleToggle(biz.id as string, false)
-      assertEquals(res.status, 200)
-      const body = await res.json()
-      assertEquals(body.isActive, false)
-    } finally {
-      await cleanupBusiness(biz.id as string)
-    }
-  })
+Deno.test({
+  name: 'PUT /api/admin/businesses/[id]/toggle',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    await cleanupAll()
 
-  // --- Unit: valid toggle isActive: false → true ---
-
-  await t.step('toggles isActive from false to true', async () => {
-    const biz = await seedBusiness({ isActive: false })
-    try {
-      const res = await handleToggle(biz.id as string, true)
-      assertEquals(res.status, 200)
-      const body = await res.json()
-      assertEquals(body.isActive, true)
-    } finally {
-      await cleanupBusiness(biz.id as string)
-    }
-  })
-
-  // --- Unit: non-existent business returns 404 ---
-
-  await t.step('returns 404 for non-existent business', async () => {
-    const res = await handleToggle('non-existent-id', true)
-    assertEquals(res.status, 404)
-    const body = await res.json()
-    assertEquals(body.error, 'Business not found')
-  })
-
-  // --- Unit: missing body field defaults to !currentValue ---
-
-  await t.step(
-    'defaults to !currentValue when isActive is missing',
-    async () => {
+    await t.step('toggles isActive from true to false', async () => {
       const biz = await seedBusiness({ isActive: true })
       try {
-        const res = await handleToggle(biz.id as string)
+        const res = await handleToggle(biz.id as string, false)
         assertEquals(res.status, 200)
         const body = await res.json()
         assertEquals(body.isActive, false)
       } finally {
         await cleanupBusiness(biz.id as string)
       }
-    },
-  )
+    })
 
-  // --- Unit: invalid JSON body returns 400 ---
+    await t.step('toggles isActive from false to true', async () => {
+      const biz = await seedBusiness({ isActive: false })
+      try {
+        const res = await handleToggle(biz.id as string, true)
+        assertEquals(res.status, 200)
+        const body = await res.json()
+        assertEquals(body.isActive, true)
+      } finally {
+        await cleanupBusiness(biz.id as string)
+      }
+    })
 
-  await t.step('returns 400 for invalid JSON body', async () => {
-    const biz = await seedBusiness()
-    try {
-      const req = new Request(
-        `http://localhost:8000/api/admin/businesses/${biz.id}/toggle`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: 'not-json',
-        },
-      )
-      const putHandler = handler.PUT as (
-        ctx: { req: Request; params: Record<string, string> },
-      ) => Promise<Response>
-      const res = await putHandler({ req, params: { id: biz.id as string } })
-      assertEquals(res.status, 400)
+    await t.step('returns 404 for non-existent business', async () => {
+      const res = await handleToggle('non-existent-id', true)
+      assertEquals(res.status, 404)
       const body = await res.json()
-      assertEquals(body.error, 'Invalid JSON')
-    } finally {
-      await cleanupBusiness(biz.id as string)
-    }
-  })
+      assertEquals(body.error, 'Business not found')
+    })
 
-  // --- Integration: admin toggles business → isActive flipped in KV ---
+    await t.step(
+      'defaults to !currentValue when isActive is missing',
+      async () => {
+        const biz = await seedBusiness({ isActive: true })
+        try {
+          const res = await handleToggle(biz.id as string)
+          assertEquals(res.status, 200)
+          const body = await res.json()
+          assertEquals(body.isActive, false)
+        } finally {
+          await cleanupBusiness(biz.id as string)
+        }
+      },
+    )
 
-  await t.step(
-    'admin toggle persists isActive change in KV',
-    async () => {
-      const biz = await seedBusiness({ isActive: true })
+    await t.step('returns 400 for invalid JSON body', async () => {
+      const biz = await seedBusiness()
       try {
         const req = new Request(
           `http://localhost:8000/api/admin/businesses/${biz.id}/toggle`,
           {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isActive: false }),
+            body: 'not-json',
           },
         )
         const putHandler = handler.PUT as (
           ctx: { req: Request; params: Record<string, string> },
         ) => Promise<Response>
         const res = await putHandler({ req, params: { id: biz.id as string } })
-        assertEquals(res.status, 200)
-
-        const stored = await kv.get(['businesses', biz.id as string])
-        assertEquals(
-          (stored.value as Record<string, unknown>).isActive,
-          false,
-        )
+        assertEquals(res.status, 400)
+        const body = await res.json()
+        assertEquals(body.error, 'Invalid JSON')
       } finally {
         await cleanupBusiness(biz.id as string)
       }
-    },
-  )
+    })
+
+    await t.step(
+      'admin toggle persists isActive change in database',
+      async () => {
+        const biz = await seedBusiness({ isActive: true })
+        try {
+          const req = new Request(
+            `http://localhost:8000/api/admin/businesses/${biz.id}/toggle`,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ isActive: false }),
+            },
+          )
+          const putHandler = handler.PUT as (
+            ctx: { req: Request; params: Record<string, string> },
+          ) => Promise<Response>
+          const res = await putHandler({
+            req,
+            params: { id: biz.id as string },
+          })
+          assertEquals(res.status, 200)
+
+          const [stored] = await db
+            .select()
+            .from(schema.businesses)
+            .where(eq(schema.businesses.id, biz.id as string))
+            .limit(1)
+          assertEquals(stored.isActive, false)
+        } finally {
+          await cleanupBusiness(biz.id as string)
+        }
+      },
+    )
+  },
 })
 
 Deno.test('Toggle middleware auth enforcement', async (t) => {

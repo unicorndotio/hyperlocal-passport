@@ -1,7 +1,8 @@
 import { define } from '../../../utils.ts'
 import { auth } from '../../../lib/auth.ts'
-import { kv } from '../../../lib/kv.ts'
-import type { Coupon, Redemption } from '../../../lib/coupon.ts'
+import { db } from '../../../lib/db.ts'
+import * as schema from '../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 export const handler = define.handlers({
   async GET(ctx) {
@@ -16,19 +17,22 @@ export const handler = define.handlers({
 
     const { code } = ctx.params
 
-    const redemptionRes = await kv.get<Redemption>(['redemptions', code])
-    const redemption = redemptionRes.value
+    const [redemption] = await db.select().from(schema.redemptions)
+      .where(eq(schema.redemptions.id, code))
     if (!redemption) {
       return new Response('Redemption code not found', { status: 404 })
     }
 
-    const couponRes = await kv.get<Coupon>(['coupons', redemption.couponId])
-    const coupon = couponRes.value
+    const [coupon] = await db.select().from(schema.coupons)
+      .where(eq(schema.coupons.id, redemption.couponId))
     if (!coupon) {
       return new Response('Associated coupon not found', { status: 404 })
     }
 
-    const behavior = coupon.behavior
+    const behavior = coupon.behavior as {
+      type: string
+      [key: string]: unknown
+    }
 
     const response: Record<string, unknown> = {
       behaviorType: behavior.type,

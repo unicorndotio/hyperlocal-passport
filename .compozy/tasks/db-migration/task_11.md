@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Admin Routes Migration
 type: backend
 complexity: high

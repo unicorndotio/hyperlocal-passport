@@ -3,16 +3,19 @@
   "tasks": {
     "check": "deno fmt --check . && deno lint . && deno check",
     "lint": "deno lint",
-    "dev": "deno run -A --unstable-kv npm:vite",
+    "dev": "deno run -A npm:vite",
     "build": "vite build",
     "start": "deno serve -A _fresh/server.js",
-    "test": "deno test -A --unstable-kv",
-    "test:cov": "deno test -A --unstable-kv --coverage=cov_profile/",
+    "test": "deno test -A",
+    "test:cov": "deno test -A --coverage=cov_profile/",
     "coverage": "deno coverage --exclude='tests/' cov_profile/",
     "coverage:html": "deno coverage --html --exclude='tests/' cov_profile/ && npx http-server cov_profile/html/",
     "type-check": "deno check",
     "update": "deno run -A -r jsr:@fresh/update .",
-    "seed": "docker compose exec web deno run -A --unstable-kv seed.ts",
+    "db:seed": "docker compose exec web deno run -A seed.ts",
+    "db:generate": "docker compose exec web deno run -A npm:drizzle-kit generate",
+    "db:migrate": "docker compose exec web deno run -A npm:drizzle-kit migrate",
+    "db:push": "docker compose exec web deno run -A npm:drizzle-kit push",
     "compozy:setup": "compozy setup",
     "compozy:daemon:start": "compozy daemon start",
     "compozy:daemon:status": "compozy daemon status",
@@ -46,7 +49,8 @@
   "exclude": [
     "**/_fresh/*",
     "node_modules/",
-    ".deno_cache/"
+    ".deno_cache/",
+    "drizzle.config.ts"
   ],
   "imports": {
     "@/": "./",
@@ -73,7 +77,9 @@
     "tailwindcss": "npm:tailwindcss@^4.1.10",
     "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.12",
     "qrcode-generator": "npm:qrcode-generator@^2.0.4",
-    "undici-types": "npm:undici-types@^6.19.8"
+    "undici-types": "npm:undici-types@^6.19.8",
+    "drizzle-orm": "npm:drizzle-orm@0.38.2",
+    "drizzle-orm/pg-core": "npm:drizzle-orm@0.38.2/pg-core"
   },
   "compilerOptions": {
     "skipLibCheck": true,
@@ -81,8 +87,7 @@
       "dom",
       "dom.asynciterable",
       "dom.iterable",
-      "deno.ns",
-      "deno.unstable"
+      "deno.ns"
     ],
     "jsx": "precompile",
     "jsxImportSource": "preact",

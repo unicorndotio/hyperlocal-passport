@@ -1,12 +1,12 @@
 ---
-status: pending
+status: completed
 title: User Registration & Approval Routes
 type: backend
 complexity: medium
 dependencies:
-  - task_02
-  - task_03
-  - task_04
+    - task_02
+    - task_03
+    - task_04
 ---
 
 # User Registration & Approval Routes

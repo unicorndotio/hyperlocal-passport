@@ -1,8 +1,18 @@
 import { define } from '../../../../utils.ts'
-import { kv } from '../../../../lib/kv.ts'
-import type { Coupon } from '../../../../lib/coupon.ts'
+import { db } from '../../../../lib/db.ts'
+import * as schema from '../../../../db/schema.ts'
+import { and, desc, eq, gte, lte } from 'drizzle-orm'
+import type { SQL } from 'drizzle-orm'
 
-interface CouponWithBusiness extends Coupon {
+interface CouponWithBusiness {
+  id: string
+  businessId: string
+  title: string
+  description: string | null
+  behavior: unknown
+  restrictions: unknown
+  isActive: boolean
+  createdAt: Date
   businessName: string
 }
 
@@ -14,63 +24,67 @@ export const handler = define.handlers({
     const dateFrom = url.searchParams.get('dateFrom')
     const dateTo = url.searchParams.get('dateTo')
 
-    const iter = kv.list<Coupon>({ prefix: ['coupons'] })
-    const rawCoupons: Coupon[] = []
-
-    for await (const entry of iter) {
-      rawCoupons.push(entry.value)
-    }
-
-    let filtered = rawCoupons
+    const conditions: SQL[] = []
 
     if (businessId) {
-      filtered = filtered.filter((c) => c.businessId === businessId)
+      conditions.push(eq(schema.coupons.businessId, businessId))
     }
 
     if (statusFilter === 'active') {
-      filtered = filtered.filter((c) => c.isActive === true)
+      conditions.push(eq(schema.coupons.isActive, true))
     } else if (statusFilter === 'inactive') {
-      filtered = filtered.filter((c) => c.isActive === false)
+      conditions.push(eq(schema.coupons.isActive, false))
     }
 
     if (dateFrom) {
-      const fromMs = new Date(dateFrom).getTime()
-      if (!isNaN(fromMs)) {
-        filtered = filtered.filter(
-          (c) => new Date(c.createdAt).getTime() >= fromMs,
-        )
+      const from = new Date(dateFrom)
+      if (!isNaN(from.getTime())) {
+        conditions.push(gte(schema.coupons.createdAt, from))
       }
     }
 
     if (dateTo) {
-      const toMs = new Date(dateTo).getTime()
-      if (!isNaN(toMs)) {
-        filtered = filtered.filter(
-          (c) => new Date(c.createdAt).getTime() <= toMs,
-        )
+      const to = new Date(dateTo)
+      if (!isNaN(to.getTime())) {
+        conditions.push(lte(schema.coupons.createdAt, to))
       }
     }
 
-    filtered.sort(
-      (a, b) => new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime(),
-    )
-
-    const couponsWithBusiness: CouponWithBusiness[] = []
-    for (const coupon of filtered) {
-      const businessEntry = await kv.get<{ name: string }>([
-        'businesses',
-        coupon.businessId,
-      ])
-      couponsWithBusiness.push({
-        ...coupon,
-        businessName: businessEntry.value?.name || 'Unknown Business',
+    const rows = await db
+      .select({
+        id: schema.coupons.id,
+        businessId: schema.coupons.businessId,
+        title: schema.coupons.title,
+        description: schema.coupons.description,
+        behavior: schema.coupons.behavior,
+        restrictions: schema.coupons.restrictions,
+        isActive: schema.coupons.isActive,
+        createdAt: schema.coupons.createdAt,
+        businessName: schema.businesses.name,
       })
-    }
+      .from(schema.coupons)
+      .leftJoin(
+        schema.businesses,
+        eq(schema.coupons.businessId, schema.businesses.id),
+      )
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(schema.coupons.createdAt))
+
+    const coupons: CouponWithBusiness[] = rows.map((row) => ({
+      id: row.id,
+      businessId: row.businessId,
+      title: row.title,
+      description: row.description,
+      behavior: row.behavior,
+      restrictions: row.restrictions,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      businessName: row.businessName ?? 'Unknown Business',
+    }))
 
     return Response.json({
-      coupons: couponsWithBusiness,
-      total: couponsWithBusiness.length,
+      coupons,
+      total: coupons.length,
     })
   },
 })

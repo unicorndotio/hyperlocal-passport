@@ -1,13 +1,22 @@
-const ANALYTICS_PREFIX = ['analytics'] as const
+import { db } from './db.ts'
+import * as schema from '../db/schema.ts'
+import { eq, sql } from 'drizzle-orm'
 
-export function viewCountKey(couponId: string): string[] {
-  return [...ANALYTICS_PREFIX, couponId, 'views']
+export function getCouponAnalytics(couponId: string) {
+  return db
+    .select()
+    .from(schema.couponAnalytics)
+    .where(eq(schema.couponAnalytics.couponId, couponId))
+    .limit(1)
+    .then((rows) => rows[0] ?? null)
 }
 
-export function redemptionCountKey(couponId: string): string[] {
-  return [...ANALYTICS_PREFIX, couponId, 'redemptions']
-}
-
-export function validationCountKey(couponId: string): string[] {
-  return [...ANALYTICS_PREFIX, couponId, 'validations']
+export async function incrementViewCount(couponId: string) {
+  const analyticsId = crypto.randomUUID()
+  await db.execute(
+    sql`INSERT INTO coupon_analytics (id, coupon_id, views)
+        VALUES (${analyticsId}, ${couponId}, 1)
+        ON CONFLICT (coupon_id)
+        DO UPDATE SET views = coupon_analytics.views + 1`,
+  )
 }

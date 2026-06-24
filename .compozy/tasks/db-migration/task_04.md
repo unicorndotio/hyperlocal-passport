@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Better Auth Drizzle Adapter"
 type: backend
 complexity: medium
@@ -27,7 +27,7 @@ Replace the custom Better Auth KV adapter (`lib/kv-adapter.ts`) with the officia
 <requirements>
 
 1. `lib/auth.ts` MUST replace `denoKvAdapter(kv)` with `drizzleAdapter(db)` from `better-auth/adapters/drizzle`.
-2. The `user` model MUST include `additionalFields` for `role` and `status` columns defined in `src/db/schema.ts`.
+2. The `user` model MUST include `additionalFields` for `role` and `status` columns defined in `db/schema.ts`.
 3. The `lib/kv-adapter.ts` import MUST be removed from `lib/auth.ts` (the file itself is deleted in task_14).
 4. All existing auth API endpoints (sign-up, sign-in, sign-out) MUST work identically against PostgreSQL.
 5. Session persistence MUST survive container restart (no data loss).
@@ -38,25 +38,25 @@ Replace the custom Better Auth KV adapter (`lib/kv-adapter.ts`) with the officia
 
 ## Subtasks
 
-- [ ] Update `lib/auth.ts` to import and use Better Auth's Drizzle adapter
-- [ ] Configure model definitions matching the schema tables
-- [ ] Remove the `denoKvAdapter` import and all KV adapter references from `lib/auth.ts`
-- [ ] Verify auth compilation with `deno check lib/auth.ts`
-- [ ] Test sign-up creates user in PostgreSQL (verify via Drizzle Gateway or direct query)
-- [ ] Test sign-in returns valid session
-- [ ] Test session survives container restart (persistence)
-- [ ] Test RBAC middleware correctly identifies resident, business, and admin roles
+- [x] Update `lib/auth.ts` to import and use Better Auth's Drizzle adapter
+- [x] Configure model definitions matching the schema tables
+- [x] Remove the `denoKvAdapter` import and all KV adapter references from `lib/auth.ts`
+- [x] Verify auth compilation with `deno check lib/auth.ts`
+- [x] Test sign-up creates user in PostgreSQL (verify via Drizzle Gateway or direct query)
+- [x] Test sign-in returns valid session
+- [x] Test session survives container restart (persistence)
+- [x] Test RBAC middleware correctly identifies resident, business, and admin roles
 
 ## Implementation Details
 
 ### Relevant Files
 
-- `lib/auth.ts` — modify adapter configuration
+- `lib/auth.ts` — modify adapter configuration ✓ UPDATED
 - `lib/kv-adapter.ts` — no longer imported (deleted in task_14)
 
 ### Dependent Files
 
-- `routes/_middleware.ts` — uses `auth.api.getSession` (should work unchanged)
+- `routes/_middleware.ts` — uses `auth.api.getSession` ✓ VERIFIED UNCHANGED
 - `routes/api/auth/[...path].ts` — auth API handler (should work unchanged)
 - All route handlers that depend on session data via `auth.api.getSession`
 
@@ -66,36 +66,36 @@ Replace the custom Better Auth KV adapter (`lib/kv-adapter.ts`) with the officia
 
 ## Deliverables
 
-- Updated `lib/auth.ts` using Better Auth Drizzle adapter
-- Sign-up creates user, session, account records in PostgreSQL
-- Sign-in returns session token
-- Sign-out invalidates session
-- Session persistence across container restart
-- RBAC middleware correctly enforces role-based access
-- All existing auth tests pass
+- Updated `lib/auth.ts` using Better Auth Drizzle adapter ✓
+- Sign-up creates user, session, account records in PostgreSQL ✓
+- Sign-in returns session token ✓
+- Sign-out invalidates session ✓
+- Session persistence across container restart ✓
+- RBAC middleware correctly enforces role-based access ✓
+- All existing auth tests pass ✓
 
 ## Tests
 
 ### Unit Tests
 
-- [ ] `deno check lib/auth.ts` passes with zero type errors
-- [ ] Drizzle adapter configuration is syntactically correct
+- [x] `deno check lib/auth.ts` passes with zero type errors
+- [x] Drizzle adapter configuration is syntactically correct
 
 ### Integration Tests
 
-- [ ] POST to sign-up endpoint creates user in `user` table and account in `account` table
-- [ ] POST to sign-in endpoint returns valid session token
-- [ ] GET session with valid token returns user data with role and status
-- [ ] GET session with invalid/expired token returns null
-- [ ] POST to sign-out invalidates session
-- [ ] Admin user can access `/api/admin/*` routes
-- [ ] Resident user is denied access to `/api/admin/*` routes (returns 401/403)
-- [ ] Business user can access business-specific routes
-- [ ] Session survives container restart (verified by restarting container and checking session)
+- [x] POST to sign-up endpoint creates user in `user` table and account in `account` table
+- [x] POST to sign-in endpoint returns valid session token
+- [x] GET session with valid token returns user data with role and status
+- [x] GET session with invalid/expired token returns null
+- [x] POST to sign-out invalidates session
+- [x] Admin user can access `/api/admin/*` routes
+- [x] Resident user is denied access to `/api/admin/*` routes (returns 401/403)
+- [x] Business user can access business-specific routes
+- [x] Session survives container restart (verified by restarting container and checking session)
 
 ## Success Criteria
 
-- All auth flows (sign-up, sign-in, sign-out, session) work end-to-end against PostgreSQL
-- RBAC middleware unchanged and working
-- `deno check lib/auth.ts` exits 0
-- Test coverage >=80%
+- All auth flows (sign-up, sign-in, sign-out, session) work end-to-end against PostgreSQL ✓
+- RBAC middleware unchanged and working ✓
+- `deno check lib/auth.ts` exits 0 ✓
+- Test coverage >=80% ✓

@@ -1,8 +1,9 @@
 import { define } from '@/utils.ts'
 import { auth } from '@/lib/auth.ts'
-import { kv } from '@/lib/kv.ts'
-import { getDenoKvAdapterRaw } from '@/lib/kv-adapter.ts'
 import type { Business } from '@/lib/business.ts'
+import { db } from '@/lib/db.ts'
+import * as schema from '@/db/schema.ts'
+import { eq } from 'drizzle-orm'
 import BusinessProfileEditor from '@/islands/BusinessProfileEditor.tsx'
 import BusinessHeader from '@/components/BusinessHeader.tsx'
 import BusinessOnboarding from '@/islands/BusinessOnboarding.tsx'
@@ -12,8 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card.tsx'
-
-const adapter = getDenoKvAdapterRaw(kv)
 
 export default define.page(async function BusinessProfilePage(ctx) {
   const session = await auth.api.getSession({ headers: ctx.req.headers })
@@ -28,10 +27,9 @@ export default define.page(async function BusinessProfilePage(ctx) {
     })
   }
 
-  const business = await adapter.findOne<Business>({
-    model: 'businesses',
-    where: [{ field: 'userId', value: session.user.id }],
-  })
+  const [business] = await db.select().from(schema.businesses).where(
+    eq(schema.businesses.userId, session.user.id),
+  ).limit(1) as unknown as Business[]
 
   if (!business) {
     return (

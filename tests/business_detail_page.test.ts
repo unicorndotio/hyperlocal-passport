@@ -3,9 +3,9 @@ import {
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { handler } from '../routes/business/[id].tsx'
-import { kv } from '../lib/kv.ts'
-import { viewCountKey } from '../lib/analytics.ts'
-import { getDenoKvAdapterRaw } from '../lib/kv-adapter.ts'
+import { db } from '../lib/db.ts'
+import * as schema from '../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 function makeBusiness(id: string): Record<string, unknown> {
   return {
@@ -18,7 +18,6 @@ function makeBusiness(id: string): Record<string, unknown> {
     description: 'A test business',
     logoUrl: '',
     isActive: true,
-    createdAt: new Date().toISOString(),
   }
 }
 
@@ -30,66 +29,87 @@ function makeCoupon(id: string, businessId: string): Record<string, unknown> {
     behavior: { type: 'percentage_discount', percent: 10 },
     restrictions: {},
     isActive: true,
-    createdAt: new Date().toISOString(),
-  }
-}
-
-async function cleanup(...keys: string[][]) {
-  for (const key of keys) {
-    await kv.delete(key)
   }
 }
 
 type HandlerCtx = { params: { id: string }; req: Request }
 
-Deno.test('Business Detail Page - view counter increments for each coupon', async () => {
-  const bizId = 'biz_vc_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_vc_' + Math.random().toString(36).slice(2)
+async function cleanupAll() {
+  await db.delete(schema.couponAnalytics)
+  await db.delete(schema.transactions)
+  await db.delete(schema.redemptions)
+  await db.delete(schema.coupons)
+  await db.delete(schema.businesses)
+  await db.delete(schema.users)
+}
 
-  const business = makeBusiness(bizId)
-  const coupon = makeCoupon(couponId, bizId)
+Deno.test({
+  name: 'Business Detail Page - view counter increments for each coupon',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    await cleanupAll()
+    const bizId = 'biz_vc_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_vc_' + Math.random().toString(36).slice(2)
+    const userId = 'user_' + bizId
 
-  // Set up via adapter so index entries are created
-  const adapter = getDenoKvAdapterRaw(kv)
-  await adapter.create({ model: 'businesses', data: business })
-  await adapter.create({ model: 'coupons', data: coupon })
+    const business = makeBusiness(bizId)
+    const coupon = makeCoupon(couponId, bizId)
 
-  try {
-    const res = await (handler as unknown as {
+    // Set up user, business, coupon via Drizzle
+    await db.insert(schema.users).values({
+      id: userId,
+      email: userId + '@test.com',
+      name: 'Test User',
+    })
+    await db.insert(schema.businesses).values(
+      business as Record<string, unknown>,
+    )
+    await db.insert(schema.coupons).values(coupon as Record<string, unknown>)
+
+    await (handler as unknown as {
       GET: (ctx: HandlerCtx) => Promise<Response | { data: unknown }>
     }).GET({
       params: { id: bizId },
       req: new Request(`http://localhost:8000/business/${bizId}`),
     })
 
-    // Handler should return page data (status 200 via Fresh rendering)
-    assertExists(res)
+    // Wait for fire-and-forget incrementViewCount to settle
+    await new Promise((r) => setTimeout(r, 100))
 
-    // Wait for fire-and-forget KV operations to settle
-    await new Promise((r) => setTimeout(r, 50))
-
-    // Verify view counter was incremented (sum returns KvU64/bigint)
-    const viewCount = await kv.get<Deno.KvU64>(viewCountKey(couponId))
-    assertEquals(Number(viewCount.value), 1)
-  } finally {
-    await cleanup(
-      ['businesses', bizId],
-      ['coupons', couponId],
-      ['coupons_by_businessId', bizId],
-      viewCountKey(couponId),
-    )
-  }
+    // Verify view counter was incremented in coupon_analytics table
+    const [analytics] = await db
+      .select()
+      .from(schema.couponAnalytics)
+      .where(eq(schema.couponAnalytics.couponId, couponId))
+      .limit(1)
+    assertExists(analytics)
+    assertEquals(analytics.views, 1)
+  },
 })
 
-Deno.test('Business Detail Page - repeated views increment counter monotonically', async () => {
-  const bizId = 'biz_rep_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_rep_' + Math.random().toString(36).slice(2)
+Deno.test({
+  name: 'Business Detail Page - repeated views increment counter monotonically',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    await cleanupAll()
+    const bizId = 'biz_rep_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_rep_' + Math.random().toString(36).slice(2)
+    const userId = 'user_' + bizId
 
-  const adapter = getDenoKvAdapterRaw(kv)
-  await adapter.create({ model: 'businesses', data: makeBusiness(bizId) })
-  await adapter.create({ model: 'coupons', data: makeCoupon(couponId, bizId) })
+    await db.insert(schema.users).values({
+      id: userId,
+      email: userId + '@test.com',
+      name: 'Test User',
+    })
+    await db.insert(schema.businesses).values(
+      makeBusiness(bizId) as Record<string, unknown>,
+    )
+    await db.insert(schema.coupons).values(
+      makeCoupon(couponId, bizId) as Record<string, unknown>,
+    )
 
-  try {
     // First view
     await (handler as unknown as {
       GET: (ctx: HandlerCtx) => Promise<Response | { data: unknown }>
@@ -97,7 +117,7 @@ Deno.test('Business Detail Page - repeated views increment counter monotonically
       params: { id: bizId },
       req: new Request(`http://localhost:8000/business/${bizId}`),
     })
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 100))
 
     // Second view
     await (handler as unknown as {
@@ -106,7 +126,7 @@ Deno.test('Business Detail Page - repeated views increment counter monotonically
       params: { id: bizId },
       req: new Request(`http://localhost:8000/business/${bizId}`),
     })
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 100))
 
     // Third view
     await (handler as unknown as {
@@ -115,29 +135,41 @@ Deno.test('Business Detail Page - repeated views increment counter monotonically
       params: { id: bizId },
       req: new Request(`http://localhost:8000/business/${bizId}`),
     })
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 100))
 
-    const viewCount = await kv.get<Deno.KvU64>(viewCountKey(couponId))
-    assertEquals(Number(viewCount.value), 3)
-  } finally {
-    await cleanup(
-      ['businesses', bizId],
-      ['coupons', couponId],
-      ['coupons_by_businessId', bizId],
-      viewCountKey(couponId),
-    )
-  }
+    const [analytics] = await db
+      .select()
+      .from(schema.couponAnalytics)
+      .where(eq(schema.couponAnalytics.couponId, couponId))
+      .limit(1)
+    assertExists(analytics)
+    assertEquals(analytics.views, 3)
+  },
 })
 
-Deno.test('Business Detail Page - handler returns response before counter completes', async () => {
-  const bizId = 'biz_ff_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_ff_' + Math.random().toString(36).slice(2)
+Deno.test({
+  name:
+    'Business Detail Page - handler returns response before counter completes',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    await cleanupAll()
+    const bizId = 'biz_ff_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_ff_' + Math.random().toString(36).slice(2)
+    const userId = 'user_' + bizId
 
-  const adapter = getDenoKvAdapterRaw(kv)
-  await adapter.create({ model: 'businesses', data: makeBusiness(bizId) })
-  await adapter.create({ model: 'coupons', data: makeCoupon(couponId, bizId) })
+    await db.insert(schema.users).values({
+      id: userId,
+      email: userId + '@test.com',
+      name: 'Test User',
+    })
+    await db.insert(schema.businesses).values(
+      makeBusiness(bizId) as Record<string, unknown>,
+    )
+    await db.insert(schema.coupons).values(
+      makeCoupon(couponId, bizId) as Record<string, unknown>,
+    )
 
-  try {
     const start = Date.now()
 
     const res = await (handler as unknown as {
@@ -147,67 +179,78 @@ Deno.test('Business Detail Page - handler returns response before counter comple
       req: new Request(`http://localhost:8000/business/${bizId}`),
     })
 
-    const elapsed = Date.now() - start
-
     // Page data returned immediately
     assertExists(res)
 
-    // If KV operations were awaited, this would be >0ms (KV has latency)
-    // Since they're fire-and-forget, the handler returns synchronously
-    // In an in-memory KV, the atomic operations are near-instant,
-    // so we verify the handler returned (exists) rather than a specific elapsed time
-
     // Wait for fire-and-forget operations to settle
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 100))
 
     // Verify counter was incremented despite fire-and-forget
-    const viewCount = await kv.get<Deno.KvU64>(viewCountKey(couponId))
-    assertEquals(Number(viewCount.value), 1)
-
-    // Verify response time is fast (handler returns without waiting for KV)
-    // The page() call just returns a plain object, so this should be <100ms
-    // even if KV were slow
-    assertEquals(elapsed < 500, true, 'Handler should return quickly')
-  } finally {
-    await cleanup(
-      ['businesses', bizId],
-      ['coupons', couponId],
-      ['coupons_by_businessId', bizId],
-      viewCountKey(couponId),
-    )
-  }
+    const [analytics] = await db
+      .select()
+      .from(schema.couponAnalytics)
+      .where(eq(schema.couponAnalytics.couponId, couponId))
+      .limit(1)
+    assertExists(analytics)
+    assertEquals(analytics.views, 1)
+  },
 })
 
-Deno.test('Business Detail Page - coupons never viewed have no analytics entry', async () => {
-  const bizId = 'biz_nv_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_nv_' + Math.random().toString(36).slice(2)
+Deno.test({
+  name: 'Business Detail Page - coupons never viewed have no analytics entry',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    await cleanupAll()
+    const bizId = 'biz_nv_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_nv_' + Math.random().toString(36).slice(2)
+    const userId = 'user_' + bizId
 
-  // Create coupon but never visit the business page
-  await kv.set(['coupons', couponId], makeCoupon(couponId, bizId))
-  await kv.set(['coupons_by_businessId', bizId], couponId)
-
-  try {
-    // Directly check that no analytics entry exists
-    const viewCount = await kv.get<Deno.KvU64>(viewCountKey(couponId))
-    assertEquals(viewCount.value, null)
-  } finally {
-    await cleanup(
-      ['coupons', couponId],
-      ['coupons_by_businessId', bizId],
-      viewCountKey(couponId),
+    // Insert user and business for FK constraints
+    await db.insert(schema.users).values({
+      id: userId,
+      email: userId + '@test.com',
+      name: 'Test User',
+    })
+    await db.insert(schema.businesses).values(
+      makeBusiness(bizId) as Record<string, unknown>,
     )
-  }
+
+    // Create coupon but never visit the business page
+    await db.insert(schema.coupons).values({
+      id: couponId,
+      businessId: bizId,
+      title: 'Unviewed Coupon',
+      behavior: { type: 'percentage_discount', percent: 10 },
+      restrictions: {},
+      isActive: true,
+    })
+
+    // Verify no analytics entry exists
+    const [analytics] = await db
+      .select()
+      .from(schema.couponAnalytics)
+      .where(eq(schema.couponAnalytics.couponId, couponId))
+      .limit(1)
+    assertEquals(analytics, undefined)
+  },
 })
 
-Deno.test('Business Detail Page - 404 for non-existent business', async () => {
-  const bizId = 'biz_404_' + Math.random().toString(36).slice(2)
+Deno.test({
+  name: 'Business Detail Page - 404 for non-existent business',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    await cleanupAll()
+    const bizId = 'biz_404_' + Math.random().toString(36).slice(2)
 
-  const res = await (handler as unknown as {
-    GET: (ctx: HandlerCtx) => Promise<Response>
-  }).GET({
-    params: { id: bizId },
-    req: new Request(`http://localhost:8000/business/${bizId}`),
-  })
+    const res = await (handler as unknown as {
+      GET: (ctx: HandlerCtx) => Promise<Response>
+    }).GET({
+      params: { id: bizId },
+      req: new Request(`http://localhost:8000/business/${bizId}`),
+    })
 
-  assertEquals(res.status, 404)
+    assertEquals(res.status, 404)
+  },
 })

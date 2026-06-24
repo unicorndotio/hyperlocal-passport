@@ -1,13 +1,8 @@
 import { define } from '@/utils.ts'
 import { auth } from '@/lib/auth.ts'
-import { kv } from '@/lib/kv.ts'
-import type { Business } from '@/lib/business.ts'
-import type { Coupon, Transaction } from '@/lib/coupon.ts'
-import {
-  redemptionCountKey,
-  validationCountKey,
-  viewCountKey,
-} from '@/lib/analytics.ts'
+import { db } from '@/lib/db.ts'
+import * as schema from '@/db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 export const handler = define.handlers({
   async GET(ctx) {
@@ -18,8 +13,11 @@ export const handler = define.handlers({
       return new Response('Unauthorized', { status: 401 })
     }
 
-    const businessRes = await kv.get<Business>(['businesses', businessId])
-    const business = businessRes.value
+    const [business] = await db
+      .select()
+      .from(schema.businesses)
+      .where(eq(schema.businesses.id, businessId))
+      .limit(1)
 
     if (!business) {
       return new Response('Business not found', { status: 404 })
@@ -29,14 +27,11 @@ export const handler = define.handlers({
       return new Response('Forbidden', { status: 403 })
     }
 
-    // Get all coupons for this business via kv.list
-    const couponEntries = kv.list<Coupon>({ prefix: ['coupons'] })
-    const coupons: Coupon[] = []
-    for await (const entry of couponEntries) {
-      if (entry.value.businessId === businessId) {
-        coupons.push(entry.value)
-      }
-    }
+    // Get all coupons for this business
+    const coupons = await db
+      .select()
+      .from(schema.coupons)
+      .where(eq(schema.coupons.businessId, businessId))
 
     // Pagination query params
     const url = new URL(ctx.req.url)
@@ -49,35 +44,37 @@ export const handler = define.handlers({
       Math.max(1, parseInt(url.searchParams.get('limit') ?? '20', 10) || 20),
     )
 
-    // Per-coupon analytics
+    // Per-coupon analytics from coupon_analytics table
     const couponAnalytics = await Promise.all(
       coupons.map(async (coupon) => {
-        const [viewsRes, redemptionsRes, validationsRes] = await Promise.all([
-          kv.get<Deno.KvU64>(viewCountKey(coupon.id)),
-          kv.get<number>(redemptionCountKey(coupon.id)),
-          kv.get<number>(validationCountKey(coupon.id)),
-        ])
+        const [analytics] = await db
+          .select()
+          .from(schema.couponAnalytics)
+          .where(eq(schema.couponAnalytics.couponId, coupon.id))
+          .limit(1)
 
         return {
           couponId: coupon.id,
           couponTitle: coupon.title,
-          views: Number(viewsRes.value?.value ?? 0n),
-          redemptions: redemptionsRes.value ?? 0,
-          validations: validationsRes.value ?? 0,
+          views: analytics?.views ?? 0,
+          redemptions: analytics?.redemptions ?? 0,
+          validations: analytics?.validations ?? 0,
         }
       }),
     )
 
-    // Read transactions with pagination
-    const txEntries = kv.list<Transaction>({
-      prefix: ['business_transactions', businessId],
-    })
+    // Read transactions for this business
+    const allTransactions = await db
+      .select()
+      .from(schema.transactions)
+      .where(eq(schema.transactions.businessId, businessId))
+      .orderBy(schema.transactions.timestamp)
 
-    const allTransactions: Transaction[] = []
-    for await (const entry of txEntries) {
-      allTransactions.push(entry.value)
-    }
-    allTransactions.sort((a, b) => b.timestamp - a.timestamp)
+    allTransactions.sort((a, b) => {
+      const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0
+      const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0
+      return bTime - aTime
+    })
 
     const totalTransactions = allTransactions.length
     const totalPages = Math.max(1, Math.ceil(totalTransactions / limit))

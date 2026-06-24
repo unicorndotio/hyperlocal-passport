@@ -1,8 +1,7 @@
 import { define } from '../../../utils.ts'
-import { kv } from '../../../lib/kv.ts'
-import { viewCountKey, redemptionCountKey, validationCountKey } from '../../../lib/analytics.ts'
-import type { Coupon, Transaction } from '../../../lib/coupon.ts'
-import type { Business } from '../../../lib/business.ts'
+import { db } from '../../../lib/db.ts'
+import * as schema from '../../../db/schema.ts'
+import { eq, sql } from 'drizzle-orm'
 
 interface BusinessAnalytics {
   businessId: string
@@ -24,93 +23,84 @@ interface AdminAnalyticsResponse {
 
 export const handler = define.handlers({
   async GET(_ctx) {
-    const couponEntries = kv.list<Coupon>({ prefix: ['coupons'] })
-    const coupons: Coupon[] = []
-    for await (const entry of couponEntries) {
-      coupons.push(entry.value)
+    const rows = await db
+      .select({
+        id: schema.coupons.id,
+        businessId: schema.coupons.businessId,
+        isActive: schema.coupons.isActive,
+        createdAt: schema.coupons.createdAt,
+        businessName: schema.businesses.name,
+        views: schema.couponAnalytics.views,
+        redemptions: schema.couponAnalytics.redemptions,
+        validations: schema.couponAnalytics.validations,
+      })
+      .from(schema.coupons)
+      .leftJoin(
+        schema.businesses,
+        eq(schema.coupons.businessId, schema.businesses.id),
+      )
+      .leftJoin(
+        schema.couponAnalytics,
+        eq(schema.coupons.id, schema.couponAnalytics.couponId),
+      )
+
+    if (rows.length === 0) {
+      return Response.json(
+        {
+          totalCoupons: 0,
+          totalViews: 0,
+          totalRedemptions: 0,
+          totalValidations: 0,
+          totalDiscountCents: 0,
+          perBusiness: [],
+        } satisfies AdminAnalyticsResponse,
+      )
     }
-
-    if (coupons.length === 0) {
-      return Response.json({
-        totalCoupons: 0,
-        totalViews: 0,
-        totalRedemptions: 0,
-        totalValidations: 0,
-        totalDiscountCents: 0,
-        perBusiness: [],
-      } satisfies AdminAnalyticsResponse)
-    }
-
-    const couponAnalytics = await Promise.all(
-      coupons.map(async (coupon) => {
-        const [viewsRes, redemptionsRes, validationsRes] = await Promise.all([
-          kv.get<Deno.KvU64>(viewCountKey(coupon.id)),
-          kv.get<number>(redemptionCountKey(coupon.id)),
-          kv.get<number>(validationCountKey(coupon.id)),
-        ])
-        return {
-          businessId: coupon.businessId,
-          views: Number(viewsRes.value?.value ?? 0n),
-          redemptions: redemptionsRes.value ?? 0,
-          validations: validationsRes.value ?? 0,
-        }
-      }),
-    )
-
-    const businessMap = new Map<string, string>()
-    const businessIds = new Set(coupons.map((c) => c.businessId))
-    await Promise.all(
-      Array.from(businessIds).map(async (bid) => {
-        const entry = await kv.get<Business>(['businesses', bid])
-        businessMap.set(bid, entry.value?.name ?? 'Unknown Business')
-      }),
-    )
 
     const perBusinessMap = new Map<string, BusinessAnalytics>()
-    for (const coupon of coupons) {
-      let ba = perBusinessMap.get(coupon.businessId)
+    for (const row of rows) {
+      let ba = perBusinessMap.get(row.businessId)
       if (!ba) {
         ba = {
-          businessId: coupon.businessId,
-          businessName: businessMap.get(coupon.businessId) ?? 'Unknown Business',
+          businessId: row.businessId,
+          businessName: row.businessName ?? 'Unknown Business',
           couponCount: 0,
           totalViews: 0,
           totalRedemptions: 0,
           totalValidations: 0,
         }
-        perBusinessMap.set(coupon.businessId, ba)
+        perBusinessMap.set(row.businessId, ba)
       }
       ba.couponCount++
+      ba.totalViews += row.views ?? 0
+      ba.totalRedemptions += row.redemptions ?? 0
+      ba.totalValidations += row.validations ?? 0
     }
 
-    for (const ca of couponAnalytics) {
-      const ba = perBusinessMap.get(ca.businessId)
-      if (ba) {
-        ba.totalViews += ca.views
-        ba.totalRedemptions += ca.redemptions
-        ba.totalValidations += ca.validations
-      }
-    }
+    const totalViews = rows.reduce((s, r) => s + (r.views ?? 0), 0)
+    const totalRedemptions = rows.reduce((s, r) => s + (r.redemptions ?? 0), 0)
+    const totalValidations = rows.reduce((s, r) => s + (r.validations ?? 0), 0)
 
-    const totalViews = couponAnalytics.reduce((s, c) => s + c.views, 0)
-    const totalRedemptions = couponAnalytics.reduce((s, c) => s + c.redemptions, 0)
-    const totalValidations = couponAnalytics.reduce((s, c) => s + c.validations, 0)
+    const [txResult] = await db
+      .select({
+        total: sql<
+          number
+        >`COALESCE(SUM(${schema.transactions.discountAppliedCents}), 0)`,
+      })
+      .from(schema.transactions)
 
-    const txEntries = kv.list<Transaction>({ prefix: ['business_transactions'] })
-    let totalDiscountCents = 0
-    for await (const entry of txEntries) {
-      totalDiscountCents += entry.value.discountAppliedCents ?? 0
-    }
-
+    const totalDiscountCents = Number(txResult?.total ?? 0)
     const perBusiness = Array.from(perBusinessMap.values())
 
-    return Response.json({
-      totalCoupons: coupons.length,
-      totalViews,
-      totalRedemptions,
-      totalValidations,
-      totalDiscountCents,
-      perBusiness,
-    } satisfies AdminAnalyticsResponse)
+    return Response.json(
+      {
+        totalCoupons: rows.length,
+        totalViews,
+        totalRedemptions,
+        totalValidations,
+        totalDiscountCents,
+        perBusiness,
+      } satisfies AdminAnalyticsResponse,
+    )
   },
 })

@@ -1,6 +1,8 @@
 import { define } from '../utils.ts'
 import { page } from 'fresh'
-import { kv } from '../lib/kv.ts'
+import { db } from '../lib/db.ts'
+import { businesses } from '../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { Business } from '../lib/business.ts'
 import { Head } from 'fresh/runtime'
 import {
@@ -14,26 +16,38 @@ import SignalRequestIsland from '../islands/SignalRequestIsland.tsx'
 
 export const handler = define.handlers({
   async GET(ctx) {
-    const iter = kv.list<Business>({ prefix: ['businesses'] })
-    const businesses: Business[] = []
-    for await (const entry of iter) {
-      if (entry.value.isActive) {
-        businesses.push(entry.value)
-      }
-    }
+    const rows = await db.select()
+      .from(businesses)
+      .where(eq(businesses.isActive, true))
+
+    const businessesList: Business[] = rows.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      name: row.name,
+      companyName: row.companyName,
+      cnpj: row.cnpj,
+      category: row.category,
+      description: row.description ?? undefined,
+      logoUrl: row.logoUrl,
+      socialLinks: row.socialLinks ?? undefined,
+      openingHours: row.openingHours ?? undefined,
+      isActive: row.isActive,
+      createdAt: row.createdAt?.toISOString() ?? new Date().toISOString(),
+      hasSeenMerchantOnboarding: row.hasSeenMerchantOnboarding ?? undefined,
+    }))
 
     const url = new URL(ctx.req.url)
     const category = url.searchParams.get('category')
 
-    let filtered = businesses
+    let filtered = businessesList
     if (category && category !== 'Todos') {
-      filtered = businesses.filter((b) => b.category === category)
+      filtered = businessesList.filter((b) => b.category === category)
     }
 
     // Extract unique categories from all businesses
     const allCategories = [
       'Todos',
-      ...new Set(businesses.map((b) => b.category)),
+      ...new Set(businessesList.map((b) => b.category)),
     ].sort()
     const selectedCategory = category || 'Todos'
 

@@ -1,57 +1,39 @@
 import { define } from '../../../../../utils.ts'
-import { kv } from '../../../../../lib/kv.ts'
-import {
-  type DemandSignal,
-  getCategoryIndexKey,
-  getSignalKey,
-} from '../../../../../lib/signals.ts'
+import { db } from '../../../../../lib/db.ts'
+import * as schema from '../../../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 export async function handleReviewSignal(
-  kvInstance: Deno.Kv,
   signalId: string,
+  newStatus: string = 'approved',
 ): Promise<Response> {
-  const signalEntry = await kvInstance.get<DemandSignal>(getSignalKey(signalId))
+  const [signal] = await db
+    .select()
+    .from(schema.signals)
+    .where(eq(schema.signals.id, signalId))
+    .limit(1)
 
-  if (!signalEntry.value) {
+  if (!signal) {
     return new Response(JSON.stringify({ error: 'Signal not found' }), {
       status: 404,
       headers: { 'Content-Type': 'application/json' },
     })
   }
 
-  const signal = signalEntry.value
-
-  if (signal.reviewed) {
+  if (signal.status !== 'pending') {
     return new Response(JSON.stringify(signal), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })
   }
 
-  signal.reviewed = true
+  const [updated] = await db
+    .update(schema.signals)
+    .set({ status: newStatus })
+    .where(eq(schema.signals.id, signalId))
+    .returning()
 
-  const categoryIndexKey = getCategoryIndexKey(
-    signal.category,
-    signal.createdAt,
-    signalId,
-  )
-  const atomic = kvInstance.atomic()
-    .check(signalEntry)
-    .set(getSignalKey(signalId), signal)
-    .set(categoryIndexKey, { signalId, reviewed: true })
-
-  const result = await atomic.commit()
-  if (!result.ok) {
-    return new Response(
-      JSON.stringify({ error: 'Failed to review signal, please retry' }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    )
-  }
-
-  return new Response(JSON.stringify(signal), {
+  return new Response(JSON.stringify(updated), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   })
@@ -60,6 +42,27 @@ export async function handleReviewSignal(
 export const handler = define.handlers({
   async PUT(ctx) {
     const signalId = ctx.params.id
-    return await handleReviewSignal(kv, signalId)
+    let body: { status?: string }
+    try {
+      body = await ctx.req.json()
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    const newStatus = body.status || 'approved'
+    if (newStatus !== 'approved' && newStatus !== 'rejected') {
+      return new Response(
+        JSON.stringify({ error: 'Status must be "approved" or "rejected"' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
+    }
+
+    return await handleReviewSignal(signalId, newStatus)
   },
 })

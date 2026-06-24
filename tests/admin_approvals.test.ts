@@ -6,198 +6,190 @@ import { handler as pendingHandler } from '../routes/api/admin/approvals/pending
 import { handler as actionHandler } from '../routes/api/admin/approvals/[userId].ts'
 import { applyMiddleware } from '../routes/_middleware.ts'
 import { auth } from '../lib/auth.ts'
-
-const kv = await Deno.openKv()
+import { db } from '../lib/db.ts'
+import * as schema from '../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 async function setupTestUser(
   userId: string,
   status: 'pending' | 'approved' | 'rejected' = 'pending',
 ) {
-  const user = {
+  await db.insert(schema.users).values({
     id: userId,
     name: 'Test User',
     cpf: '12345678901',
-    email: 'test@example.com',
+    email: `test-${userId}@example.com`,
     role: 'resident',
     status,
-    createdAt: Date.now(),
-  }
-  await kv.set(['user', userId], user)
-  if (status === 'pending') {
-    await kv.set(['approvals', 'pending', userId], {
-      userId,
-      createdAt: user.createdAt,
-    })
-  }
-  return user
+  })
 }
 
 async function cleanupTestUser(userId: string) {
-  await kv.delete(['user', userId])
-  await kv.delete(['approvals', 'pending', userId])
+  await db.delete(schema.users).where(eq(schema.users.id, userId))
 }
 
-Deno.test('Admin Approvals API', async (t) => {
-  await t.step(
-    'GET /api/admin/approvals/pending returns pending users',
-    async () => {
-      const userId = crypto.randomUUID()
-      await setupTestUser(userId)
+Deno.test({
+  name: 'Admin Approvals API',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    await t.step(
+      'GET /api/admin/approvals/pending returns pending users',
+      async () => {
+        const userId = crypto.randomUUID()
+        await db.delete(schema.users).where(eq(schema.users.status, 'pending'))
+        await setupTestUser(userId)
 
-      // We need to pass a mock context to the handler if using define.handlers
-      // But define.handlers returns a handler that takes a context.
-      // Fresh 2.0 handlers are a bit different.
-      // Let's see how they are exported.
-      // routes/api/admin/approvals/pending.ts: export const handler = define.handlers({ ... })
+        const req = new Request(
+          'http://localhost:8000/api/admin/approvals/pending',
+        )
+        const res = await (pendingHandler as unknown as {
+          GET: (ctx: unknown) => Promise<Response>
+        }).GET({ req })
+        assertEquals(res.status, 200)
+        const users = await res.json()
+        const found = users.find((u: { id: string }) => u.id === userId)
+        assertExists(found)
+        assertEquals(found.status, 'pending')
 
-      // For simplicity, let's extract the GET logic or call it via a mock context.
-      // Since I wrote the files, I know how they look.
-
-      const req = new Request(
-        'http://localhost:8000/api/admin/approvals/pending',
-      )
-      // define.handlers returns a function (ctx: Context) => Response | Promise<Response>
-      // In Fresh 2, the context has a 'req' property.
-      const res = await (pendingHandler as unknown as {
-        GET: (ctx: unknown) => Promise<Response>
-      }).GET({ req })
-      assertEquals(res.status, 200)
-      const users = await res.json()
-      const found = users.find((u: { id: string }) => u.id === userId)
-      assertExists(found)
-      assertEquals(found.status, 'pending')
-
-      await cleanupTestUser(userId)
-    },
-  )
-
-  await t.step(
-    'POST /api/admin/approvals/:userId approves a user',
-    async () => {
-      const userId = crypto.randomUUID()
-      await setupTestUser(userId)
-
-      const req = new Request(
-        `http://localhost:8000/api/admin/approvals/${userId}`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ status: 'approved' }),
-        },
-      )
-      const res = await (actionHandler as unknown as {
-        POST: (ctx: unknown) => Promise<Response>
-      }).POST({ req, params: { userId } })
-      assertEquals(res.status, 200)
-
-      const user = await res.json()
-      assertEquals(user.status, 'approved')
-
-      // Verify KV
-      const kvUser = await kv.get(['user', userId])
-      assertEquals((kvUser.value as { status: string }).status, 'approved')
-      const kvPending = await kv.get(['approvals', 'pending', userId])
-      assertEquals(kvPending.value, null)
-
-      await cleanupTestUser(userId)
-    },
-  )
-
-  await t.step('POST /api/admin/approvals/:userId rejects a user', async () => {
-    const userId = crypto.randomUUID()
-    await setupTestUser(userId)
-
-    const req = new Request(
-      `http://localhost:8000/api/admin/approvals/${userId}`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ status: 'rejected' }),
+        await cleanupTestUser(userId)
       },
     )
-    const res = await (actionHandler as unknown as {
-      POST: (ctx: unknown) => Promise<Response>
-    }).POST({ req, params: { userId } })
-    assertEquals(res.status, 200)
 
-    const user = await res.json()
-    assertEquals(user.status, 'rejected')
+    await t.step(
+      'POST /api/admin/approvals/:userId approves a user',
+      async () => {
+        const userId = crypto.randomUUID()
+        await setupTestUser(userId)
 
-    // Verify KV
-    const kvUser = await kv.get(['user', userId])
-    assertEquals((kvUser.value as { status: string }).status, 'rejected')
-    const kvPending = await kv.get(['approvals', 'pending', userId])
-    assertEquals(kvPending.value, null)
+        const req = new Request(
+          `http://localhost:8000/api/admin/approvals/${userId}`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ status: 'approved' }),
+          },
+        )
+        const res = await (actionHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req, params: { userId } })
+        assertEquals(res.status, 200)
 
-    await cleanupTestUser(userId)
-  })
+        const user = await res.json()
+        assertEquals(user.status, 'approved')
 
-  await t.step(
-    'POST /api/admin/approvals/:userId returns 400 for invalid status',
-    async () => {
-      const userId = crypto.randomUUID()
-      await setupTestUser(userId)
+        // Verify in database
+        const [dbUser] = await db
+          .select()
+          .from(schema.users)
+          .where(eq(schema.users.id, userId))
+          .limit(1)
+        assertEquals(dbUser.status, 'approved')
 
-      const req = new Request(
-        `http://localhost:8000/api/admin/approvals/${userId}`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ status: 'invalid' }),
-        },
-      )
-      const res = await (actionHandler as unknown as {
-        POST: (ctx: unknown) => Promise<Response>
-      }).POST({ req, params: { userId } })
-      assertEquals(res.status, 400)
+        await cleanupTestUser(userId)
+      },
+    )
 
-      await cleanupTestUser(userId)
-    },
-  )
+    await t.step(
+      'POST /api/admin/approvals/:userId rejects a user',
+      async () => {
+        const userId = crypto.randomUUID()
+        await setupTestUser(userId)
 
-  await t.step(
-    'POST /api/admin/approvals/:userId returns 400 for invalid JSON',
-    async () => {
-      const userId = crypto.randomUUID()
-      const req = new Request(
-        `http://localhost:8000/api/admin/approvals/${userId}`,
-        {
-          method: 'POST',
-          body: 'not-json',
-        },
-      )
-      const res = await (actionHandler as unknown as {
-        POST: (ctx: unknown) => Promise<Response>
-      }).POST({ req, params: { userId } })
-      assertEquals(res.status, 400)
-      const body = await res.json()
-      assertEquals(body.error, 'Invalid JSON')
-    },
-  )
+        const req = new Request(
+          `http://localhost:8000/api/admin/approvals/${userId}`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ status: 'rejected' }),
+          },
+        )
+        const res = await (actionHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req, params: { userId } })
+        assertEquals(res.status, 200)
 
-  await t.step(
-    'POST /api/admin/approvals/:userId returns 404 for missing user',
-    async () => {
-      const userId = crypto.randomUUID()
-      const req = new Request(
-        `http://localhost:8000/api/admin/approvals/${userId}`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ status: 'approved' }),
-        },
-      )
-      const res = await (actionHandler as unknown as {
-        POST: (ctx: unknown) => Promise<Response>
-      }).POST({ req, params: { userId } })
-      assertEquals(res.status, 404)
-      const body = await res.json()
-      assertEquals(body.error, 'User not found')
-    },
-  )
+        const user = await res.json()
+        assertEquals(user.status, 'rejected')
+
+        // Verify in database
+        const [dbUser] = await db
+          .select()
+          .from(schema.users)
+          .where(eq(schema.users.id, userId))
+          .limit(1)
+        assertEquals(dbUser.status, 'rejected')
+
+        await cleanupTestUser(userId)
+      },
+    )
+
+    await t.step(
+      'POST /api/admin/approvals/:userId returns 400 for invalid status',
+      async () => {
+        const userId = crypto.randomUUID()
+        await setupTestUser(userId)
+
+        const req = new Request(
+          `http://localhost:8000/api/admin/approvals/${userId}`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ status: 'invalid' }),
+          },
+        )
+        const res = await (actionHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req, params: { userId } })
+        assertEquals(res.status, 400)
+
+        await cleanupTestUser(userId)
+      },
+    )
+
+    await t.step(
+      'POST /api/admin/approvals/:userId returns 400 for invalid JSON',
+      async () => {
+        const userId = crypto.randomUUID()
+        const req = new Request(
+          `http://localhost:8000/api/admin/approvals/${userId}`,
+          {
+            method: 'POST',
+            body: 'not-json',
+          },
+        )
+        const res = await (actionHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req, params: { userId } })
+        assertEquals(res.status, 400)
+        const body = await res.json()
+        assertEquals(body.error, 'Invalid JSON')
+      },
+    )
+
+    await t.step(
+      'POST /api/admin/approvals/:userId returns 404 for missing user',
+      async () => {
+        const userId = crypto.randomUUID()
+        const req = new Request(
+          `http://localhost:8000/api/admin/approvals/${userId}`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ status: 'approved' }),
+          },
+        )
+        const res = await (actionHandler as unknown as {
+          POST: (ctx: unknown) => Promise<Response>
+        }).POST({ req, params: { userId } })
+        assertEquals(res.status, 404)
+        const body = await res.json()
+        assertEquals(body.error, 'User not found')
+      },
+    )
+  },
 })
 
 Deno.test('Admin Middleware', async (t) => {
   const originalGetSession = auth.api.getSession
 
   await t.step('blocks unauthorized from /api/*', async () => {
-    // Mock no session
     ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
       Promise.resolve(null)
 
@@ -213,7 +205,6 @@ Deno.test('Admin Middleware', async (t) => {
   })
 
   await t.step('redirects unauthorized from /admin*', async () => {
-    // Mock no session
     ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
       Promise.resolve(null)
 
@@ -228,7 +219,6 @@ Deno.test('Admin Middleware', async (t) => {
   })
 
   await t.step('blocks non-admin from /admin*', async () => {
-    // Mock resident
     ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
       Promise.resolve({
         session: { id: 's1', userId: 'u1' },
@@ -268,7 +258,6 @@ Deno.test('Admin Middleware', async (t) => {
   })
 
   await t.step('blocks non-admin from /api/admin/*', async () => {
-    // Mock session for resident
     ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
       Promise.resolve({
         session: {
@@ -302,7 +291,6 @@ Deno.test('Admin Middleware', async (t) => {
   })
 
   await t.step('allows admin to /api/admin/*', async () => {
-    // Mock session for admin
     ;(auth.api as unknown as { getSession: unknown }).getSession = () =>
       Promise.resolve({
         session: {

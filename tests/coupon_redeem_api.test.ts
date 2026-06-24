@@ -1,10 +1,10 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
+import { db } from '../lib/db.ts'
+import * as schema from '../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { handler as redeemHandler } from '../routes/api/coupons/[id]/redeem.ts'
 import { auth } from '../lib/auth.ts'
-import { kv } from '../lib/kv.ts'
-import { redemptionCountKey } from '../lib/analytics.ts'
-import type { Coupon } from '../lib/coupon.ts'
 
 type RedeemCtx = { req: Request; params: { id: string } }
 
@@ -36,284 +36,395 @@ function resolveSession(userId: string, role: string) {
   })
 }
 
-async function cleanup(couponId: string) {
-  await kv.delete(['coupons', couponId])
-}
-
-Deno.test('Coupon Redeem API - unauthorized', async () => {
-  const couponId = 'coupon_unauth_' + Math.random().toString(36).slice(2)
-  const getSessionStub = stub(
-    auth.api,
-    'getSession',
-    () => Promise.resolve(null),
-  )
-  try {
-    const res = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
-    assertEquals(res.status, 401)
-  } finally {
-    getSessionStub.restore()
-    await cleanup(couponId)
-  }
-})
-
-Deno.test('Coupon Redeem API - coupon not found', async () => {
-  const userId = 'user_nf_' + Math.random().toString(36).slice(2)
-  const getSessionStub = stub(
-    auth.api,
-    'getSession',
-    () => resolveSession(userId, 'resident'),
-  )
-  try {
-    const res = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq('nonexistent'), params: { id: 'nonexistent' } })
-    assertEquals(res.status, 404)
-  } finally {
-    getSessionStub.restore()
-  }
-})
-
-Deno.test('Coupon Redeem API - coupon inactive', async () => {
-  const userId = 'user_inact_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_inact_' + Math.random().toString(36).slice(2)
-  await kv.set(['coupons', couponId], {
+async function createTestCoupon(
+  couponId: string,
+  businessId: string,
+  overrides: Record<string, unknown> = {},
+) {
+  const coupon: Record<string, unknown> = {
     id: couponId,
-    businessId: 'biz',
-    isActive: false,
+    businessId,
+    title: 'Test Coupon',
     behavior: { type: 'percentage_discount', percent: 10 },
     restrictions: {},
-    title: 'Inactive',
-    createdAt: new Date().toISOString(),
-  })
-  const getSessionStub = stub(
-    auth.api,
-    'getSession',
-    () => resolveSession(userId, 'resident'),
-  )
-  try {
-    const res = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
-    assertEquals(res.status, 400)
-  } finally {
-    getSessionStub.restore()
-    await cleanup(couponId)
-  }
-})
-
-Deno.test('Coupon Redeem API - coupon expired', async () => {
-  const userId = 'user_exp_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_exp_' + Math.random().toString(36).slice(2)
-  await kv.set(['coupons', couponId], {
-    id: couponId,
-    businessId: 'biz',
     isActive: true,
-    behavior: { type: 'percentage_discount', percent: 10 },
-    restrictions: { validUntil: Date.now() - 10000 },
-    title: 'Expired',
-    createdAt: new Date().toISOString(),
-  })
-  const getSessionStub = stub(
-    auth.api,
-    'getSession',
-    () => resolveSession(userId, 'resident'),
-  )
-  try {
-    const res = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
-    assertEquals(res.status, 400)
-  } finally {
-    getSessionStub.restore()
-    await cleanup(couponId)
+    ...overrides,
   }
-})
+  await db.insert(schema.coupons).values(coupon as any)
+}
 
-Deno.test('Coupon Redeem API - global limit reached', async () => {
-  const userId = 'user_gl_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_gl_' + Math.random().toString(36).slice(2)
-  const cap = 5
-  await kv.set(['coupons', couponId], {
-    id: couponId,
-    businessId: 'biz',
+async function ensureBizUser(
+  userId: string,
+  email?: string,
+  name?: string,
+) {
+  await db.insert(schema.users).values({
+    id: userId,
+    email: email || `${userId}@test.com`,
+    name: name || 'Test User',
+  }).onConflictDoNothing({ target: schema.users.id })
+}
+
+async function ensureBusiness(
+  businessId: string,
+  userId: string,
+  name?: string,
+) {
+  const cnpj = Date.now().toString(36).slice(-6) +
+    Math.random().toString(36).slice(2, 10)
+  await db.insert(schema.businesses).values({
+    id: businessId,
+    userId,
+    name: name || 'Test Business',
+    companyName: name ? `${name} Ltd` : 'Test Business Ltd',
+    cnpj,
+    category: 'Test',
+    logoUrl: 'http://localhost/logo.png',
     isActive: true,
-    behavior: { type: 'percentage_discount', percent: 10 },
-    restrictions: { globalCap: cap },
-    title: 'Full',
-    createdAt: new Date().toISOString(),
-  })
-  // Preset the analytics counter at the cap so redemption is blocked
-  await kv.set(redemptionCountKey(couponId), cap)
-  const getSessionStub = stub(
-    auth.api,
-    'getSession',
-    () => resolveSession(userId, 'resident'),
+  }).onConflictDoNothing({ target: schema.businesses.id })
+}
+
+async function cleanup(couponId: string) {
+  // Delete FK-dependent rows first: redemptions -> analytics -> coupon
+  await db.delete(schema.redemptions).where(
+    eq(schema.redemptions.couponId, couponId),
   )
-  try {
-    const res = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
-    assertEquals(res.status, 400)
-  } finally {
-    getSessionStub.restore()
-    await kv.delete(redemptionCountKey(couponId))
-    await cleanup(couponId)
-  }
-})
-
-Deno.test('Coupon Redeem API - user monthly limit reached', async () => {
-  const userId = 'user_ml_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_ml_' + Math.random().toString(36).slice(2)
-  const now = new Date()
-  const yearMonth = `${now.getFullYear()}-${now.getMonth() + 1}`
-  await kv.set(['coupons', couponId], {
-    id: couponId,
-    businessId: 'biz',
-    isActive: true,
-    behavior: { type: 'percentage_discount', percent: 10 },
-    restrictions: { userCap: 1 },
-    title: 'Limited',
-    createdAt: new Date().toISOString(),
-  })
-  // Set monthly counter to already at limit
-  await kv.set(['user_coupon_monthly_count', userId, couponId, yearMonth], 1)
-  const getSessionStub = stub(
-    auth.api,
-    'getSession',
-    () => resolveSession(userId, 'resident'),
+  await db.delete(schema.couponAnalytics).where(
+    eq(schema.couponAnalytics.couponId, couponId),
   )
-  try {
-    const res = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
-    assertEquals(res.status, 400)
-  } finally {
-    getSessionStub.restore()
-    await kv.delete(['user_coupon_monthly_count', userId, couponId, yearMonth])
-    await cleanup(couponId)
-  }
-})
+  await db.delete(schema.coupons).where(eq(schema.coupons.id, couponId))
+}
 
-Deno.test('Coupon Redeem API - success', async () => {
-  const userId = 'user_succ_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_succ_' + Math.random().toString(36).slice(2)
-  const coupon: Coupon = {
-    id: couponId,
-    businessId: 'biz_' + Math.random().toString(36).slice(2),
-    title: 'Redeemable',
-    behavior: { type: 'percentage_discount', percent: 10 },
-    restrictions: { globalCap: 5 },
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  }
-  await kv.set(['coupons', couponId], coupon)
-  const getSessionStub = stub(
-    auth.api,
-    'getSession',
-    () => resolveSession(userId, 'resident'),
-  )
-  try {
-    const res = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
-    assertEquals(res.status, 201)
-    const data = await res.json()
-    assertEquals(data.couponId, couponId)
-    assertEquals(data.userId, userId)
-    assertEquals(data.status, 'active')
-
-    // Verify analytics counter was incremented
-    const updatedCount = await kv.get<number>(redemptionCountKey(couponId))
-    assertEquals(updatedCount.value, 1)
-  } finally {
-    getSessionStub.restore()
-    await cleanup(couponId)
-  }
-})
-
-Deno.test('Coupon Redeem API - analytics counter increments atomically', async () => {
-  const userId = 'user_aci_' + Math.random().toString(36).slice(2)
-  const couponId = 'coupon_aci_' + Math.random().toString(36).slice(2)
-  const coupon: Coupon = {
-    id: couponId,
-    businessId: 'biz',
-    title: 'Atomic',
-    behavior: { type: 'fixed_amount', amountCents: 100 },
-    restrictions: { globalCap: 10 },
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  }
-  await kv.set(['coupons', couponId], coupon)
-  const getSessionStub = stub(
-    auth.api,
-    'getSession',
-    () => resolveSession(userId, 'resident'),
-  )
-  try {
-    const res1 = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
-    assertEquals(res1.status, 201)
-
-    const res2 = await (redeemHandler as unknown as {
-      POST: (ctx: RedeemCtx) => Promise<Response>
-    }).POST({ req: redeemReq(couponId), params: { id: couponId } })
-    assertEquals(res2.status, 201)
-
-    const count = await kv.get<number>(redemptionCountKey(couponId))
-    assertEquals(count.value, 2)
-  } finally {
-    getSessionStub.restore()
-    await cleanup(couponId)
-  }
-})
-
-Deno.test('Coupon Redeem API - concurrent redemptions respect global cap', async () => {
-  const couponId = 'coupon_conc_' + Math.random().toString(36).slice(2)
-  const cap = 1
-  const coupon: Coupon = {
-    id: couponId,
-    businessId: 'biz',
-    title: 'Concurrent',
-    behavior: { type: 'percentage_discount', percent: 10 },
-    restrictions: { globalCap: cap },
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  }
-  await kv.set(['coupons', couponId], coupon)
-
-  const userId = 'user_conc_' + Math.random().toString(36).slice(2)
-  const sessionStub = stub(
-    auth.api,
-    'getSession',
-    () => resolveSession(userId, 'resident'),
-  )
-  try {
-    // Fire both requests concurrently — same userId, no userCap set, so only globalCap races
-    const [res1, res2] = await Promise.all([
-      (redeemHandler as unknown as {
+Deno.test({
+  name: 'Coupon Redeem API - unauthorized',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const couponId = 'coupon_unauth_' + Math.random().toString(36).slice(2)
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => Promise.resolve(null),
+    )
+    try {
+      const res = await (redeemHandler as unknown as {
         POST: (ctx: RedeemCtx) => Promise<Response>
-      }).POST({ req: redeemReq(couponId), params: { id: couponId } }),
-      (redeemHandler as unknown as {
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(res.status, 401)
+    } finally {
+      getSessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon Redeem API - coupon not found',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const userId = 'user_nf_' + Math.random().toString(36).slice(2)
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      const res = await (redeemHandler as unknown as {
         POST: (ctx: RedeemCtx) => Promise<Response>
-      }).POST({ req: redeemReq(couponId), params: { id: couponId } }),
-    ])
+      }).POST({ req: redeemReq('nonexistent'), params: { id: 'nonexistent' } })
+      assertEquals(res.status, 404)
+    } finally {
+      getSessionStub.restore()
+    }
+  },
+})
 
-    const statuses = [res1.status, res2.status]
-    const okCount = statuses.filter((s) => s === 201).length
-    const failCount = statuses.filter((s) => s === 409 || s === 400).length
+Deno.test({
+  name: 'Coupon Redeem API - coupon inactive',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const userId = 'user_inact_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_inact_' + Math.random().toString(36).slice(2)
+    const businessId = 'biz_inact_' + Math.random().toString(36).slice(2)
 
-    assertEquals(okCount, 1, 'Exactly one concurrent redemption should succeed')
-    assertEquals(failCount, 1, 'Exactly one concurrent redemption should fail')
+    await ensureBizUser(userId)
+    await ensureBusiness(businessId, userId)
+    await createTestCoupon(couponId, businessId, { isActive: false })
 
-    // Final counter should be exactly 1
-    const count = await kv.get<number>(redemptionCountKey(couponId))
-    assertEquals(count.value, cap)
-  } finally {
-    sessionStub.restore()
-    await kv.delete(redemptionCountKey(couponId))
-    await cleanup(couponId)
-  }
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(res.status, 400)
+    } finally {
+      getSessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon Redeem API - coupon expired',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const userId = 'user_exp_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_exp_' + Math.random().toString(36).slice(2)
+    const businessId = 'biz_exp_' + Math.random().toString(36).slice(2)
+
+    await ensureBizUser(userId)
+    await ensureBusiness(businessId, userId)
+    await createTestCoupon(couponId, businessId, {
+      isActive: true,
+      restrictions: { validUntil: Date.now() - 10000 },
+    })
+
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(res.status, 400)
+    } finally {
+      getSessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon Redeem API - global limit reached',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const userId = 'user_gl_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_gl_' + Math.random().toString(36).slice(2)
+    const businessId = 'biz_gl_' + Math.random().toString(36).slice(2)
+    const cap = 5
+
+    await ensureBizUser(userId)
+    await ensureBusiness(businessId, userId)
+    await createTestCoupon(couponId, businessId, {
+      isActive: true,
+      restrictions: { globalCap: cap },
+    })
+
+    // Preset the analytics counter at the cap so redemption is blocked
+    await db.insert(schema.couponAnalytics).values({
+      id: crypto.randomUUID(),
+      couponId,
+      redemptions: cap,
+    })
+
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(res.status, 400)
+    } finally {
+      getSessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon Redeem API - user monthly limit reached',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const userId = 'user_ml_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_ml_' + Math.random().toString(36).slice(2)
+    const businessId = 'biz_ml_' + Math.random().toString(36).slice(2)
+
+    await ensureBizUser(userId)
+    await ensureBusiness(businessId, userId)
+    await createTestCoupon(couponId, businessId, {
+      isActive: true,
+      restrictions: { userCap: 1 },
+    })
+
+    // Insert one redemption so monthly count = 1 (at userCap)
+    await db.insert(schema.redemptions).values({
+      id: crypto.randomUUID(),
+      couponId,
+      businessId,
+      userId,
+      status: 'active',
+    })
+
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(res.status, 400)
+    } finally {
+      getSessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon Redeem API - success',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const userId = 'user_succ_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_succ_' + Math.random().toString(36).slice(2)
+    const businessId = 'biz_succ_' + Math.random().toString(36).slice(2)
+
+    await ensureBizUser(userId)
+    await ensureBusiness(businessId, userId)
+    await createTestCoupon(couponId, businessId, {
+      restrictions: { globalCap: 5 },
+    })
+
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(res.status, 201)
+      const data = await res.json()
+      assertEquals(data.couponId, couponId)
+      assertEquals(data.userId, userId)
+      assertEquals(data.status, 'active')
+
+      // Verify analytics counter was incremented
+      const [analytics] = await db.select().from(schema.couponAnalytics)
+        .where(eq(schema.couponAnalytics.couponId, couponId))
+      assertEquals(analytics.redemptions, 1)
+    } finally {
+      getSessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon Redeem API - analytics counter increments atomically',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const userId = 'user_aci_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_aci_' + Math.random().toString(36).slice(2)
+    const businessId = 'biz_aci_' + Math.random().toString(36).slice(2)
+
+    await ensureBizUser(userId)
+    await ensureBusiness(businessId, userId)
+    await createTestCoupon(couponId, businessId, {
+      restrictions: { globalCap: 10 },
+    })
+
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      const res1 = await (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(res1.status, 201)
+
+      const res2 = await (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(res2.status, 201)
+
+      const [analytics] = await db.select().from(schema.couponAnalytics)
+        .where(eq(schema.couponAnalytics.couponId, couponId))
+      assertEquals(analytics.redemptions, 2)
+    } finally {
+      getSessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon Redeem API - concurrent redemptions respect global cap',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const couponId = 'coupon_conc_' + Math.random().toString(36).slice(2)
+    const businessId = 'biz_conc_' + Math.random().toString(36).slice(2)
+    const cap = 1
+
+    await ensureBizUser('conc_user')
+    await ensureBusiness(businessId, 'conc_user', 'Concurrent Business')
+    await createTestCoupon(couponId, businessId, {
+      isActive: true,
+      restrictions: { globalCap: cap },
+      title: 'Concurrent',
+      behavior: { type: 'percentage_discount', percent: 10 },
+    })
+
+    const userId = 'conc_user'
+    const sessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      // Fire both requests concurrently
+      const [res1, res2] = await Promise.all([
+        (redeemHandler as unknown as {
+          POST: (ctx: RedeemCtx) => Promise<Response>
+        }).POST({ req: redeemReq(couponId), params: { id: couponId } }),
+        (redeemHandler as unknown as {
+          POST: (ctx: RedeemCtx) => Promise<Response>
+        }).POST({ req: redeemReq(couponId), params: { id: couponId } }),
+      ])
+
+      const statuses = [res1.status, res2.status]
+      const okCount = statuses.filter((s) => s === 201).length
+      const failCount = statuses.filter((s) => s === 409 || s === 400).length
+
+      assertEquals(
+        okCount,
+        1,
+        'Exactly one concurrent redemption should succeed',
+      )
+      assertEquals(
+        failCount,
+        1,
+        'Exactly one concurrent redemption should fail',
+      )
+
+      // Final counter should be exactly 1
+      const [analytics] = await db.select().from(schema.couponAnalytics)
+        .where(eq(schema.couponAnalytics.couponId, couponId))
+      assertEquals(analytics?.redemptions, cap)
+    } finally {
+      sessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
 })

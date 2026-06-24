@@ -2,8 +2,9 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { handler as analyticsHandler } from '../routes/api/admin/analytics.ts'
 import { applyMiddleware } from '../routes/_middleware.ts'
 import { auth } from '../lib/auth.ts'
-import { kv } from '../lib/kv.ts'
-import { viewCountKey, redemptionCountKey, validationCountKey } from '../lib/analytics.ts'
+import { db } from '../lib/db.ts'
+import * as schema from '../db/schema.ts'
+import { sql } from 'drizzle-orm'
 
 function makeBusiness(id: string, name: string) {
   return {
@@ -15,6 +16,7 @@ function makeBusiness(id: string, name: string) {
     cnpj: '11222333000181',
     category: 'Test',
     description: 'Test business',
+    logoUrl: 'http://localhost/logo.png',
   }
 }
 
@@ -30,85 +32,218 @@ function makeCoupon(
     behavior: { type: 'percentage_discount', percent: 10 },
     restrictions: {},
     isActive: true,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
     ...overrides,
   }
 }
 
-Deno.test('Admin Analytics API - aggregate metrics', async (t) => {
-  const biz1Id = 'ada_biz1_' + Math.random().toString(36).slice(2)
-  const biz2Id = 'ada_biz2_' + Math.random().toString(36).slice(2)
-  const cpn1Id = 'ada_cpn1_' + Math.random().toString(36).slice(2)
-  const cpn2Id = 'ada_cpn2_' + Math.random().toString(36).slice(2)
-  const cpn3Id = 'ada_cpn3_' + Math.random().toString(36).slice(2)
-  const cpn4Id = 'ada_cpn4_' + Math.random().toString(36).slice(2)
-  const now = Date.now()
-  const txKeys = [
-    ['business_transactions', biz1Id, now - 1000],
-    ['business_transactions', biz1Id, now - 2000],
-    ['business_transactions', biz2Id, now - 3000],
-  ]
+Deno.test({
+  name: 'Admin Analytics API - aggregate metrics',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    const biz1Id = 'ada_biz1_' + Math.random().toString(36).slice(2)
+    const biz2Id = 'ada_biz2_' + Math.random().toString(36).slice(2)
+    const cpn1Id = 'ada_cpn1_' + Math.random().toString(36).slice(2)
+    const cpn2Id = 'ada_cpn2_' + Math.random().toString(36).slice(2)
+    const cpn3Id = 'ada_cpn3_' + Math.random().toString(36).slice(2)
+    const cpn4Id = 'ada_cpn4_' + Math.random().toString(36).slice(2)
+    const userId = 'ana-user-' + crypto.randomUUID()
 
-  try {
-    await kv.set(['businesses', biz1Id], makeBusiness(biz1Id, 'Biz Alpha'))
-    await kv.set(['businesses', biz2Id], makeBusiness(biz2Id, 'Biz Beta'))
+    try {
+      // Create test user
+      await db.insert(schema.users).values({
+        id: userId,
+        email: `ana-${userId}@test.com`,
+        name: 'Ana User',
+        role: 'admin',
+        emailVerified: true,
+      })
 
-    await kv.set(['coupons', cpn1Id], makeCoupon(cpn1Id, biz1Id, { title: 'Coupon A' }))
-    await kv.set(['coupons', cpn2Id], makeCoupon(cpn2Id, biz1Id, { title: 'Coupon B' }))
-    await kv.set(['coupons', cpn3Id], makeCoupon(cpn3Id, biz2Id, { title: 'Coupon C' }))
-    await kv.set(['coupons', cpn4Id], makeCoupon(cpn4Id, biz2Id, { title: 'Coupon D' }))
+      // Insert businesses
+      await db.insert(schema.businesses).values([
+        makeBusiness(biz1Id, 'Biz Alpha'),
+        makeBusiness(biz2Id, 'Biz Beta'),
+      ])
 
-    await kv.atomic().set(viewCountKey(cpn1Id), new Deno.KvU64(100n)).commit()
-    await kv.set(redemptionCountKey(cpn1Id), 10)
-    await kv.set(validationCountKey(cpn1Id), 8)
+      // Insert coupons
+      await db.insert(schema.coupons).values([
+        makeCoupon(cpn1Id, biz1Id, { title: 'Coupon A' }),
+        makeCoupon(cpn2Id, biz1Id, { title: 'Coupon B' }),
+        makeCoupon(cpn3Id, biz2Id, { title: 'Coupon C' }),
+        makeCoupon(cpn4Id, biz2Id, { title: 'Coupon D' }),
+      ])
 
-    await kv.atomic().set(viewCountKey(cpn2Id), new Deno.KvU64(50n)).commit()
-    await kv.set(redemptionCountKey(cpn2Id), 5)
-    await kv.set(validationCountKey(cpn2Id), 4)
+      // Insert analytics
+      await db.insert(schema.couponAnalytics).values([
+        {
+          id: crypto.randomUUID(),
+          couponId: cpn1Id,
+          views: 100,
+          redemptions: 10,
+          validations: 8,
+        },
+        {
+          id: crypto.randomUUID(),
+          couponId: cpn2Id,
+          views: 50,
+          redemptions: 5,
+          validations: 4,
+        },
+        {
+          id: crypto.randomUUID(),
+          couponId: cpn3Id,
+          views: 200,
+          redemptions: 20,
+          validations: 15,
+        },
+        {
+          id: crypto.randomUUID(),
+          couponId: cpn4Id,
+          views: 30,
+          redemptions: 3,
+          validations: 2,
+        },
+      ])
 
-    await kv.atomic().set(viewCountKey(cpn3Id), new Deno.KvU64(200n)).commit()
-    await kv.set(redemptionCountKey(cpn3Id), 20)
-    await kv.set(validationCountKey(cpn3Id), 15)
+      // Insert transactions for discount calculation
+      const now = Date.now()
+      await db.insert(schema.transactions).values([
+        {
+          id: 'tx1',
+          redemptionId: 'r1',
+          couponId: cpn1Id,
+          businessId: biz1Id,
+          userId,
+          totalAmountCents: 1000,
+          discountAppliedCents: 100,
+          finalAmountCents: 900,
+          timestamp: new Date(now - 1000),
+        },
+        {
+          id: 'tx2',
+          redemptionId: 'r2',
+          couponId: cpn2Id,
+          businessId: biz1Id,
+          userId,
+          totalAmountCents: 2000,
+          discountAppliedCents: 200,
+          finalAmountCents: 1800,
+          timestamp: new Date(now - 2000),
+        },
+        {
+          id: 'tx3',
+          redemptionId: 'r3',
+          couponId: cpn3Id,
+          businessId: biz2Id,
+          userId,
+          totalAmountCents: 3000,
+          discountAppliedCents: 300,
+          finalAmountCents: 2700,
+          timestamp: new Date(now - 3000),
+        },
+      ] as typeof schema.transactions.$inferInsert[])
 
-    await kv.atomic().set(viewCountKey(cpn4Id), new Deno.KvU64(30n)).commit()
-    await kv.set(redemptionCountKey(cpn4Id), 3)
-    await kv.set(validationCountKey(cpn4Id), 2)
+      await t.step('includes test-specific data in response', async () => {
+        const req = new Request('http://localhost:8000/api/admin/analytics')
+        const getHandler = analyticsHandler.GET as (
+          ctx: { req: Request },
+        ) => Promise<Response>
+        const res = await getHandler({ req })
+        assertEquals(res.status, 200)
+        const data = await res.json()
 
-    await kv.set(txKeys[0], {
-      id: 'tx1',
-      redemptionId: 'r1',
-      couponId: cpn1Id,
-      businessId: biz1Id,
-      userId: 'u1',
-      totalAmountCents: 1000,
-      discountAppliedCents: 100,
-      finalAmountCents: 900,
-      timestamp: now - 1000,
-    })
-    await kv.set(txKeys[1], {
-      id: 'tx2',
-      redemptionId: 'r2',
-      couponId: cpn2Id,
-      businessId: biz1Id,
-      userId: 'u2',
-      totalAmountCents: 2000,
-      discountAppliedCents: 200,
-      finalAmountCents: 1800,
-      timestamp: now - 2000,
-    })
-    await kv.set(txKeys[2], {
-      id: 'tx3',
-      redemptionId: 'r3',
-      couponId: cpn3Id,
-      businessId: biz2Id,
-      userId: 'u3',
-      totalAmountCents: 3000,
-      discountAppliedCents: 300,
-      finalAmountCents: 2700,
-      timestamp: now - 3000,
-    })
+        assertEquals(typeof data.totalCoupons, 'number')
+        assertEquals(typeof data.totalViews, 'number')
+        assertEquals(typeof data.totalRedemptions, 'number')
+        assertEquals(typeof data.totalValidations, 'number')
+        assertEquals(typeof data.totalDiscountCents, 'number')
+        assertEquals(data.totalCoupons, 4)
+        assertEquals(data.totalRedemptions, 38)
+        assertEquals(data.totalValidations, 29)
+        assertEquals(data.totalDiscountCents, 600)
+      })
 
-    await t.step('includes test-specific data in response', async () => {
+      await t.step(
+        'returns test-specific businesses in perBusiness breakdown',
+        async () => {
+          const req = new Request('http://localhost:8000/api/admin/analytics')
+          const getHandler = analyticsHandler.GET as (
+            ctx: { req: Request },
+          ) => Promise<Response>
+          const res = await getHandler({ req })
+          const data = await res.json()
+
+          const bizAlpha = data.perBusiness.find(
+            (b: { businessName: string }) => b.businessName === 'Biz Alpha',
+          )
+          assertEquals(bizAlpha !== undefined, true)
+          assertEquals(bizAlpha.couponCount, 2)
+          assertEquals(bizAlpha.totalViews, 150)
+          assertEquals(bizAlpha.totalRedemptions, 15)
+          assertEquals(bizAlpha.totalValidations, 12)
+
+          const bizBeta = data.perBusiness.find(
+            (b: { businessName: string }) => b.businessName === 'Biz Beta',
+          )
+          assertEquals(bizBeta !== undefined, true)
+          assertEquals(bizBeta.couponCount, 2)
+          assertEquals(bizBeta.totalViews, 230)
+          assertEquals(bizBeta.totalRedemptions, 23)
+          assertEquals(bizBeta.totalValidations, 17)
+        },
+      )
+
+      await t.step('perBusiness entries have correct shape', async () => {
+        const req = new Request('http://localhost:8000/api/admin/analytics')
+        const getHandler = analyticsHandler.GET as (
+          ctx: { req: Request },
+        ) => Promise<Response>
+        const res = await getHandler({ req })
+        const data = await res.json()
+
+        for (const biz of data.perBusiness) {
+          assertEquals(typeof biz.businessId, 'string')
+          assertEquals(typeof biz.businessName, 'string')
+          assertEquals(typeof biz.couponCount, 'number')
+          assertEquals(typeof biz.totalViews, 'number')
+          assertEquals(typeof biz.totalRedemptions, 'number')
+          assertEquals(typeof biz.totalValidations, 'number')
+        }
+      })
+
+      await t.step('response has all required top-level fields', async () => {
+        const req = new Request('http://localhost:8000/api/admin/analytics')
+        const getHandler = analyticsHandler.GET as (
+          ctx: { req: Request },
+        ) => Promise<Response>
+        const res = await getHandler({ req })
+        const data = await res.json()
+
+        assertEquals(typeof data.totalCoupons, 'number')
+        assertEquals(typeof data.totalViews, 'number')
+        assertEquals(typeof data.totalRedemptions, 'number')
+        assertEquals(typeof data.totalValidations, 'number')
+        assertEquals(typeof data.totalDiscountCents, 'number')
+        assertEquals(Array.isArray(data.perBusiness), true)
+      })
+    } finally {
+      await db.delete(schema.transactions)
+      await db.delete(schema.couponAnalytics)
+      await db.delete(schema.coupons)
+      await db.delete(schema.businesses)
+      await db.delete(schema.users)
+      // Reset sequences if needed
+    }
+  },
+})
+
+Deno.test({
+  name: 'Admin Analytics API - response shape with no test data',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    await t.step('returns expected response shape', async () => {
       const req = new Request('http://localhost:8000/api/admin/analytics')
       const getHandler = analyticsHandler.GET as (
         ctx: { req: Request },
@@ -117,128 +252,19 @@ Deno.test('Admin Analytics API - aggregate metrics', async (t) => {
       assertEquals(res.status, 200)
       const data = await res.json()
 
-      // KV has pre-existing data from other tests, so check shape and minimums
-      assertEquals(typeof data.totalCoupons, 'number')
-      assertEquals(typeof data.totalViews, 'number')
-      assertEquals(typeof data.totalRedemptions, 'number')
-      assertEquals(typeof data.totalValidations, 'number')
-      assertEquals(typeof data.totalDiscountCents, 'number')
-      assertEquals(data.totalCoupons >= 4, true, `Expected >=4 got ${data.totalCoupons}`)
-      assertEquals(data.totalRedemptions >= 38, true)
-      assertEquals(data.totalValidations >= 29, true)
-      assertEquals(data.totalDiscountCents >= 600, true)
-    })
-
-    await t.step('returns test-specific businesses in perBusiness breakdown', async () => {
-      const req = new Request('http://localhost:8000/api/admin/analytics')
-      const getHandler = analyticsHandler.GET as (
-        ctx: { req: Request },
-      ) => Promise<Response>
-      const res = await getHandler({ req })
-      const data = await res.json()
-
-      assertEquals(data.perBusiness.length >= 2, true)
-
-      const bizAlpha = data.perBusiness.find(
-        (b: { businessName: string }) => b.businessName === 'Biz Alpha',
-      )
-      assertEquals(bizAlpha !== undefined, true)
-      assertEquals(bizAlpha.couponCount, 2)
-      assertEquals(bizAlpha.totalViews, 150)
-      assertEquals(bizAlpha.totalRedemptions, 15)
-      assertEquals(bizAlpha.totalValidations, 12)
-
-      const bizBeta = data.perBusiness.find(
-        (b: { businessName: string }) => b.businessName === 'Biz Beta',
-      )
-      assertEquals(bizBeta !== undefined, true)
-      assertEquals(bizBeta.couponCount, 2)
-      assertEquals(bizBeta.totalViews, 230)
-      assertEquals(bizBeta.totalRedemptions, 23)
-      assertEquals(bizBeta.totalValidations, 17)
-    })
-
-    await t.step('perBusiness entries have correct shape', async () => {
-      const req = new Request('http://localhost:8000/api/admin/analytics')
-      const getHandler = analyticsHandler.GET as (
-        ctx: { req: Request },
-      ) => Promise<Response>
-      const res = await getHandler({ req })
-      const data = await res.json()
-
-      for (const biz of data.perBusiness) {
-        assertEquals(typeof biz.businessId, 'string')
-        assertEquals(typeof biz.businessName, 'string')
-        assertEquals(typeof biz.couponCount, 'number')
-        assertEquals(typeof biz.totalViews, 'number')
-        assertEquals(typeof biz.totalRedemptions, 'number')
-        assertEquals(typeof biz.totalValidations, 'number')
-      }
-    })
-
-    await t.step('response has all required top-level fields', async () => {
-      const req = new Request('http://localhost:8000/api/admin/analytics')
-      const getHandler = analyticsHandler.GET as (
-        ctx: { req: Request },
-      ) => Promise<Response>
-      const res = await getHandler({ req })
-      const data = await res.json()
-
       assertEquals(typeof data.totalCoupons, 'number')
       assertEquals(typeof data.totalViews, 'number')
       assertEquals(typeof data.totalRedemptions, 'number')
       assertEquals(typeof data.totalValidations, 'number')
       assertEquals(typeof data.totalDiscountCents, 'number')
       assertEquals(Array.isArray(data.perBusiness), true)
+      assertEquals(data.totalCoupons >= 0, true)
+      assertEquals(data.totalViews >= 0, true)
+      assertEquals(data.totalRedemptions >= 0, true)
+      assertEquals(data.totalValidations >= 0, true)
+      assertEquals(data.totalDiscountCents >= 0, true)
     })
-  } finally {
-    await kv.delete(['businesses', biz1Id])
-    await kv.delete(['businesses', biz2Id])
-    await kv.delete(['coupons', cpn1Id])
-    await kv.delete(['coupons', cpn2Id])
-    await kv.delete(['coupons', cpn3Id])
-    await kv.delete(['coupons', cpn4Id])
-    await kv.delete(viewCountKey(cpn1Id))
-    await kv.delete(viewCountKey(cpn2Id))
-    await kv.delete(viewCountKey(cpn3Id))
-    await kv.delete(viewCountKey(cpn4Id))
-    await kv.delete(redemptionCountKey(cpn1Id))
-    await kv.delete(redemptionCountKey(cpn2Id))
-    await kv.delete(redemptionCountKey(cpn3Id))
-    await kv.delete(redemptionCountKey(cpn4Id))
-    await kv.delete(validationCountKey(cpn1Id))
-    await kv.delete(validationCountKey(cpn2Id))
-    await kv.delete(validationCountKey(cpn3Id))
-    await kv.delete(validationCountKey(cpn4Id))
-    for (const key of txKeys) {
-      await kv.delete(key)
-    }
-  }
-})
-
-Deno.test('Admin Analytics API - response shape with no test data', async (t) => {
-  await t.step('returns expected response shape regardless of pre-existing data', async () => {
-    const req = new Request('http://localhost:8000/api/admin/analytics')
-    const getHandler = analyticsHandler.GET as (
-      ctx: { req: Request },
-    ) => Promise<Response>
-    const res = await getHandler({ req })
-    assertEquals(res.status, 200)
-    const data = await res.json()
-
-    assertEquals(typeof data.totalCoupons, 'number')
-    assertEquals(typeof data.totalViews, 'number')
-    assertEquals(typeof data.totalRedemptions, 'number')
-    assertEquals(typeof data.totalValidations, 'number')
-    assertEquals(typeof data.totalDiscountCents, 'number')
-    assertEquals(Array.isArray(data.perBusiness), true)
-    // Verify non-negative
-    assertEquals(data.totalCoupons >= 0, true)
-    assertEquals(data.totalViews >= 0, true)
-    assertEquals(data.totalRedemptions >= 0, true)
-    assertEquals(data.totalValidations >= 0, true)
-    assertEquals(data.totalDiscountCents >= 0, true)
-  })
+  },
 })
 
 Deno.test('Admin Analytics API - auth enforcement', async (t) => {

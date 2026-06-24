@@ -1,16 +1,16 @@
 import { define } from '../../../../utils.ts'
-import { kv } from '../../../../lib/kv.ts'
-import { getDenoKvAdapterRaw } from '../../../../lib/kv-adapter.ts'
+import { db } from '../../../../lib/db.ts'
+import * as schema from '../../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { validateBehavior } from '../../../../lib/coupon.ts'
-const adapter = getDenoKvAdapterRaw(kv)
 
 export const handler = define.handlers({
   async GET(ctx) {
     const { id: businessId } = ctx.params
-    const coupons = await adapter.findMany({
-      model: 'coupons',
-      where: [{ field: 'businessId', value: businessId }],
-    })
+    const coupons = await db
+      .select()
+      .from(schema.coupons)
+      .where(eq(schema.coupons.businessId, businessId))
     return Response.json(coupons)
   },
 
@@ -38,18 +38,18 @@ export const handler = define.handlers({
       behavior = { type: 'percentage_discount', percent: 10 }
     }
 
-    const coupon = await adapter.create({
-      model: 'coupons',
-      data: {
+    const [coupon] = await db
+      .insert(schema.coupons)
+      .values({
+        id: crypto.randomUUID(),
         businessId,
         title: data.title,
         description: data.description,
         behavior,
         restrictions: data.restrictions || {},
         isActive: data.isActive !== false,
-        createdAt: new Date().toISOString(),
-      },
-    })
+      })
+      .returning()
 
     return Response.json(coupon, { status: 201 })
   },

@@ -8,6 +8,9 @@ import { deleteFile, uploadFile } from '../lib/storage.ts'
 import { handleGetUpload } from '../routes/api/uploads/[filename].ts'
 import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
 import { auth } from '../lib/auth.ts'
+import { db } from '../lib/db.ts'
+import * as schema from '../db/schema.ts'
+import { eq } from 'npm:drizzle-orm@0.38.2'
 
 Deno.test('Storage and Upload API Tests', async (t) => {
   // Use a temporary uploads directory for testing to prevent polluting the project
@@ -16,22 +19,6 @@ Deno.test('Storage and Upload API Tests', async (t) => {
   })
   const originalUploadsDir = Deno.env.get('UPLOADS_DIR')
   Deno.env.set('UPLOADS_DIR', testUploadsDir)
-
-  // Ensure clean database entries for testing users
-  const kv = await Deno.openKv()
-
-  // Clean up any test users that might exist
-  const users = kv.list({ prefix: ['user'] })
-  for await (const user of users) {
-    const val = user.value as { email?: string }
-    if (
-      val.email === 'resident_owner@example.com' ||
-      val.email === 'resident_other@example.com' ||
-      val.email === 'admin_user@example.com'
-    ) {
-      await kv.delete(user.key)
-    }
-  }
 
   // Create our test users via Better Auth
   // 1. Resident Owner
@@ -45,17 +32,18 @@ Deno.test('Storage and Upload API Tests', async (t) => {
   })
   const ownerCookie = resOwner.headers.get('set-cookie')
 
-  // Set role to 'resident' and status to 'approved' manually in Deno KV for the signed-up user
+  // Get the owner session and verify
   const ownerSession = await auth.api.getSession({
     headers: { cookie: ownerCookie || '' },
   })
   assertExists(ownerSession)
   const ownerUser = ownerSession.user
-  await kv.set(['user', ownerUser.id], {
-    ...ownerUser,
+
+  // Update user role and status in database
+  await db.update(schema.users).set({
     role: 'resident',
     status: 'approved',
-  })
+  }).where(eq(schema.users.id, ownerUser.id))
 
   // 2. Resident Other
   const resOther = await auth.api.signUpEmail({
@@ -73,11 +61,12 @@ Deno.test('Storage and Upload API Tests', async (t) => {
   })
   assertExists(otherSession)
   const otherUser = otherSession.user
-  await kv.set(['user', otherUser.id], {
-    ...otherUser,
+
+  // Update user role and status in database
+  await db.update(schema.users).set({
     role: 'resident',
     status: 'approved',
-  })
+  }).where(eq(schema.users.id, otherUser.id))
 
   // 3. Admin User
   const resAdmin = await auth.api.signUpEmail({
@@ -95,11 +84,12 @@ Deno.test('Storage and Upload API Tests', async (t) => {
   })
   assertExists(adminSession)
   const adminUser = adminSession.user
-  await kv.set(['user', adminUser.id], {
-    ...adminUser,
+
+  // Update user role and status in database
+  await db.update(schema.users).set({
     role: 'admin',
     status: 'approved',
-  })
+  }).where(eq(schema.users.id, adminUser.id))
 
   await t.step('uploadFile name generation and validation', async () => {
     // Valid PNG upload
@@ -150,10 +140,13 @@ Deno.test('Storage and Upload API Tests', async (t) => {
       const readContent = new TextDecoder().decode(readBytes)
       assertEquals(readContent, fileContent)
 
-      // Verify metadata was stored in Deno KV
-      const metaEntry = await kv.get(['file_metadata', filename])
-      assertExists(metaEntry.value)
-      const meta = metaEntry.value as { userId: string; isPublic: boolean }
+      // Verify metadata was stored in PostgreSQL database
+      const metaRows = await db.select().from(schema.fileMetadata).where(
+        eq(schema.fileMetadata.filename, filename),
+      )
+      assertExists(metaRows)
+      assertEquals(metaRows.length, 1)
+      const meta = metaRows[0]
       assertEquals(meta.userId, ownerUser.id)
       assertEquals(meta.isPublic, false)
     },
@@ -248,31 +241,16 @@ Deno.test('Storage and Upload API Tests', async (t) => {
     // Ignore cleanup error
   }
 
-  // Delete test users and sessions from Deno KV
-  const testUsers = kv.list({ prefix: ['user'] })
-  for await (const user of testUsers) {
-    const val = user.value as { email?: string }
-    if (
-      val.email === 'resident_owner@example.com' ||
-      val.email === 'resident_other@example.com' ||
-      val.email === 'admin_user@example.com'
-    ) {
-      await kv.delete(user.key)
-    }
-  }
-
-  const testSessions = kv.list({ prefix: ['session'] })
-  for await (const session of testSessions) {
-    const val = session.value as { userId?: string }
-    if (
-      val.userId === ownerUser.id || val.userId === otherUser.id ||
-      val.userId === adminUser.id
-    ) {
-      await kv.delete(session.key)
-    }
-  }
-
-  kv.close()
+  // Delete test users from database
+  await db.delete(schema.users).where(
+    eq(schema.users.email, 'resident_owner@example.com'),
+  )
+  await db.delete(schema.users).where(
+    eq(schema.users.email, 'resident_other@example.com'),
+  )
+  await db.delete(schema.users).where(
+    eq(schema.users.email, 'admin_user@example.com'),
+  )
 })
 
 Deno.test('deleteFile utility', async (t) => {
@@ -281,12 +259,15 @@ Deno.test('deleteFile utility', async (t) => {
   })
   const origDir = Deno.env.get('UPLOADS_DIR')
   Deno.env.set('UPLOADS_DIR', testDir)
-  const kv2 = await Deno.openKv()
 
   await t.step('deletes existing file and metadata', async () => {
     const filePath = join(testDir, 'test_delete.txt')
     await Deno.writeTextFile(filePath, 'content')
-    await kv2.set(['file_metadata', 'test_delete.txt'], {
+
+    // Store metadata in PostgreSQL database
+    await db.insert(schema.fileMetadata).values({
+      id: 'test_delete_id',
+      filename: 'test_delete.txt',
       userId: 'u1',
       isPublic: false,
     })
@@ -298,17 +279,21 @@ Deno.test('deleteFile utility', async (t) => {
       async () => await Deno.stat(filePath),
       Deno.errors.NotFound,
     )
-    // Metadata should be gone
-    const entry = await kv2.get(['file_metadata', 'test_delete.txt'])
-    assertEquals(entry.value, null)
+    // Metadata should be gone from database
+    const metaRows = await db.select().from(schema.fileMetadata).where(
+      eq(schema.fileMetadata.filename, 'test_delete.txt'),
+    )
+    assertEquals(metaRows.length, 0)
   })
 
   await t.step('handles non-existent file idempotently', async () => {
     // Should not throw
     await deleteFile('nonexistent_file.txt')
     // Metadata deletion should also be idempotent
-    const entry = await kv2.get(['file_metadata', 'nonexistent_file.txt'])
-    assertEquals(entry.value, null)
+    const metaRows = await db.select().from(schema.fileMetadata).where(
+      eq(schema.fileMetadata.filename, 'nonexistent_file.txt'),
+    )
+    assertEquals(metaRows.length, 0)
   })
 
   await t.step(
@@ -317,6 +302,14 @@ Deno.test('deleteFile utility', async (t) => {
       const filePath = join(testDir, 'test_perm_deny.txt')
       await Deno.writeTextFile(filePath, 'content')
 
+      // Store metadata in database
+      await db.insert(schema.fileMetadata).values({
+        id: 'test_perm_deny_id',
+        filename: 'test_perm_deny.txt',
+        userId: 'u1',
+        isPublic: false,
+      })
+
       const removeStub = stub(Deno, 'remove', () => {
         throw new Deno.errors.PermissionDenied('Permission denied')
       })
@@ -324,8 +317,10 @@ Deno.test('deleteFile utility', async (t) => {
         // Should not throw, just console.error
         await deleteFile('test_perm_deny.txt')
         // Metadata should still be deleted
-        const entry = await kv2.get(['file_metadata', 'test_perm_deny.txt'])
-        assertEquals(entry.value, null)
+        const metaRows = await db.select().from(schema.fileMetadata).where(
+          eq(schema.fileMetadata.filename, 'test_perm_deny.txt'),
+        )
+        assertEquals(metaRows.length, 0)
       } finally {
         removeStub.restore()
       }
@@ -336,7 +331,6 @@ Deno.test('deleteFile utility', async (t) => {
   try {
     await Deno.remove(testDir, { recursive: true })
   } catch { /* ignore */ }
-  kv2.close()
 })
 
 Deno.test('uploadFile edge cases', async (t) => {

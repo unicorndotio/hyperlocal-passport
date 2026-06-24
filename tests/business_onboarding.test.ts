@@ -7,11 +7,17 @@ import { render } from 'npm:preact-render-to-string@^6.6.3'
 import { h } from 'npm:preact@^10.27.2'
 import { auth } from '../lib/auth.ts'
 import { handler as businessProfileHandler } from '../routes/api/businesses/[id]/profile.ts'
-import { kv } from '../lib/kv.ts'
+import { db } from '../lib/db.ts'
+import * as schema from '../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import BusinessOnboarding from '../islands/BusinessOnboarding.tsx'
 import type { Business } from '../lib/business.ts'
 
-type ProfileCtx = { req: Request; params: Record<string, string>; state: { user: { id: string; role: string } } }
+type ProfileCtx = {
+  req: Request
+  params: Record<string, string>
+  state: { user: { id: string; role: string } }
+}
 type ProfileHandler = {
   PUT: (ctx: ProfileCtx) => Promise<Response>
 }
@@ -54,18 +60,21 @@ const mockBusiness: Business = {
 // --- Component Tests ---
 
 Deno.test('BusinessOnboarding - Component Rendering', async (t) => {
-  await t.step('renders walkthrough when hasSeenMerchantOnboarding is false', () => {
-    const html = render(
-      h(BusinessOnboarding, {
-        business: { ...mockBusiness, hasSeenMerchantOnboarding: false },
-        businessId: 'biz_1',
-      }),
-    )
-    assertExists(html.includes('Bem-vindo ao Novo Painel!'))
-    assertExists(html.includes('Passo 1 de 6'))
-    assertExists(html.includes('Próximo'))
-    assertExists(html.includes('Pular'))
-  })
+  await t.step(
+    'renders walkthrough when hasSeenMerchantOnboarding is false',
+    () => {
+      const html = render(
+        h(BusinessOnboarding, {
+          business: { ...mockBusiness, hasSeenMerchantOnboarding: false },
+          businessId: 'biz_1',
+        }),
+      )
+      assertExists(html.includes('Bem-vindo ao Novo Painel!'))
+      assertExists(html.includes('Passo 1 de 6'))
+      assertExists(html.includes('Próximo'))
+      assertExists(html.includes('Pular'))
+    },
+  )
 
   await t.step('does NOT render when hasSeenMerchantOnboarding is true', () => {
     const html = render(
@@ -114,7 +123,6 @@ Deno.test('BusinessOnboarding - Component Rendering', async (t) => {
         businessId: 'biz_1',
       }),
     )
-    // Style objects are rendered as CSS (no spaces after colons with preact-render-to-string)
     const hasInactiveColor = html.includes('#e2e8f0')
     const hasActiveColor = html.includes('#2563eb')
     assertExists(hasInactiveColor)
@@ -145,71 +153,88 @@ Deno.test('BusinessOnboarding - Navigation Logic', async (t) => {
   })
 
   await t.step('last step shows Finalizar instead of Proximo', () => {
-    // We can't easily navigate to step 6 via render, but we can verify the
-    // component renders Finalizar button somewhere (via the step config)
-    // This is more of an integration test — verified via API test below
     assertExists(true)
   })
 })
 
 // --- API Integration Tests ---
 
-Deno.test('BusinessOnboarding - API Integration', async (t) => {
-  const kvTest = await Deno.openKv(':memory:')
+Deno.test({
+  name: 'BusinessOnboarding - API Integration',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    await db.delete(schema.businesses)
+    await db.delete(schema.users)
 
-  // Create a test business in KV
-  const bizKey = ['businesses', 'biz_api_1']
-  const testBusiness = {
-    id: 'biz_api_1',
-    userId: 'biz_user',
-    name: 'API Test Store',
-    companyName: 'API Test Store Ltda',
-    cnpj: '11222333000181',
-    category: 'food',
-    description: 'Test',
-    logoUrl: 'http://localhost/logo.png',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  }
-  await kvTest.set(bizKey, testBusiness)
-
-  const getSessionStub = mockStub(auth.api, 'getSession', businessSession)
-
-  const handler = businessProfileHandler as unknown as ProfileHandler
-
-  await t.step('PUT /profile sets hasSeenMerchantOnboarding flag', async () => {
-    const req = new Request('http://localhost/api/businesses/biz_api_1/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hasSeenMerchantOnboarding: true }),
+    // Create a test user and business in PostgreSQL
+    await db.insert(schema.users).values({
+      id: 'biz_user',
+      email: 'biz@example.com',
+      name: 'Business Owner',
+      role: 'business',
     })
 
-    const ctx: ProfileCtx = {
-      req,
-      params: { id: 'biz_api_1' },
-      state: { user: { id: 'biz_user', role: 'business' } },
+    const testBusiness = {
+      id: 'biz_api_1',
+      userId: 'biz_user',
+      name: 'API Test Store',
+      companyName: 'API Test Store Ltda',
+      cnpj: '11222333000181',
+      category: 'food',
+      description: 'Test',
+      logoUrl: 'http://localhost/logo.png',
+      isActive: true,
     }
+    await db.insert(schema.businesses).values(testBusiness)
 
-    // Override kv in the handler by stubbing the kv module
-    // We need a different approach — the handler uses the real kv instance
-    // Let's test via adapter.update directly instead
-    assertExists(true)
-  })
+    const getSessionStub = mockStub(auth.api, 'getSession', businessSession)
 
-  await t.step('rejects non-boolean hasSeenMerchantOnboarding', () => {
-    // This validates the handler validation
-    const body = { hasSeenMerchantOnboarding: 'true' }
-    assertEquals(typeof body.hasSeenMerchantOnboarding, 'string')
-  })
+    const handler = businessProfileHandler as unknown as ProfileHandler
 
-  getSessionStub.restore()
-  kvTest.close()
+    await t.step(
+      'PUT /profile sets hasSeenMerchantOnboarding flag',
+      async () => {
+        const req = new Request(
+          'http://localhost/api/businesses/biz_api_1/profile',
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hasSeenMerchantOnboarding: true }),
+          },
+        )
+
+        const ctx: ProfileCtx = {
+          req,
+          params: { id: 'biz_api_1' },
+          state: { user: { id: 'biz_user', role: 'business' } },
+        }
+
+        const res = await handler.PUT(ctx)
+        assertEquals(res.status, 200)
+
+        // Verify in database
+        const [updated] = await db
+          .select()
+          .from(schema.businesses)
+          .where(eq(schema.businesses.id, 'biz_api_1'))
+          .limit(1)
+        assertEquals(updated.hasSeenMerchantOnboarding, true)
+      },
+    )
+
+    await t.step('rejects non-boolean hasSeenMerchantOnboarding', () => {
+      const body = { hasSeenMerchantOnboarding: 'true' }
+      assertEquals(typeof body.hasSeenMerchantOnboarding, 'string')
+    })
+
+    getSessionStub.restore()
+  },
 })
 
 // --- Pure Logic Tests ---
 
 Deno.test('BusinessOnboarding - Step Configuration', () => {
-  // Test step structure is valid
   const stepTitles = [
     'Bem-vindo ao Novo Painel!',
     'Meus Cupons',
@@ -237,14 +262,11 @@ Deno.test('BusinessOnboarding - Boolean Flag on Business Interface', () => {
     createdAt: new Date().toISOString(),
   }
 
-  // When not set, should be undefined
   assertEquals(biz.hasSeenMerchantOnboarding, undefined)
 
-  // When set to false, walkthrough should show
   biz.hasSeenMerchantOnboarding = false
   assertEquals(biz.hasSeenMerchantOnboarding, false)
 
-  // When set to true, walkthrough should hide
   biz.hasSeenMerchantOnboarding = true
   assertEquals(biz.hasSeenMerchantOnboarding, true)
 })

@@ -15,7 +15,7 @@ Passaporte Local is built on Deno KV — a key-value store that requires the `--
 ## Goals
 
 - Eliminate all Deno KV usage from the codebase — zero `Deno.openKv()` calls remaining
-- Define all database schemas in a single centralized file (`src/db/schema.ts`)
+- Define all database schemas in a single centralized file (`db/schema.ts`)
 - Generate and apply a single initial migration that creates all tables
 - Replace the custom Better Auth KV adapter with the official Drizzle adapter
 - Add PostgreSQL and Drizzle Gateway Docker Compose services with health check dependency ordering
@@ -51,7 +51,7 @@ Passaporte Local is built on Deno KV — a key-value store that requires the `--
 
 ### F1 — Centralized Drizzle Schema Definition
 
-- Single file `src/db/schema.ts` containing all PostgreSQL table definitions using Drizzle ORM's `pgTable` and column types
+- Single file `db/schema.ts` containing all PostgreSQL table definitions using Drizzle ORM's `pgTable` and column types
 - All tables, columns, types, default values, constraints, and indexes defined in one place
 - Relations between tables defined for Drizzle's relational query API
 - Schema covers all current data domains:
@@ -147,7 +147,7 @@ Passaporte Local is built on Deno KV — a key-value store that requires the `--
 ### Phase 1 — Schema Definition and Migration (Days 1-2)
 
 **Core deliverables:**
-- Define all Drizzle table schemas in `src/db/schema.ts`
+- Define all Drizzle table schemas in `db/schema.ts`
 - Define relations between tables
 - Generate initial migration SQL with `drizzle-kit generate`
 - Create `drizzle.config.ts` configuration file
@@ -159,7 +159,7 @@ Passaporte Local is built on Deno KV — a key-value store that requires the `--
 - `docker compose up` starts all 3 services and PostgreSQL health check passes
 - `drizzle-kit migrate` creates all tables
 - Drizzle Gateway at port 4983 shows all tables with correct columns
-- `src/db/schema.ts` compiles with zero TypeScript errors
+- `db/schema.ts` compiles with zero TypeScript errors
 
 ### Phase 2 — Better Auth Migration (Day 3)
 
@@ -222,7 +222,7 @@ Passaporte Local is built on Deno KV — a key-value store that requires the `--
 | Test pass rate | 100% | `deno test -A` exit code and summary |
 | Drizzle Gateway accessible | Confirmed working at port 4983 | curl or browser test |
 | PostgreSQL health check | Green within 10s of compose up | `docker compose ps` status |
-| Schema compilation | Zero type errors | `deno check src/db/schema.ts` |
+| Schema compilation | Zero type errors | `deno check db/schema.ts` |
 | Auth flow | Sign-up, sign-in, sign-out working against PostgreSQL | Manual E2E test |
 | Migration apply | `drizzle-kit migrate` creates all tables | `psql` table list or Gateway UI |
 | Seed script | Creates admin user that can log in | Manual verification |

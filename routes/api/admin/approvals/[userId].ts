@@ -1,11 +1,14 @@
 import { define } from '../../../../utils.ts'
 import { auth } from '../../../../lib/auth.ts'
-import { kv } from '../../../../lib/kv.ts'
+import { db } from '../../../../lib/db.ts'
+import * as schema from '../../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 interface User {
   id: string
   email: string
   name: string
+  cpf?: string
   status: 'pending' | 'approved' | 'rejected'
   [key: string]: unknown
 }
@@ -36,27 +39,48 @@ export const handler = define.handlers({
       )
     }
 
-    const userEntry = await kv.get(['user', userId])
-    if (!userEntry.value) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
+    let user: User | null = null
+
+    try {
+      await db.transaction(async (tx) => {
+        // Fetch user
+        const users = await tx
+          .select()
+          .from(schema.users)
+          .where(eq(schema.users.id, userId))
+          .limit(1)
+
+        if (users.length === 0) {
+          throw new Error('User not found')
+        }
+
+        const dbUser = users[0]
+        user = {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          cpf: dbUser.cpf || undefined,
+          status: status as 'pending' | 'approved' | 'rejected',
+        }
+
+        // Update user status
+        await tx
+          .update(schema.users)
+          .set({ status })
+          .where(eq(schema.users.id, userId))
       })
-    }
-
-    const user = userEntry.value as User
-    user.status = status
-
-    const atomic = kv.atomic()
-      .check(userEntry)
-      .set(['user', userId], user)
-      .delete(['approvals', 'pending', userId])
-
-    const result = await atomic.commit()
-
-    if (!result.ok) {
+    } catch (err) {
+      const message = err instanceof Error
+        ? err.message
+        : 'Failed to update user status'
+      if (message === 'User not found') {
+        return new Response(JSON.stringify({ error: message }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
       return new Response(
-        JSON.stringify({ error: 'Failed to update user status' }),
+        JSON.stringify({ error: message }),
         {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
@@ -64,13 +88,13 @@ export const handler = define.handlers({
       )
     }
 
-    // If approved, create Better Auth credentials (after atomic commit succeeds)
-    if (status === 'approved') {
+    // If approved, create Better Auth credentials (after transaction succeeds)
+    if (status === 'approved' && user) {
       try {
         await auth.api.signUpEmail({
           body: {
             email: user.email,
-            password: (user.cpf as string) || 'Pass@123',
+            password: user.cpf || 'Pass@123',
             name: user.name,
             role: 'resident',
           },

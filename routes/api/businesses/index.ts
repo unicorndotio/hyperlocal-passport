@@ -1,13 +1,13 @@
 import { define } from '../../../utils.ts'
-import { kv } from '../../../lib/kv.ts'
-import { getDenoKvAdapterRaw } from '../../../lib/kv-adapter.ts'
+import { db } from '../../../lib/db.ts'
+import * as schema from '../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { uploadFile } from '../../../lib/storage.ts'
 import { isValidCnpj, normalizeCnpj } from '../../../lib/business.ts'
-const adapter = getDenoKvAdapterRaw(kv)
 
 export const handler = define.handlers({
   async GET(_ctx) {
-    const businesses = await adapter.findMany({ model: 'businesses' })
+    const businesses = await db.select().from(schema.businesses)
     return Response.json(businesses)
   },
 
@@ -30,18 +30,12 @@ export const handler = define.handlers({
     const userId = formData.get('userId') as string || ''
     const isActive = formData.get('isActive') !== 'false'
 
-    // Validations
     if (!name.trim()) {
       return new Response('Missing required field: name', { status: 400 })
     }
     const normalizedCnpj = normalizeCnpj(cnpj)
     if (!normalizedCnpj || !isValidCnpj(normalizedCnpj)) {
       return new Response('Missing or invalid CNPJ', { status: 400 })
-    }
-
-    const existingCnpj = await kv.get(['businesses_by_cnpj', normalizedCnpj])
-    if (existingCnpj.value !== null) {
-      return new Response('CNPJ already registered', { status: 409 })
     }
 
     if (!category.trim()) {
@@ -54,7 +48,6 @@ export const handler = define.handlers({
       return new Response('Missing required field: userId', { status: 400 })
     }
 
-    // Logo upload
     let logoUrl = ''
     try {
       const filename = await uploadFile(logo, { isPublic: true })
@@ -67,29 +60,45 @@ export const handler = define.handlers({
       )
     }
 
-    // Save business profile
-    const business = await adapter.create({
-      model: 'businesses',
-      data: {
-        name,
-        companyName,
-        cnpj: normalizedCnpj,
-        category,
-        description,
-        logoUrl,
-        userId,
-        isActive,
-        createdAt: new Date().toISOString(),
-      },
-    })
+    try {
+      const [business] = await db.transaction(async (tx) => {
+        const existingCnpj = await tx
+          .select()
+          .from(schema.businesses)
+          .where(eq(schema.businesses.cnpj, normalizedCnpj))
+          .limit(1)
 
-    // Update the linked user's role to 'business'
-    await adapter.update({
-      model: 'user',
-      where: [{ field: 'id', value: userId }],
-      update: { role: 'business' },
-    })
+        if (existingCnpj.length > 0) {
+          throw new Error('CNPJ already registered')
+        }
 
-    return Response.json(business, { status: 201 })
+        return tx
+          .insert(schema.businesses)
+          .values({
+            id: crypto.randomUUID(),
+            name,
+            companyName,
+            cnpj: normalizedCnpj,
+            category,
+            description,
+            logoUrl,
+            userId,
+            isActive,
+          })
+          .returning()
+      })
+
+      await db
+        .update(schema.users)
+        .set({ role: 'business' })
+        .where(eq(schema.users.id, userId))
+
+      return Response.json(business, { status: 201 })
+    } catch (err) {
+      if (err instanceof Error && err.message === 'CNPJ already registered') {
+        return new Response('CNPJ already registered', { status: 409 })
+      }
+      throw err
+    }
   },
 })

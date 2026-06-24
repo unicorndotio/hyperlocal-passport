@@ -1,19 +1,19 @@
 import { define } from '../../../../utils.ts'
-import { kv } from '../../../../lib/kv.ts'
-import { getDenoKvAdapterRaw } from '../../../../lib/kv-adapter.ts'
-import type { Coupon } from '../../../../lib/coupon.ts'
+import { db } from '../../../../lib/db.ts'
+import * as schema from '../../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { validateBehavior } from '../../../../lib/coupon.ts'
-
-const adapter = getDenoKvAdapterRaw(kv)
 
 export const handler = define.handlers({
   async PUT(ctx) {
     const { id } = ctx.params
 
-    const coupon = await adapter.findOne<Coupon>({
-      model: 'coupons',
-      where: [{ field: 'id', value: id }],
-    })
+    const [coupon] = await db
+      .select()
+      .from(schema.coupons)
+      .where(eq(schema.coupons.id, id))
+      .limit(1)
+
     if (!coupon) {
       return new Response(JSON.stringify({ error: 'Coupon not found' }), {
         status: 404,
@@ -44,11 +44,11 @@ export const handler = define.handlers({
       }
     }
 
-    const updated = await adapter.update({
-      model: 'coupons',
-      where: [{ field: 'id', value: id }],
-      update: updateData,
-    })
+    const [updated] = await db
+      .update(schema.coupons)
+      .set(updateData)
+      .where(eq(schema.coupons.id, id))
+      .returning()
 
     return Response.json(updated)
   },
@@ -56,10 +56,12 @@ export const handler = define.handlers({
   async DELETE(ctx) {
     const { id } = ctx.params
 
-    const coupon = await adapter.findOne<Coupon>({
-      model: 'coupons',
-      where: [{ field: 'id', value: id }],
-    })
+    const [coupon] = await db
+      .select()
+      .from(schema.coupons)
+      .where(eq(schema.coupons.id, id))
+      .limit(1)
+
     if (!coupon) {
       return new Response(JSON.stringify({ error: 'Coupon not found' }), {
         status: 404,
@@ -67,10 +69,9 @@ export const handler = define.handlers({
       })
     }
 
-    await adapter.delete({
-      model: 'coupons',
-      where: [{ field: 'id', value: id }],
-    })
+    await db
+      .delete(schema.coupons)
+      .where(eq(schema.coupons.id, id))
 
     return new Response(null, { status: 204 })
   },

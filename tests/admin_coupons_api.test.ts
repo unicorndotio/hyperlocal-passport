@@ -3,7 +3,9 @@ import { handler as listHandler } from '../routes/api/admin/coupons/index.ts'
 import { handler as couponHandler } from '../routes/api/admin/coupons/[id].ts'
 import { applyMiddleware } from '../routes/_middleware.ts'
 import { auth } from '../lib/auth.ts'
-import { kv } from '../lib/kv.ts'
+import { db } from '../lib/db.ts'
+import * as schema from '../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 function makeCoupon(
   id: string,
@@ -17,7 +19,7 @@ function makeCoupon(
     behavior: { type: 'percentage_discount', percent: 10 },
     restrictions: {},
     isActive: true,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
     ...overrides,
   }
 }
@@ -32,269 +34,321 @@ function makeBusiness(id: string, name: string) {
     cnpj: '11222333000181',
     category: 'Test',
     description: 'Test business',
+    logoUrl: 'http://localhost/logo.png',
   }
 }
 
-Deno.test('Admin Coupons API - GET /api/admin/coupons', async (t) => {
-  const biz1Id = 'admc_biz1_' + Math.random().toString(36).slice(2)
-  const biz2Id = 'admc_biz2_' + Math.random().toString(36).slice(2)
-  const cpn1Id = 'admc_cpn1_' + Math.random().toString(36).slice(2)
-  const cpn2Id = 'admc_cpn2_' + Math.random().toString(36).slice(2)
-  const cpn3Id = 'admc_cpn3_' + Math.random().toString(36).slice(2)
+Deno.test({
+  name: 'Admin Coupons API - GET /api/admin/coupons',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    const biz1Id = 'admc_biz1_' + Math.random().toString(36).slice(2)
+    const biz2Id = 'admc_biz2_' + Math.random().toString(36).slice(2)
+    const cpn1Id = 'admc_cpn1_' + Math.random().toString(36).slice(2)
+    const cpn2Id = 'admc_cpn2_' + Math.random().toString(36).slice(2)
+    const cpn3Id = 'admc_cpn3_' + Math.random().toString(36).slice(2)
+    const userId = 'adm-coupon-user-' + crypto.randomUUID()
 
-  try {
-    await kv.set(['businesses', biz1Id], makeBusiness(biz1Id, 'Biz One'))
-    await kv.set(['businesses', biz2Id], makeBusiness(biz2Id, 'Biz Two'))
+    try {
+      await db.insert(schema.users).values({
+        id: userId,
+        email: `adm-coupon-${userId}@test.com`,
+        name: 'Adm Coupon User',
+        role: 'admin',
+        emailVerified: true,
+      })
 
-    await kv.set(
-      ['coupons', cpn1Id],
-      makeCoupon(cpn1Id, biz1Id, { title: 'Coupon A' }),
-    )
-    await kv.set(
-      ['coupons', cpn2Id],
-      makeCoupon(cpn2Id, biz1Id, {
-        title: 'Coupon B',
-        isActive: false,
-        behavior: { type: 'fixed_amount', amountCents: 500 },
-      }),
-    )
-    await kv.set(
-      ['coupons', cpn3Id],
-      makeCoupon(cpn3Id, biz2Id, {
-        title: 'Coupon C',
-        behavior: { type: 'bogo', buyQuantity: 2, freeQuantity: 1, unitPriceCents: 1500 },
-      }),
-    )
+      await db.insert(schema.businesses).values([
+        makeBusiness(biz1Id, 'Biz One'),
+        makeBusiness(biz2Id, 'Biz Two'),
+      ])
 
-    await t.step('lists all coupons with correct shape', async () => {
-      const req = new Request('http://localhost:8000/api/admin/coupons')
-      const getHandler = listHandler.GET as (
-        ctx: { req: Request },
-      ) => Promise<Response>
-      const res = await getHandler({ req })
-      assertEquals(res.status, 200)
-      const data = await res.json()
-      assertEquals(data.total >= 3, true)
+      await db.insert(schema.coupons).values([
+        makeCoupon(cpn1Id, biz1Id, { title: 'Coupon A' }),
+        makeCoupon(cpn2Id, biz1Id, {
+          title: 'Coupon B',
+          isActive: false,
+          behavior: { type: 'fixed_amount', amountCents: 500 },
+        }),
+        makeCoupon(cpn3Id, biz2Id, {
+          title: 'Coupon C',
+          behavior: {
+            type: 'bogo',
+            buyQuantity: 2,
+            freeQuantity: 1,
+            unitPriceCents: 1500,
+          },
+        }),
+      ])
 
-      const cpA = data.coupons.find(
-        (c: { title: string }) => c.title === 'Coupon A',
-      )
-      assertEquals(cpA !== undefined, true)
-      assertEquals(cpA.businessName, 'Biz One')
-      assertEquals(cpA.behavior.type, 'percentage_discount')
-      assertEquals(cpA.isActive, true)
+      await t.step('lists all coupons with correct shape', async () => {
+        const req = new Request('http://localhost:8000/api/admin/coupons')
+        const getHandler = listHandler.GET as (
+          ctx: { req: Request },
+        ) => Promise<Response>
+        const res = await getHandler({ req })
+        assertEquals(res.status, 200)
+        const data = await res.json()
+        assertEquals(data.total, 3)
 
-      const cpC = data.coupons.find(
-        (c: { title: string }) => c.title === 'Coupon C',
-      )
-      assertEquals(cpC !== undefined, true)
-      assertEquals(cpC.behavior.type, 'bogo')
-    })
+        const cpA = data.coupons.find(
+          (c: { title: string }) => c.title === 'Coupon A',
+        )
+        assertEquals(cpA !== undefined, true)
+        assertEquals(cpA.businessName, 'Biz One')
+        assertEquals(cpA.behavior.type, 'percentage_discount')
+        assertEquals(cpA.isActive, true)
 
-    await t.step('filters by businessId', async () => {
-      const req = new Request(
-        `http://localhost:8000/api/admin/coupons?businessId=${biz1Id}`,
-      )
-      const getHandler = listHandler.GET as (
-        ctx: { req: Request },
-      ) => Promise<Response>
-      const res = await getHandler({ req })
-      const data = await res.json()
-      assertEquals(data.total, 2)
-      assertEquals(data.coupons.length, 2)
-      for (const c of data.coupons) {
-        assertEquals(c.businessId, biz1Id)
-      }
-    })
+        const cpC = data.coupons.find(
+          (c: { title: string }) => c.title === 'Coupon C',
+        )
+        assertEquals(cpC !== undefined, true)
+        assertEquals(cpC.behavior.type, 'bogo')
+      })
 
-    await t.step('filters by status active', async () => {
-      const req = new Request(
-        'http://localhost:8000/api/admin/coupons?status=active',
-      )
-      const getHandler = listHandler.GET as (
-        ctx: { req: Request },
-      ) => Promise<Response>
-      const res = await getHandler({ req })
-      const data = await res.json()
-      const ourCoupons = data.coupons.filter(
-        (c: { businessId: string }) =>
-          c.businessId === biz1Id || c.businessId === biz2Id,
-      )
-      assertEquals(ourCoupons.length, 2)
-      for (const c of ourCoupons) {
-        assertEquals(c.isActive, true)
-      }
-    })
+      await t.step('filters by businessId', async () => {
+        const req = new Request(
+          `http://localhost:8000/api/admin/coupons?businessId=${biz1Id}`,
+        )
+        const getHandler = listHandler.GET as (
+          ctx: { req: Request },
+        ) => Promise<Response>
+        const res = await getHandler({ req })
+        const data = await res.json()
+        assertEquals(data.total, 2)
+        assertEquals(data.coupons.length, 2)
+        for (const c of data.coupons) {
+          assertEquals(c.businessId, biz1Id)
+        }
+      })
 
-    await t.step('filters by status inactive', async () => {
-      const req = new Request(
-        'http://localhost:8000/api/admin/coupons?status=inactive',
-      )
-      const getHandler = listHandler.GET as (
-        ctx: { req: Request },
-      ) => Promise<Response>
-      const res = await getHandler({ req })
-      const data = await res.json()
-      const ourCoupons = data.coupons.filter(
-        (c: { businessId: string }) =>
-          c.businessId === biz1Id || c.businessId === biz2Id,
-      )
-      assertEquals(ourCoupons.length, 1)
-      assertEquals(ourCoupons[0].isActive, false)
-      assertEquals(ourCoupons[0].title, 'Coupon B')
-    })
-  } finally {
-    await kv.delete(['businesses', biz1Id])
-    await kv.delete(['businesses', biz2Id])
-    await kv.delete(['coupons', cpn1Id])
-    await kv.delete(['coupons', cpn2Id])
-    await kv.delete(['coupons', cpn3Id])
-  }
+      await t.step('filters by status active', async () => {
+        const req = new Request(
+          'http://localhost:8000/api/admin/coupons?status=active',
+        )
+        const getHandler = listHandler.GET as (
+          ctx: { req: Request },
+        ) => Promise<Response>
+        const res = await getHandler({ req })
+        const data = await res.json()
+        const ourCoupons = data.coupons.filter(
+          (c: { businessId: string }) =>
+            c.businessId === biz1Id || c.businessId === biz2Id,
+        )
+        assertEquals(ourCoupons.length, 2)
+        for (const c of ourCoupons) {
+          assertEquals(c.isActive, true)
+        }
+      })
+
+      await t.step('filters by status inactive', async () => {
+        const req = new Request(
+          'http://localhost:8000/api/admin/coupons?status=inactive',
+        )
+        const getHandler = listHandler.GET as (
+          ctx: { req: Request },
+        ) => Promise<Response>
+        const res = await getHandler({ req })
+        const data = await res.json()
+        const ourCoupons = data.coupons.filter(
+          (c: { businessId: string }) =>
+            c.businessId === biz1Id || c.businessId === biz2Id,
+        )
+        assertEquals(ourCoupons.length, 1)
+        assertEquals(ourCoupons[0].isActive, false)
+        assertEquals(ourCoupons[0].title, 'Coupon B')
+      })
+    } finally {
+      await db.delete(schema.coupons)
+      await db.delete(schema.businesses)
+      await db.delete(schema.users)
+    }
+  },
 })
 
-Deno.test('Admin Coupons API - PUT /api/admin/coupons/[id]', async (t) => {
-  const bizId = 'admc_putbiz_' + Math.random().toString(36).slice(2)
-  const cpnId = 'admc_putcpn_' + Math.random().toString(36).slice(2)
+Deno.test({
+  name: 'Admin Coupons API - PUT /api/admin/coupons/[id]',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    const bizId = 'admc_putbiz_' + Math.random().toString(36).slice(2)
+    const cpnId = 'admc_putcpn_' + Math.random().toString(36).slice(2)
+    const userId = 'adm-put-coupon-' + crypto.randomUUID()
 
-  try {
-    await kv.set(['businesses', bizId], makeBusiness(bizId, 'Put Biz'))
-    await kv.set(
-      ['coupons', cpnId],
-      makeCoupon(cpnId, bizId, { title: 'Original Title' }),
-    )
-
-    await t.step('updates coupon regardless of ownership', async () => {
-      const req = new Request(
-        `http://localhost:8000/api/admin/coupons/${cpnId}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: 'Updated Title',
-            isActive: false,
-          }),
-        },
-      )
-      const putHandler = couponHandler.PUT as (
-        ctx: { req: Request; params: Record<string, string> },
-      ) => Promise<Response>
-      const res = await putHandler({ req, params: { id: cpnId } })
-      assertEquals(res.status, 200)
-      const data = await res.json()
-      assertEquals(data.title, 'Updated Title')
-      assertEquals(data.isActive, false)
-      assertEquals(data.businessId, bizId)
-
-      const stored = await kv.get(['coupons', cpnId])
-      assertEquals(
-        (stored.value as Record<string, unknown>).title,
-        'Updated Title',
-      )
-    })
-
-    await t.step('returns 404 for non-existent coupon', async () => {
-      const req = new Request(
-        'http://localhost:8000/api/admin/coupons/nonexistent',
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: 'x' }),
-        },
-      )
-      const putHandler = couponHandler.PUT as (
-        ctx: { req: Request; params: Record<string, string> },
-      ) => Promise<Response>
-      const res = await putHandler({
-        req,
-        params: { id: 'nonexistent' },
+    try {
+      await db.insert(schema.users).values({
+        id: userId,
+        email: `adm-put-${userId}@test.com`,
+        name: 'Adm Put User',
+        role: 'admin',
+        emailVerified: true,
       })
-      assertEquals(res.status, 404)
-    })
 
-    await t.step('returns 400 for invalid JSON', async () => {
-      const req = new Request(
-        `http://localhost:8000/api/admin/coupons/${cpnId}`,
-        {
-          method: 'PUT',
-          body: 'not-json',
-        },
-      )
-      const putHandler = couponHandler.PUT as (
-        ctx: { req: Request; params: Record<string, string> },
-      ) => Promise<Response>
-      const res = await putHandler({ req, params: { id: cpnId } })
-      assertEquals(res.status, 400)
-    })
+      await db.insert(schema.businesses).values([
+        makeBusiness(bizId, 'Put Biz'),
+      ])
 
-    await t.step('returns 400 for invalid behavior update', async () => {
-      const req = new Request(
-        `http://localhost:8000/api/admin/coupons/${cpnId}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            behavior: { type: 'fixed_amount' },
-          }),
-        },
-      )
-      const putHandler = couponHandler.PUT as (
-        ctx: { req: Request; params: Record<string, string> },
-      ) => Promise<Response>
-      const res = await putHandler({ req, params: { id: cpnId } })
-      assertEquals(res.status, 400)
-      const data = await res.json()
-      assertEquals(data.error, 'amountCents is required and must be a number')
-    })
-  } finally {
-    await kv.delete(['businesses', bizId])
-    await kv.delete(['coupons', cpnId])
-  }
+      await db.insert(schema.coupons).values([
+        makeCoupon(cpnId, bizId, { title: 'Original Title' }),
+      ])
+
+      await t.step('updates coupon regardless of ownership', async () => {
+        const req = new Request(
+          `http://localhost:8000/api/admin/coupons/${cpnId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: 'Updated Title',
+              isActive: false,
+            }),
+          },
+        )
+        const putHandler = couponHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Promise<Response>
+        const res = await putHandler({ req, params: { id: cpnId } })
+        assertEquals(res.status, 200)
+        const data = await res.json()
+        assertEquals(data.title, 'Updated Title')
+        assertEquals(data.isActive, false)
+        assertEquals(data.businessId, bizId)
+
+        const [stored] = await db
+          .select()
+          .from(schema.coupons)
+          .where(eq(schema.coupons.id, cpnId))
+          .limit(1)
+        assertEquals(stored.title, 'Updated Title')
+      })
+
+      await t.step('returns 404 for non-existent coupon', async () => {
+        const req = new Request(
+          'http://localhost:8000/api/admin/coupons/nonexistent',
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: 'x' }),
+          },
+        )
+        const putHandler = couponHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Promise<Response>
+        const res = await putHandler({
+          req,
+          params: { id: 'nonexistent' },
+        })
+        assertEquals(res.status, 404)
+      })
+
+      await t.step('returns 400 for invalid JSON', async () => {
+        const req = new Request(
+          `http://localhost:8000/api/admin/coupons/${cpnId}`,
+          {
+            method: 'PUT',
+            body: 'not-json',
+          },
+        )
+        const putHandler = couponHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Promise<Response>
+        const res = await putHandler({ req, params: { id: cpnId } })
+        assertEquals(res.status, 400)
+      })
+
+      await t.step('returns 400 for invalid behavior update', async () => {
+        const req = new Request(
+          `http://localhost:8000/api/admin/coupons/${cpnId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              behavior: { type: 'fixed_amount' },
+            }),
+          },
+        )
+        const putHandler = couponHandler.PUT as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Promise<Response>
+        const res = await putHandler({ req, params: { id: cpnId } })
+        assertEquals(res.status, 400)
+        const data = await res.json()
+        assertEquals(data.error, 'amountCents is required and must be a number')
+      })
+    } finally {
+      await db.delete(schema.coupons)
+      await db.delete(schema.businesses)
+      await db.delete(schema.users)
+    }
+  },
 })
 
-Deno.test('Admin Coupons API - DELETE /api/admin/coupons/[id]', async (t) => {
-  const bizId = 'admc_delbiz_' + Math.random().toString(36).slice(2)
-  const cpnId = 'admc_delcpn_' + Math.random().toString(36).slice(2)
+Deno.test({
+  name: 'Admin Coupons API - DELETE /api/admin/coupons/[id]',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    const bizId = 'admc_delbiz_' + Math.random().toString(36).slice(2)
+    const cpnId = 'admc_delcpn_' + Math.random().toString(36).slice(2)
+    const userId = 'adm-del-coupon-' + crypto.randomUUID()
 
-  try {
-    await kv.set(['businesses', bizId], makeBusiness(bizId, 'Del Biz'))
-    await kv.set(
-      ['coupons', cpnId],
-      makeCoupon(cpnId, bizId, { title: 'To Delete' }),
-    )
-
-    await t.step('deletes coupon regardless of ownership', async () => {
-      const req = new Request(
-        `http://localhost:8000/api/admin/coupons/${cpnId}`,
-        { method: 'DELETE' },
-      )
-      const deleteHandler = couponHandler.DELETE as (
-        ctx: { req: Request; params: Record<string, string> },
-      ) => Promise<Response>
-      const res = await deleteHandler({ req, params: { id: cpnId } })
-      assertEquals(res.status, 204)
-
-      const stored = await kv.get(['coupons', cpnId])
-      assertEquals(stored.value, null)
-    })
-
-    await t.step('returns 404 for non-existent coupon', async () => {
-      const req = new Request(
-        'http://localhost:8000/api/admin/coupons/nonexistent',
-        { method: 'DELETE' },
-      )
-      const deleteHandler = couponHandler.DELETE as (
-        ctx: { req: Request; params: Record<string, string> },
-      ) => Promise<Response>
-      const res = await deleteHandler({
-        req,
-        params: { id: 'nonexistent' },
+    try {
+      await db.insert(schema.users).values({
+        id: userId,
+        email: `adm-del-${userId}@test.com`,
+        name: 'Adm Del User',
+        role: 'admin',
+        emailVerified: true,
       })
-      assertEquals(res.status, 404)
-    })
-  } finally {
-    await kv.delete(['businesses', bizId])
-    await kv.delete(['coupons', cpnId])
-  }
+
+      await db.insert(schema.businesses).values([
+        makeBusiness(bizId, 'Del Biz'),
+      ])
+
+      await db.insert(schema.coupons).values([
+        makeCoupon(cpnId, bizId, { title: 'To Delete' }),
+      ])
+
+      await t.step('deletes coupon regardless of ownership', async () => {
+        const req = new Request(
+          `http://localhost:8000/api/admin/coupons/${cpnId}`,
+          { method: 'DELETE' },
+        )
+        const deleteHandler = couponHandler.DELETE as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Promise<Response>
+        const res = await deleteHandler({ req, params: { id: cpnId } })
+        assertEquals(res.status, 204)
+
+        const [stored] = await db
+          .select()
+          .from(schema.coupons)
+          .where(eq(schema.coupons.id, cpnId))
+          .limit(1)
+        assertEquals(stored, undefined)
+      })
+
+      await t.step('returns 404 for non-existent coupon', async () => {
+        const req = new Request(
+          'http://localhost:8000/api/admin/coupons/nonexistent',
+          { method: 'DELETE' },
+        )
+        const deleteHandler = couponHandler.DELETE as (
+          ctx: { req: Request; params: Record<string, string> },
+        ) => Promise<Response>
+        const res = await deleteHandler({
+          req,
+          params: { id: 'nonexistent' },
+        })
+        assertEquals(res.status, 404)
+      })
+    } finally {
+      await db.delete(schema.coupons)
+      await db.delete(schema.businesses)
+      await db.delete(schema.users)
+    }
+  },
 })
 
 Deno.test('Admin Coupons API - auth enforcement', async (t) => {

@@ -1,5 +1,8 @@
 import { define } from '../../../utils.ts'
 import { auth } from '../../../lib/auth.ts'
+import { db } from '../../../lib/db.ts'
+import * as schema from '../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { deleteFile, uploadFile } from '../../../lib/storage.ts'
 import {
   isValidCnpj,
@@ -7,7 +10,6 @@ import {
   validateOpeningHours,
   validateSocialLinks,
 } from '../../../lib/business.ts'
-import { kv } from '../../../lib/kv.ts'
 import { json } from '../../../lib/utils.ts'
 
 export async function handleRegister(req: Request): Promise<Response> {
@@ -77,13 +79,14 @@ export async function handleRegister(req: Request): Promise<Response> {
 
   const normalizedEmail = email.trim().toLowerCase()
 
-  const existingEmail = await kv.get(['user_by_email', normalizedEmail])
-  if (existingEmail.value !== null) {
-    return json({ error: 'Email already registered' }, 409)
-  }
+  // Check CNPJ uniqueness early
+  const existingCnpj = await db
+    .select()
+    .from(schema.businesses)
+    .where(eq(schema.businesses.cnpj, cnpj))
+    .limit(1)
 
-  const existingCnpj = await kv.get(['businesses_by_cnpj', cnpj])
-  if (existingCnpj.value !== null) {
+  if (existingCnpj.length > 0) {
     return json({ error: 'CNPJ already registered' }, 409)
   }
 
@@ -128,35 +131,35 @@ export async function handleRegister(req: Request): Promise<Response> {
   }
 
   const businessId = crypto.randomUUID()
-  const business = {
-    id: businessId,
-    userId,
-    name: name.trim(),
-    companyName: companyName.trim(),
-    cnpj,
-    category: typeof category === 'string' ? category.trim() : '',
-    description: typeof description === 'string' ? description.trim() : '',
-    logoUrl,
-    socialLinks: socialLinks || undefined,
-    openingHours: openingHours || undefined,
-    isActive: false,
-    createdAt: new Date().toISOString(),
-  }
 
-  const result = await kv.atomic()
-    .check(existingCnpj)
-    .set(['businesses', businessId], business)
-    .set(['businesses_by_cnpj', cnpj], businessId)
-    .commit()
-
-  if (!result.ok) {
+  try {
+    await db.insert(schema.businesses).values({
+      id: businessId,
+      userId,
+      name: name.trim(),
+      companyName: companyName.trim(),
+      cnpj,
+      category: typeof category === 'string' ? category.trim() : '',
+      description: typeof description === 'string' ? description.trim() : '',
+      logoUrl,
+      socialLinks: socialLinks || undefined,
+      openingHours: openingHours || undefined,
+      isActive: false,
+    })
+  } catch (err) {
+    // Cleanup auth user and files on business insert failure
     const cleanup: Promise<unknown>[] = [
-      kv.delete(['user', userId]),
-      kv.delete(['user_by_email', normalizedEmail]),
-      kv.delete(['account_by_userId', userId]),
+      db.delete(schema.users).where(eq(schema.users.id, userId)),
     ]
     if (logoFilename) cleanup.push(deleteFile(logoFilename))
     await Promise.allSettled(cleanup)
+
+    if (
+      err && typeof err === 'object' && 'code' in err &&
+      err.code === '23505'
+    ) {
+      return json({ error: 'CNPJ already registered' }, 409)
+    }
     return json({ error: 'Conflict or system error, please retry' }, 500)
   }
 
@@ -168,7 +171,19 @@ export async function handleRegister(req: Request): Promise<Response> {
       role: 'business',
       status: 'pending',
     },
-    business,
+    business: {
+      id: businessId,
+      userId,
+      name: name.trim(),
+      companyName: companyName.trim(),
+      cnpj,
+      category: typeof category === 'string' ? category.trim() : '',
+      description: typeof description === 'string' ? description.trim() : '',
+      logoUrl,
+      socialLinks: socialLinks || undefined,
+      openingHours: openingHours || undefined,
+      isActive: false,
+    },
   }, 201)
 }
 

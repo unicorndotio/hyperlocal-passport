@@ -1,18 +1,25 @@
 import { define } from '../../../utils.ts'
-import { getDenoKvAdapterRaw } from '../../../lib/kv-adapter.ts'
-
-const kv = await Deno.openKv()
-const adapter = getDenoKvAdapterRaw(kv)
+import { db } from '../../../lib/db.ts'
+import * as schema from '../../../db/schema.ts'
 
 export const handler = define.handlers({
   async GET() {
-    const users = await adapter.findMany({ model: 'user' })
-    const mapped = users.map((u: Record<string, unknown>) => ({
-      id: u.id as string,
-      name: (u.name as string) || '',
-      email: (u.email as string) || '',
-      role: (u.role as string) || 'resident',
-      status: (u.status as string) || 'pending',
+    const users = await db
+      .select({
+        id: schema.users.id,
+        name: schema.users.name,
+        email: schema.users.email,
+        role: schema.users.role,
+        status: schema.users.status,
+      })
+      .from(schema.users)
+
+    const mapped = users.map((u) => ({
+      id: u.id,
+      name: u.name ?? '',
+      email: u.email,
+      role: u.role ?? 'resident',
+      status: u.status ?? 'pending',
     }))
     return Response.json(mapped)
   },

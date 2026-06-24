@@ -1,13 +1,10 @@
 import { define } from '../../../utils.ts'
 import { join } from 'https://deno.land/std@0.224.0/path/mod.ts'
 import { auth } from '../../../lib/auth.ts'
-import { kv } from '../../../lib/kv.ts'
+import { db } from '../../../lib/db.ts'
+import * as schema from '../../../db/schema.ts'
+import { eq } from 'npm:drizzle-orm@0.38.2'
 import { json } from '../../../lib/utils.ts'
-
-interface FileMetadata {
-  userId: string
-  isPublic: boolean
-}
 
 const mimeTypes: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -24,8 +21,10 @@ export async function handleGetUpload(
 ): Promise<Response> {
   if (!filename) return json({ error: 'Filename parameter is missing' }, 400)
 
-  const metaEntry = await kv.get<FileMetadata>(['file_metadata', filename])
-  const metadata = metaEntry.value
+  const metaRows = await db.select().from(schema.fileMetadata).where(
+    eq(schema.fileMetadata.filename, filename),
+  )
+  const metadata = metaRows.length > 0 ? metaRows[0] : null
   const isPublic = metadata?.isPublic ?? false
   const ownerId = metadata?.userId ?? ''
 

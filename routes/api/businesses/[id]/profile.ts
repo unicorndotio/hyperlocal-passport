@@ -1,6 +1,8 @@
 import { define } from '../../../../utils.ts'
 import type { SessionUser } from '../../../../utils.ts'
-import { kv } from '../../../../lib/kv.ts'
+import { db } from '../../../../lib/db.ts'
+import * as schema from '../../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { uploadFile } from '../../../../lib/storage.ts'
 import {
   validateOpeningHours,
@@ -13,15 +15,15 @@ export async function handleProfileUpdate(
   businessId: string,
   user: SessionUser,
 ): Promise<Response> {
-  const bizEntry = await kv.get<Record<string, unknown>>([
-    'businesses',
-    businessId,
-  ])
-  if (!bizEntry.value) {
+  const [business] = await db
+    .select()
+    .from(schema.businesses)
+    .where(eq(schema.businesses.id, businessId))
+    .limit(1)
+
+  if (!business) {
     return json({ error: 'Business not found' }, 404)
   }
-
-  const business = bizEntry.value
 
   if (user.role !== 'admin' && business.userId !== user.id) {
     return json({ error: 'Forbidden: you do not own this business' }, 403)
@@ -129,7 +131,10 @@ export async function handleProfileUpdate(
 
     if ('hasSeenMerchantOnboarding' in body) {
       if (typeof body.hasSeenMerchantOnboarding !== 'boolean') {
-        return json({ error: 'hasSeenMerchantOnboarding must be a boolean' }, 400)
+        return json(
+          { error: 'hasSeenMerchantOnboarding must be a boolean' },
+          400,
+        )
       }
       updateData.hasSeenMerchantOnboarding = body.hasSeenMerchantOnboarding
     }
@@ -139,13 +144,13 @@ export async function handleProfileUpdate(
     return json({ error: 'No valid fields to update' }, 400)
   }
 
-  const updated = { ...business, ...updateData }
-  const result = await kv.atomic()
-    .check(bizEntry)
-    .set(['businesses', businessId], updated)
-    .commit()
+  const [updated] = await db
+    .update(schema.businesses)
+    .set(updateData)
+    .where(eq(schema.businesses.id, businessId))
+    .returning()
 
-  if (!result.ok) {
+  if (!updated) {
     return json({ error: 'Failed to update business' }, 500)
   }
 

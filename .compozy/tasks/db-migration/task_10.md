@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Signals Routes & Rate Limit Removal
 type: backend
 complexity: medium
@@ -38,13 +38,13 @@ Migrate demand signal creation and management routes from Deno KV to Drizzle, an
 
 ## Subtasks
 
-- [ ] Update `routes/api/signals/index.ts`: replace KV operations with Drizzle, remove rate limit block
-- [ ] Update `routes/api/admin/signals/index.ts`: replace KV prefix scan with Drizzle query
-- [ ] Update `routes/api/admin/signals/[id]/review.ts`: replace KV set with Drizzle update
-- [ ] Update or remove rate limit KV key helpers in `lib/signals.ts`
-- [ ] Remove `kv` imports; add `db` and `schema` imports
-- [ ] Verify `deno check` on all modified files
-- [ ] Update signals API tests for PostgreSQL
+- [x] Update `routes/api/signals/index.ts`: replace KV operations with Drizzle, remove rate limit block
+- [x] Update `routes/api/admin/signals/index.ts`: replace KV prefix scan with Drizzle query
+- [x] Update `routes/api/admin/signals/[id]/review.ts`: replace KV set with Drizzle update
+- [x] Update or remove rate limit KV key helpers in `lib/signals.ts`
+- [x] Remove `kv` imports; add `db` and `schema` imports
+- [x] Verify `deno check` on all modified files
+- [x] Update signals API tests for PostgreSQL
 
 ## Implementation Details
 
@@ -76,20 +76,20 @@ Migrate demand signal creation and management routes from Deno KV to Drizzle, an
 
 ### Unit Tests
 
-- [ ] `deno check` on all 3 modified route files passes with zero errors
-- [ ] `deno check lib/signals.ts` passes (no rate limit references remain)
+- [x] `deno check` on all 3 modified route files passes with zero errors
+- [x] `deno check lib/signals.ts` passes (no rate limit references remain)
 
 ### Integration Tests
 
-- [ ] POST signals/ creates a new signal row in PostgreSQL
-- [ ] POST signals/ with invalid category returns 400
-- [ ] GET signals/ returns signals for the authenticated user
-- [ ] GET signals/ with category filter returns filtered results
-- [ ] Rate limit check is NOT performed (previously blocked >5/day, now allows unlimited)
-- [ ] GET admin/signals/ returns all signals (admin view)
-- [ ] POST admin/signals/[id]/review with approve updates signal status to 'approved'
-- [ ] POST admin/signals/[id]/review with reject updates signal status to 'rejected'
-- [ ] Category count is computed via SQL COUNT, not from a KV counter
+- [x] POST signals/ creates a new signal row in PostgreSQL
+- [x] POST signals/ with invalid category returns 400
+- [x] GET signals/ returns signals for the authenticated user
+- [x] GET signals/ with category filter returns filtered results
+- [x] Rate limit check is NOT performed (previously blocked >5/day, now allows unlimited)
+- [x] GET admin/signals/ returns all signals (admin view)
+- [x] POST admin/signals/[id]/review with approve updates signal status to 'approved'
+- [x] POST admin/signals/[id]/review with reject updates signal status to 'rejected'
+- [x] Category count is computed via SQL COUNT, not from a KV counter
 
 ## Success Criteria
 

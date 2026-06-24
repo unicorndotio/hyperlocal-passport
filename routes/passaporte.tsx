@@ -1,9 +1,10 @@
 import { define } from '../utils.ts'
 import { page } from 'fresh'
 import { auth } from '../lib/auth.ts'
-import { kv } from '../lib/kv.ts'
+import { db } from '../lib/db.ts'
+import { businesses, redemptions } from '../db/schema.ts'
+import { and, desc, eq } from 'drizzle-orm'
 import { Redemption } from '../lib/coupon.ts'
-import { Business } from '../lib/business.ts'
 import { Head } from 'fresh/runtime'
 import QRCodeDisplay from '../islands/QRCodeDisplay.tsx'
 import { Card, CardContent } from '@/components/ui/card.tsx'
@@ -18,28 +19,38 @@ export const handler = define.handlers({
 
     const userId = session.user.id
 
-    // Fetch active redemptions
-    const entries = kv.list<Redemption>({
-      prefix: ['user_redemptions', userId],
-    }, { reverse: true })
-    const activeRedemptions: (Redemption & { businessName: string })[] = []
+    // Fetch active redemptions with business names via join
+    const rows = await db.select({
+      id: redemptions.id,
+      couponId: redemptions.couponId,
+      businessId: redemptions.businessId,
+      userId: redemptions.userId,
+      status: redemptions.status,
+      redeemedAt: redemptions.redeemedAt,
+      usedAt: redemptions.usedAt,
+      businessName: businesses.name,
+    })
+      .from(redemptions)
+      .innerJoin(businesses, eq(redemptions.businessId, businesses.id))
+      .where(
+        and(
+          eq(redemptions.userId, userId),
+          eq(redemptions.status, 'active'),
+        ),
+      )
+      .orderBy(desc(redemptions.redeemedAt))
 
-    // We also need business names for display
-    const businessMap = new Map<string, string>()
-
-    for await (const entry of entries) {
-      if (entry.value.status === 'active') {
-        const r = entry.value
-        if (!businessMap.has(r.businessId)) {
-          const b = await kv.get<Business>(['businesses', r.businessId])
-          businessMap.set(r.businessId, b.value?.name || 'Empresa')
-        }
-        activeRedemptions.push({
-          ...r,
-          businessName: businessMap.get(r.businessId) || 'Empresa',
-        })
-      }
-    }
+    const activeRedemptions: (Redemption & { businessName: string })[] = rows
+      .map((r) => ({
+        id: r.id,
+        couponId: r.couponId,
+        businessId: r.businessId,
+        userId: r.userId,
+        status: r.status as 'active' | 'used' | 'expired',
+        redeemedAt: r.redeemedAt?.getTime() ?? Date.now(),
+        usedAt: r.usedAt?.getTime(),
+        businessName: r.businessName,
+      }))
 
     return page(
       { redemptions: activeRedemptions },

@@ -1,0 +1,7 @@
+{
+  "name": "passport-local",
+  "private": true,
+  "devDependencies": {
+    "drizzle-kit": "^0.30.0"
+  }
+}

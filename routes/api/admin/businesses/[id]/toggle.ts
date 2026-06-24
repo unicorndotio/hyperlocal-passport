@@ -1,42 +1,34 @@
 import { define } from '../../../../../utils.ts'
-import { kv } from '../../../../../lib/kv.ts'
+import { db } from '../../../../../lib/db.ts'
+import * as schema from '../../../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 
 export async function handleToggle(
   businessId: string,
   isActive?: boolean,
 ): Promise<Response> {
-  const businessEntry = await kv.get<Record<string, unknown>>([
-    'businesses',
-    businessId,
-  ])
-  if (!businessEntry.value) {
+  const [business] = await db
+    .select()
+    .from(schema.businesses)
+    .where(eq(schema.businesses.id, businessId))
+    .limit(1)
+
+  if (!business) {
     return new Response(JSON.stringify({ error: 'Business not found' }), {
       status: 404,
       headers: { 'Content-Type': 'application/json' },
     })
   }
 
-  const business = businessEntry.value
   const newIsActive = isActive !== undefined ? isActive : !business.isActive
 
-  business.isActive = newIsActive
+  const [updated] = await db
+    .update(schema.businesses)
+    .set({ isActive: newIsActive })
+    .where(eq(schema.businesses.id, businessId))
+    .returning()
 
-  const atomic = kv.atomic()
-    .check(businessEntry)
-    .set(['businesses', businessId], business)
-
-  const result = await atomic.commit()
-  if (!result.ok) {
-    return new Response(
-      JSON.stringify({ error: 'Failed to update business status' }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    )
-  }
-
-  return new Response(JSON.stringify(business), {
+  return new Response(JSON.stringify(updated), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   })

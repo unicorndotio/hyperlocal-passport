@@ -1,7 +1,8 @@
 import { define } from '@/utils.ts'
 import { auth } from '@/lib/auth.ts'
-import { kv } from '@/lib/kv.ts'
-import { getDenoKvAdapterRaw } from '@/lib/kv-adapter.ts'
+import { db } from '@/lib/db.ts'
+import * as schema from '@/db/schema.ts'
+import { eq, sql } from 'drizzle-orm'
 import type { Business } from '@/lib/business.ts'
 import { Coupon, Redemption, Transaction } from '@/lib/coupon.ts'
 import {
@@ -9,9 +10,14 @@ import {
   checkMinimumPurchase,
   validateRedemption,
 } from '@/lib/coupon-engine.ts'
-import { validationCountKey } from '@/lib/analytics.ts'
 
-const adapter = getDenoKvAdapterRaw(kv)
+class TransactionError extends Error {
+  statusCode: number
+  constructor(message: string, statusCode: number) {
+    super(message)
+    this.statusCode = statusCode
+  }
+}
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -40,10 +46,8 @@ export const handler = define.handlers({
     }
 
     // 1. Find business associated with the user
-    const business = await adapter.findOne<Business>({
-      model: 'businesses',
-      where: [{ field: 'userId', value: session.user.id }],
-    })
+    const [business] = await db.select().from(schema.businesses)
+      .where(eq(schema.businesses.userId, session.user.id))
 
     if (!business && session.user.role === 'business') {
       return new Response('Business profile not found for this user', {
@@ -51,9 +55,6 @@ export const handler = define.handlers({
       })
     }
 
-    // For admins without a business profile, we'll allow validation
-    // but skip the ownership check if we want, OR we require they have a business.
-    // Techspec implies it must belong to "the requesting business".
     if (!business) {
       return new Response(
         'A business profile is required to validate transactions',
@@ -63,162 +64,194 @@ export const handler = define.handlers({
 
     const businessId = business.id
 
-    // 2. Fetch Redemption
-    const redemptionRes = await kv.get<Redemption>(['redemptions', code])
-    const redemption = redemptionRes.value
-    if (!redemption) {
-      return new Response('Redemption code not found', { status: 404 })
-    }
+    try {
+      const result = await db.transaction(async (tx) => {
+        // 2. Fetch Redemption
+        const [redemption] = await tx.select().from(schema.redemptions)
+          .where(eq(schema.redemptions.id, code))
 
-    // 3. Verify ownership and status
-    if (redemption.businessId !== businessId) {
-      return new Response('Redemption code belongs to another business', {
-        status: 403,
-      })
-    }
-    if (redemption.status !== 'active') {
-      return new Response(`Redemption is already ${redemption.status}`, {
-        status: 400,
-      })
-    }
+        if (!redemption) {
+          throw new TransactionError('Redemption code not found', 404)
+        }
 
-    // 4. Fetch Coupon
-    const couponRes = await kv.get<Coupon>(['coupons', redemption.couponId])
-    const coupon = couponRes.value
-    if (!coupon) {
-      return new Response('Associated coupon not found', { status: 404 })
-    }
-
-    // 5. Verify Coupon validity
-    const validityCheck = validateRedemption(coupon)
-    if (!validityCheck.valid) {
-      return new Response(validityCheck.reason, { status: 400 })
-    }
-
-    // 6. Validate amountCents/quantity based on behavior type
-    const behaviorType = coupon.behavior.type
-    const isQuantityBased = behaviorType === 'bogo' ||
-      behaviorType === 'item_specific'
-
-    if (isQuantityBased) {
-      if (
-        typeof quantity !== 'number' || quantity <= 0 ||
-        !Number.isInteger(quantity)
-      ) {
-        return new Response(
-          `Quantity is required for ${behaviorType} coupons and must be a positive integer`,
-          { status: 400 },
-        )
-      }
-      if (amountCents !== undefined && amountCents !== null) {
-        if (typeof amountCents !== 'number' || amountCents <= 0) {
-          return new Response(
-            'Invalid amountCents: must be a positive number',
-            { status: 400 },
+        // 3. Verify ownership and status
+        if (redemption.businessId !== businessId) {
+          throw new TransactionError(
+            'Redemption code belongs to another business',
+            403,
           )
         }
-        const unitPrice = 'unitPriceCents' in coupon.behavior
-          ? coupon.behavior.unitPriceCents
-          : 0
-        const expectedCents = unitPrice * quantity
-        if (amountCents !== expectedCents) {
-          return new Response(
-            `amountCents mismatch: expected ${expectedCents}, got ${amountCents}`,
-            { status: 400 },
+
+        if (redemption.status !== 'active') {
+          throw new TransactionError(
+            `Redemption is already ${redemption.status}`,
+            400,
           )
         }
-      }
-    } else {
-      if (typeof amountCents !== 'number' || amountCents <= 0) {
-        return new Response('Invalid amountCents: must be a positive number', {
-          status: 400,
+
+        // 4. Fetch Coupon
+        const [coupon] = await tx.select().from(schema.coupons)
+          .where(eq(schema.coupons.id, redemption.couponId))
+
+        if (!coupon) {
+          throw new TransactionError('Associated coupon not found', 404)
+        }
+
+        // 5. Verify Coupon validity
+        const validityCheck = validateRedemption(coupon as unknown as Coupon)
+        if (!validityCheck.valid) {
+          throw new TransactionError(validityCheck.reason!, 400)
+        }
+
+        // 6. Validate amountCents/quantity based on behavior type
+        const behavior = coupon.behavior as Record<string, unknown>
+        const behaviorType = behavior.type as string
+        const isQuantityBased = behaviorType === 'bogo' ||
+          behaviorType === 'item_specific'
+
+        if (isQuantityBased) {
+          if (
+            typeof quantity !== 'number' || quantity <= 0 ||
+            !Number.isInteger(quantity)
+          ) {
+            throw new TransactionError(
+              `Quantity is required for ${behaviorType} coupons and must be a positive integer`,
+              400,
+            )
+          }
+          if (amountCents !== undefined && amountCents !== null) {
+            if (typeof amountCents !== 'number' || amountCents <= 0) {
+              throw new TransactionError(
+                'Invalid amountCents: must be a positive number',
+                400,
+              )
+            }
+            const unitPrice = 'unitPriceCents' in behavior
+              ? behavior.unitPriceCents as number
+              : 0
+            const expectedCents = unitPrice * quantity
+            if (amountCents !== expectedCents) {
+              throw new TransactionError(
+                `amountCents mismatch: expected ${expectedCents}, got ${amountCents}`,
+                400,
+              )
+            }
+          }
+        } else {
+          if (typeof amountCents !== 'number' || amountCents <= 0) {
+            throw new TransactionError(
+              'Invalid amountCents: must be a positive number',
+              400,
+            )
+          }
+        }
+
+        // 7. Calculate discount using CouponEngine
+        const calcResult = couponCalculate({
+          behavior: coupon.behavior as Coupon['behavior'],
+          amountCents: amountCents ?? 0,
+          quantity: quantity ?? undefined,
         })
+
+        // 8. Check minimum purchase value
+        const restrictions = coupon.restrictions as Record<string, unknown>
+        if (
+          !checkMinimumPurchase(
+            calcResult.totalAmountCents,
+            restrictions.minimumPurchaseValueCents as number | undefined,
+          )
+        ) {
+          const minVal = restrictions.minimumPurchaseValueCents as number
+          throw new TransactionError(
+            `Minimum purchase value of R$ ${(minVal / 100).toFixed(2)} not met`,
+            400,
+          )
+        }
+
+        // 9. Create transaction record
+        const transactionId = crypto.randomUUID()
+        const now = new Date()
+
+        const [newTransaction] = await tx.insert(schema.transactions).values({
+          id: transactionId,
+          redemptionId: redemption.id,
+          couponId: coupon.id,
+          businessId: businessId,
+          userId: redemption.userId,
+          totalAmountCents: calcResult.totalAmountCents,
+          discountAppliedCents: calcResult.discountAppliedCents,
+          finalAmountCents: calcResult.finalAmountCents,
+          timestamp: now,
+        }).returning()
+
+        // 10. Update redemption status to 'used'
+        await tx.update(schema.redemptions)
+          .set({ status: 'used', usedAt: now })
+          .where(eq(schema.redemptions.id, code))
+
+        // 11. Increment analytics validation counter (UPSERT)
+        const analyticsId = crypto.randomUUID()
+        await tx.execute(
+          sql`INSERT INTO coupon_analytics (id, coupon_id, validations)
+              VALUES (${analyticsId}, ${coupon.id}, 1)
+              ON CONFLICT (coupon_id)
+              DO UPDATE SET validations = coupon_analytics.validations + 1`,
+        )
+
+        const responseQuantity =
+          behaviorType === 'bogo' || behaviorType === 'item_specific'
+            ? (quantity ?? undefined)
+            : undefined
+        const unitPriceCents = 'unitPriceCents' in behavior
+          ? behavior.unitPriceCents as number | undefined
+          : undefined
+
+        return {
+          transaction: {
+            id: newTransaction.id,
+            redemptionId: newTransaction.redemptionId,
+            couponId: newTransaction.couponId,
+            businessId: newTransaction.businessId,
+            userId: newTransaction.userId,
+            totalAmountCents: newTransaction.totalAmountCents,
+            discountAppliedCents: newTransaction.discountAppliedCents,
+            finalAmountCents: newTransaction.finalAmountCents,
+            timestamp: newTransaction.timestamp.getTime(),
+          },
+          redemption: {
+            id: redemption.id,
+            couponId: redemption.couponId,
+            businessId: redemption.businessId,
+            userId: redemption.userId,
+            status: 'used',
+            redeemedAt: redemption.redeemedAt.getTime(),
+            usedAt: now.getTime(),
+          },
+          behaviorType,
+          quantity: responseQuantity,
+          unitPriceCents,
+        }
+      }, { isolationLevel: 'serializable' })
+
+      return Response.json(result)
+    } catch (err) {
+      if (err instanceof TransactionError) {
+        return new Response(err.message, { status: err.statusCode })
       }
+      if (err instanceof Error) {
+        const msg = err.message
+        if (
+          msg.includes('could not serialize access') ||
+          msg.includes('40001') ||
+          msg.includes('deadlock detected')
+        ) {
+          return new Response(
+            'Conflict or race condition occurred. Please try again.',
+            { status: 409 },
+          )
+        }
+      }
+      throw err
     }
-
-    // 7. Calculate discount using CouponEngine
-    const calcResult = couponCalculate({
-      behavior: coupon.behavior,
-      amountCents: amountCents ?? 0,
-      quantity: quantity ?? undefined,
-    })
-
-    // 8. Check minimum purchase value
-    if (
-      !checkMinimumPurchase(
-        calcResult.totalAmountCents,
-        coupon.restrictions.minimumPurchaseValueCents,
-      )
-    ) {
-      const minVal = coupon.restrictions.minimumPurchaseValueCents!
-      return new Response(
-        `Minimum purchase value of R$ ${(minVal / 100).toFixed(2)} not met`,
-        { status: 400 },
-      )
-    }
-
-    // 9. Read analytics validation counter
-    const validationKey = validationCountKey(coupon.id)
-    const validationRes = await kv.get<number>(validationKey)
-    const validationCount = validationRes.value ?? 0
-
-    // 10. Atomic Update
-    const transactionId = crypto.randomUUID()
-    const now = Date.now()
-
-    const transaction: Transaction = {
-      id: transactionId,
-      redemptionId: redemption.id,
-      couponId: coupon.id,
-      businessId: businessId,
-      userId: redemption.userId,
-      totalAmountCents: calcResult.totalAmountCents,
-      discountAppliedCents: calcResult.discountAppliedCents,
-      finalAmountCents: calcResult.finalAmountCents,
-      timestamp: now,
-    }
-
-    const updatedRedemption: Redemption = {
-      ...redemption,
-      status: 'used',
-      usedAt: now,
-    }
-
-    const atomic = kv.atomic()
-      .check(redemptionRes)
-      .check(validationRes)
-      .set(['redemptions', code], updatedRedemption)
-      .set(
-        ['user_redemptions', redemption.userId, redemption.redeemedAt],
-        updatedRedemption,
-      )
-      .set(['transactions', transactionId], transaction)
-      .set(['business_transactions', businessId, now], transaction)
-      .set(['user_transactions', redemption.userId, now], transaction)
-      .set(validationKey, validationCount + 1)
-
-    const result = await atomic.commit()
-    if (!result.ok) {
-      return new Response(
-        'Conflict: Redemption may have been processed already',
-        { status: 409 },
-      )
-    }
-
-    const responseQuantity =
-      behaviorType === 'bogo' || behaviorType === 'item_specific'
-        ? (quantity ?? undefined)
-        : undefined
-    const unitPriceCents = 'unitPriceCents' in coupon.behavior
-      ? coupon.behavior.unitPriceCents
-      : undefined
-
-    return Response.json({
-      transaction,
-      redemption: updatedRedemption,
-      behaviorType,
-      quantity: responseQuantity,
-      unitPriceCents,
-    })
   },
 })

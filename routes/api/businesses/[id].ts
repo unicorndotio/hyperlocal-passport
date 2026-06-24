@@ -1,9 +1,9 @@
 import { define } from '../../../utils.ts'
-import { kv } from '../../../lib/kv.ts'
-import { getDenoKvAdapterRaw } from '../../../lib/kv-adapter.ts'
+import { db } from '../../../lib/db.ts'
+import * as schema from '../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import { uploadFile } from '../../../lib/storage.ts'
 import { isValidCnpj, normalizeCnpj } from '../../../lib/business.ts'
-const adapter = getDenoKvAdapterRaw(kv)
 
 export const handler = define.handlers({
   async PUT(ctx) {
@@ -47,11 +47,10 @@ export const handler = define.handlers({
       const userId = formData.get('userId') as string
       if (userId) {
         updateData.userId = userId
-        await adapter.update({
-          model: 'user',
-          where: [{ field: 'id', value: userId }],
-          update: { role: 'business' },
-        })
+        await db
+          .update(schema.users)
+          .set({ role: 'business' })
+          .where(eq(schema.users.id, userId))
       }
 
       const isActiveStr = formData.get('isActive') as string
@@ -113,19 +112,18 @@ export const handler = define.handlers({
 
       const userId = updateData.userId
       if (typeof userId === 'string') {
-        await adapter.update({
-          model: 'user',
-          where: [{ field: 'id', value: userId }],
-          update: { role: 'business' },
-        })
+        await db
+          .update(schema.users)
+          .set({ role: 'business' })
+          .where(eq(schema.users.id, userId))
       }
     }
 
-    const updated = await adapter.update({
-      model: 'businesses',
-      where: [{ field: 'id', value: id }],
-      update: updateData,
-    })
+    const [updated] = await db
+      .update(schema.businesses)
+      .set(updateData)
+      .where(eq(schema.businesses.id, id))
+      .returning()
 
     if (!updated) return new Response('Not Found', { status: 404 })
     return Response.json(updated)
@@ -133,10 +131,9 @@ export const handler = define.handlers({
 
   async DELETE(ctx) {
     const { id } = ctx.params
-    await adapter.delete({
-      model: 'businesses',
-      where: [{ field: 'id', value: id }],
-    })
+    await db
+      .delete(schema.businesses)
+      .where(eq(schema.businesses.id, id))
     return new Response(null, { status: 204 })
   },
 })

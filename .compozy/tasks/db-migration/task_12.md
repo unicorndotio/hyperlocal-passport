@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: User Redemptions & Upload Routes
 type: backend
 complexity: low

@@ -1,7 +1,8 @@
 import { define } from '../../../../utils.ts'
 import { auth } from '../../../../lib/auth.ts'
-import { kv } from '../../../../lib/kv.ts'
-import { Redemption } from '../../../../lib/coupon.ts'
+import { db } from '../../../../lib/db.ts'
+import * as schema from '../../../../db/schema.ts'
+import { desc, eq } from 'drizzle-orm'
 
 export const handler = define.handlers({
   async GET(ctx) {
@@ -13,23 +14,22 @@ export const handler = define.handlers({
 
     const userId = session.user.id
 
-    // List user redemptions
-    // Key: ["user_redemptions", userId, timestamp]
-    const entries = kv.list<Redemption>({
-      prefix: ['user_redemptions', userId],
-    }, {
-      reverse: true, // Newest first
-    })
+    const rows = await db.select()
+      .from(schema.redemptions)
+      .where(eq(schema.redemptions.userId, userId))
+      .orderBy(desc(schema.redemptions.redeemedAt))
 
-    const redemptions: Redemption[] = []
-    for await (const entry of entries) {
-      redemptions.push(entry.value)
-    }
-
-    // Filter by status 'active' if needed, but usually we want to show active ones in Passaporte
-    // The requirement says: "MUST show a list of the user's currently active (un-used) redemptions."
-    // So we filter for 'active'.
-    const activeRedemptions = redemptions.filter((r) => r.status === 'active')
+    const activeRedemptions = rows
+      .filter((r) => r.status === 'active')
+      .map((r) => ({
+        id: r.id,
+        couponId: r.couponId,
+        businessId: r.businessId,
+        userId: r.userId,
+        status: r.status,
+        redeemedAt: r.redeemedAt?.getTime() ?? Date.now(),
+        usedAt: r.usedAt?.getTime(),
+      }))
 
     return Response.json(activeRedemptions)
   },

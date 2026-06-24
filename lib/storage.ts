@@ -1,10 +1,12 @@
 import { join } from 'https://deno.land/std@0.224.0/path/mod.ts'
-import { kv } from './kv.ts'
+import { eq } from 'npm:drizzle-orm@0.38.2'
+import { db } from './db.ts'
+import * as schema from '../db/schema.ts'
 
 /**
  * Uploads a file/blob to the local filesystem under the UPLOADS_DIR directory.
  * Generates a unique UUID filename and returns it.
- * Saves access control metadata to Deno KV.
+ * Saves access control metadata to PostgreSQL.
  */
 export async function uploadFile(
   file: Blob | File,
@@ -72,9 +74,11 @@ export async function uploadFile(
   const arrayBuffer = await file.arrayBuffer()
   await Deno.writeFile(filePath, new Uint8Array(arrayBuffer))
 
-  // Persist access control metadata in Deno KV
-  await kv.set(['file_metadata', filename], {
-    userId: options?.userId || '',
+  // Persist access control metadata in PostgreSQL
+  await db.insert(schema.fileMetadata).values({
+    id: uuid,
+    filename,
+    userId: options?.userId || null,
     isPublic: options?.isPublic ?? false,
   })
 
@@ -82,7 +86,7 @@ export async function uploadFile(
 }
 
 /**
- * Deletes a file from the local filesystem and its metadata from Deno KV.
+ * Deletes a file from the local filesystem and its metadata from PostgreSQL.
  */
 export async function deleteFile(filename: string): Promise<void> {
   const uploadsDir = Deno.env.get('UPLOADS_DIR') || '/app/uploads'
@@ -96,5 +100,7 @@ export async function deleteFile(filename: string): Promise<void> {
     }
   }
 
-  await kv.delete(['file_metadata', filename])
+  await db.delete(schema.fileMetadata).where(
+    eq(schema.fileMetadata.filename, filename),
+  )
 }

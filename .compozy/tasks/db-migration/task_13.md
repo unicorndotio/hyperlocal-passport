@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Seed Script Rewrite
 type: backend
 complexity: low

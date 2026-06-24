@@ -1,9 +1,18 @@
 import { betterAuth } from 'better-auth'
-import { denoKvAdapter } from './kv-adapter.ts'
-import { kv } from './kv.ts'
+import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { db } from './db.ts'
+import * as schema from '../db/schema.ts'
 
 export const auth = betterAuth({
-  database: denoKvAdapter(kv),
+  database: drizzleAdapter(db, {
+    provider: 'pg',
+    schema: {
+      user: schema.users,
+      session: schema.session,
+      account: schema.account,
+      verification: schema.verification,
+    },
+  }),
   emailAndPassword: {
     enabled: true,
   },
@@ -11,7 +20,7 @@ export const auth = betterAuth({
     additionalFields: {
       role: {
         type: 'string',
-        required: false, // It can default to 'resident' in app logic
+        required: false,
       },
       status: {
         type: 'string',

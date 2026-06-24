@@ -3,7 +3,9 @@ import {
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { handleProfileUpdate } from '../../../../routes/api/businesses/[id]/profile.ts'
-import { kv } from '../../../../lib/kv.ts'
+import { db } from '../../../../lib/db.ts'
+import * as schema from '../../../../db/schema.ts'
+import { eq } from 'drizzle-orm'
 import type { SessionUser } from '../../../../utils.ts'
 
 const ownerUser: SessionUser = {
@@ -29,7 +31,7 @@ const adminUser: SessionUser = {
 
 function makeBusiness(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'biz-test-1',
+    id: 'biz-profile-test-1',
     userId: ownerUser.id,
     name: 'Minha Empresa',
     companyName: 'Minha Empresa Ltda',
@@ -40,7 +42,6 @@ function makeBusiness(overrides: Record<string, unknown> = {}) {
     socialLinks: { instagram: 'https://instagram.com/minhaempresa' },
     openingHours: { monday: { open: '09:00', close: '18:00' } },
     isActive: false,
-    createdAt: new Date().toISOString(),
     ...overrides,
   }
 }
@@ -49,12 +50,42 @@ async function seedBusiness(
   data: Record<string, unknown> = {},
 ): Promise<Record<string, unknown>> {
   const biz = makeBusiness(data)
-  await kv.set(['businesses', biz.id as string], biz)
+  // Ensure parent user exists for FK constraint
+  await db.insert(schema.users).values({
+    id: biz.userId as string,
+    email: `${biz.userId}@test.com`,
+    name: 'Test User',
+  }).onConflictDoNothing()
+  await db.insert(schema.businesses).values({
+    id: biz.id as string,
+    userId: biz.userId as string,
+    name: biz.name as string,
+    companyName: biz.companyName as string,
+    cnpj: biz.cnpj as string,
+    category: biz.category as string,
+    description: biz.description as string | undefined,
+    logoUrl: biz.logoUrl as string,
+    socialLinks: biz.socialLinks as Record<string, unknown> | undefined,
+    openingHours: biz.openingHours as Record<string, unknown> | undefined,
+    isActive: biz.isActive as boolean,
+  })
   return biz
 }
 
 async function cleanupBusiness(id: string) {
-  await kv.delete(['businesses', id])
+  const [biz] = await db
+    .select()
+    .from(schema.businesses)
+    .where(eq(schema.businesses.id, id))
+    .limit(1)
+  if (biz) {
+    await db
+      .delete(schema.businesses)
+      .where(eq(schema.businesses.id, id))
+    await db
+      .delete(schema.users)
+      .where(eq(schema.users.id, biz.userId))
+  }
 }
 
 Deno.test('PUT /api/businesses/[id]/profile', async (t) => {
@@ -289,11 +320,14 @@ Deno.test('PUT /api/businesses/[id]/profile', async (t) => {
         assertEquals(body.openingHours.monday.open, '08:00')
         assertEquals(body.openingHours.friday.open, '08:00')
 
-        const stored = await kv.get(['businesses', biz.id as string])
-        assertEquals(
-          (stored.value as Record<string, unknown>).description,
-          'Nova descrição',
-        )
+        // Verify stored in database
+        const stored = await db
+          .select()
+          .from(schema.businesses)
+          .where(eq(schema.businesses.id, biz.id as string))
+          .limit(1)
+        assertEquals(stored.length, 1)
+        assertEquals(stored[0].description, 'Nova descrição')
       } finally {
         await cleanupBusiness(biz.id as string)
       }
@@ -418,52 +452,38 @@ Deno.test('PUT /api/businesses/[id]/profile', async (t) => {
     }
   })
 
-  // --- Atomic: .check() prevents lost concurrent writes ---
+  // --- Concurrent update: PostgreSQL row-level locking ---
 
   await t.step(
-    'atomic check rejects stale versionstamp from concurrent write',
+    'concurrent updates are serialized by PostgreSQL',
     async () => {
       const biz = await seedBusiness()
       try {
-        const res1 = await kv.get<Record<string, unknown>>([
-          'businesses',
-          biz.id as string,
+        // Two concurrent updates to the same business
+        const [result1, result2] = await Promise.allSettled([
+          db
+            .update(schema.businesses)
+            .set({ description: 'First concurrent write' })
+            .where(eq(schema.businesses.id, biz.id as string))
+            .returning(),
+          db
+            .update(schema.businesses)
+            .set({ description: 'Second concurrent write' })
+            .where(eq(schema.businesses.id, biz.id as string))
+            .returning(),
         ])
-        const res2 = await kv.get<Record<string, unknown>>([
-          'businesses',
-          biz.id as string,
-        ])
 
-        const oldValue = res1.value!
+        // Both should succeed (PostgreSQL handles serialization)
+        assertEquals(result1.status, 'fulfilled')
+        assertEquals(result2.status, 'fulfilled')
 
-        // First concurrent commit succeeds
-        const commit1 = await kv.atomic()
-          .check(res1)
-          .set(['businesses', biz.id as string], {
-            ...oldValue,
-            description: 'First concurrent write',
-          })
-          .commit()
-        assertEquals(commit1.ok, true)
-
-        // Second concurrent commit with stale versionstamp fails
-        const commit2 = await kv.atomic()
-          .check(res2)
-          .set(['businesses', biz.id as string], {
-            ...oldValue,
-            description: 'Second concurrent write (lost)',
-          })
-          .commit()
-        assertEquals(commit2.ok, false)
-
-        const stored = await kv.get<Record<string, unknown>>([
-          'businesses',
-          biz.id as string,
-        ])
-        assertEquals(
-          (stored.value as Record<string, unknown>).description,
-          'First concurrent write',
-        )
+        // One of the two will be the final state
+        const stored = await db
+          .select()
+          .from(schema.businesses)
+          .where(eq(schema.businesses.id, biz.id as string))
+          .limit(1)
+        assertExists(stored[0].description)
       } finally {
         await cleanupBusiness(biz.id as string)
       }

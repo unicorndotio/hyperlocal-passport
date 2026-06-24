@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Schema Definition & Initial Migration
 type: backend
 complexity: medium
@@ -10,7 +10,7 @@ dependencies: []
 
 ## Overview
 
-Create the centralized `src/db/schema.ts` file defining all PostgreSQL table schemas using Drizzle ORM's `pgTable`, including relations, indexes, and constraints. Generate the initial migration SQL with `drizzle-kit generate` that creates all tables in a single migration file. This is the single source of truth for the database schema that every other migration task references.
+Create the centralized `db/schema.ts` file defining all PostgreSQL table schemas using Drizzle ORM's `pgTable`, including relations, indexes, and constraints. Generate the initial migration SQL with `drizzle-kit generate` that creates all tables in a single migration file. This is the single source of truth for the database schema that every other migration task references.
 
 <critical>
 
@@ -25,21 +25,21 @@ Create the centralized `src/db/schema.ts` file defining all PostgreSQL table sch
 
 <requirements>
 
-1. All tables MUST be defined in a single `src/db/schema.ts` file using `pgTable` from `drizzle-orm/pg-core`.
+1. All tables MUST be defined in a single `db/schema.ts` file using `pgTable` from `drizzle-orm/pg-core`.
 2. Tables MUST be defined in dependency order: users → businesses → coupons → redemptions → transactions → signals → coupon_analytics → file_metadata → session → account → verification.
 3. Better Auth tables (`user`, `session`, `account`, `verification`) MUST match the exact schema expected by `better-auth/adapters/drizzle`.
 4. Foreign key constraints MUST be defined for all cross-table references (e.g., `coupons.businessId -> businesses.id`).
 5. Drizzle `relations` API MUST be defined for relational queries.
 6. Indexes MUST be defined as specified in the TechSpec (idx_redemptions_user_coupon_month, idx_redemptions_coupon_id, etc.).
 7. `drizzle.config.ts` (created in task_01) MUST be used to generate the initial migration with `drizzle-kit generate`.
-8. The initial migration SQL file MUST be saved to `src/db/migrations/` and committed to version control.
+8. The initial migration SQL file MUST be saved to `db/migrations/` and committed to version control.
 9. Migration files MUST use the snake_case naming convention for column names (e.g., `created_at`, `business_id`).
 
 </requirements>
 
 ## Subtasks
 
-- [ ] Create `src/db/schema.ts` with all table definitions using pgTable
+- [ ] Create `db/schema.ts` with all table definitions using pgTable
 - [ ] Define all column types, default values, nullability, and constraints
 - [ ] Define foreign key references in correct dependency order
 - [ ] Define Drizzle relations API for all tables
@@ -47,14 +47,14 @@ Create the centralized `src/db/schema.ts` file defining all PostgreSQL table sch
 - [ ] Run `npx drizzle-kit generate` to produce the initial migration SQL
 - [ ] Review and verify the generated SQL migration file
 - [ ] Run `npx drizzle-kit migrate` against local PostgreSQL to verify all tables created
-- [ ] Ensure `deno check src/db/schema.ts` passes with zero type errors
+- [ ] Ensure `deno check db/schema.ts` passes with zero type errors
 
 ## Implementation Details
 
 ### Relevant Files
 
-- `src/db/schema.ts` — new file; all table definitions
-- `src/db/migrations/0000_initial.sql` — new (generated); initial migration SQL
+- `db/schema.ts` — new file; all table definitions
+- `db/migrations/0000_initial.sql` — new (generated); initial migration SQL
 
 ### Dependent Files
 
@@ -72,22 +72,22 @@ Create the centralized `src/db/schema.ts` file defining all PostgreSQL table sch
 
 ## Deliverables
 
-- `src/db/schema.ts` with all table definitions, relations, and indexes
-- Generated migration file `src/db/migrations/0000_initial.sql`
+- `db/schema.ts` with all table definitions, relations, and indexes
+- Generated migration file `db/migrations/0000_initial.sql`
 - All tables created in PostgreSQL via `drizzle-kit migrate`
-- `deno check src/db/schema.ts` passes with zero errors
+- `deno check db/schema.ts` passes with zero errors
 
 ## Tests
 
 ### Unit Tests
 
-- [ ] `src/db/schema.ts` compiles with `deno check` and produces zero type errors
+- [ ] `db/schema.ts` compiles with `deno check` and produces zero type errors
 - [ ] All exported table objects are valid `pgTable` instances
 - [ ] Relations API is correctly typed and references valid tables
 
 ### Integration Tests
 
-- [ ] `drizzle-kit generate` produces a valid SQL migration file in `src/db/migrations/`
+- [ ] `drizzle-kit generate` produces a valid SQL migration file in `db/migrations/`
 - [ ] `drizzle-kit migrate` creates all expected tables in PostgreSQL (verify with `\dt` or Drizzle Gateway)
 - [ ] Drizzle Gateway at port 4983 shows all tables with correct column names and types
 - [ ] Foreign key constraints are enforced (e.g., inserting a coupon with a non-existent business_id fails)
@@ -96,7 +96,7 @@ Create the centralized `src/db/schema.ts` file defining all PostgreSQL table sch
 
 ## Success Criteria
 
-- `deno check src/db/schema.ts` exits 0
+- `deno check db/schema.ts` exits 0
 - `drizzle-kit generate` produces a SQL file with all CREATE TABLE statements
 - `drizzle-kit migrate` creates all tables without errors
 - Drizzle Gateway shows the complete schema

@@ -1,11 +1,11 @@
 ---
-status: pending
+status: completed
 title: File Metadata Migration
 type: backend
 complexity: low
 dependencies:
-  - task_02
-  - task_03
+    - task_02
+    - task_03
 ---
 
 # File Metadata Migration

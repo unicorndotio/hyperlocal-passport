@@ -1,9 +1,10 @@
 import { define } from '@/utils.ts'
 import { auth } from '@/lib/auth.ts'
-import { kv } from '@/lib/kv.ts'
-import { getDenoKvAdapterRaw } from '@/lib/kv-adapter.ts'
 import type { Business } from '@/lib/business.ts'
 import type { Coupon } from '@/lib/coupon.ts'
+import { db } from '@/lib/db.ts'
+import * as schema from '@/db/schema.ts'
+import { eq } from 'drizzle-orm'
 import CouponManager from '@/islands/CouponManager.tsx'
 import BusinessHeader from '@/components/BusinessHeader.tsx'
 import BusinessOnboarding from '@/islands/BusinessOnboarding.tsx'
@@ -13,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card.tsx'
-const adapter = getDenoKvAdapterRaw(kv)
 
 export default define.page(async function BusinessCouponsPage(ctx) {
   const session = await auth.api.getSession({ headers: ctx.req.headers })
@@ -26,10 +26,9 @@ export default define.page(async function BusinessCouponsPage(ctx) {
   }
 
   // Find business for this user
-  const business = await adapter.findOne<Business>({
-    model: 'businesses',
-    where: [{ field: 'userId', value: session.user.id }],
-  })
+  const [business] = await db.select().from(schema.businesses).where(
+    eq(schema.businesses.userId, session.user.id),
+  ).limit(1) as unknown as Business[]
 
   if (!business) {
     return (
@@ -58,10 +57,9 @@ export default define.page(async function BusinessCouponsPage(ctx) {
   }
 
   // Fetch coupons
-  const coupons = await adapter.findMany<Coupon>({
-    model: 'coupons',
-    where: [{ field: 'businessId', value: business.id }],
-  })
+  const coupons = await db.select().from(schema.coupons).where(
+    eq(schema.coupons.businessId, business.id),
+  ) as unknown as Coupon[]
 
   return (
     <div className='min-h-screen bg-slate-50'>
