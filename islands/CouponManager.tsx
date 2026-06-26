@@ -381,8 +381,12 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
         const bq = parseInt(buyQuantity.value)
         const fq = parseInt(freeQuantity.value)
         const up = parseInt(unitPriceCents.value)
-        if (isNaN(bq) || bq < 1) return 'Quantidade para comprar deve ser no mínimo 1.'
-        if (isNaN(fq) || fq < 1) return 'Quantidade grátis deve ser no mínimo 1.'
+        if (isNaN(bq) || bq < 1) {
+          return 'Quantidade para comprar deve ser no mínimo 1.'
+        }
+        if (isNaN(fq) || fq < 1) {
+          return 'Quantidade grátis deve ser no mínimo 1.'
+        }
         if (isNaN(up) || up <= 0) return 'Preço unitário deve ser maior que 0.'
         break
       }
@@ -565,7 +569,10 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
     if (r.globalCap) parts.push(`Global: ${r.globalCap}`)
     if (r.userCap) parts.push(`Usuário: ${r.userCap}`)
     if (r.usageFrequency) {
-      parts.push(FREQUENCY_LABELS[r.usageFrequency] || r.usageFrequency.replace('_', ' '))
+      parts.push(
+        FREQUENCY_LABELS[r.usageFrequency] ||
+          r.usageFrequency.replace('_', ' '),
+      )
     }
     if (r.validUntil) {
       parts.push(`Até ${new Date(r.validUntil).toLocaleDateString()}`)

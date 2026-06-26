@@ -41,7 +41,9 @@ export const handler = define.handlers({
         const globalRedemptionCount = analytics?.redemptions ?? 0
 
         const now = new Date()
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        const startOfMonth = new Date(
+          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+        )
         const [monthlyResult] = await tx.select({ count: count() })
           .from(schema.redemptions)
           .where(

@@ -2,7 +2,7 @@ import { define } from '../../../../utils.ts'
 import { auth } from '../../../../lib/auth.ts'
 import { db } from '../../../../lib/db.ts'
 import * as schema from '../../../../db/schema.ts'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 
 export const handler = define.handlers({
   async GET(ctx) {
@@ -14,22 +14,26 @@ export const handler = define.handlers({
 
     const userId = session.user.id
 
-    const rows = await db.select()
+    const activeRedemptions = await db.select()
       .from(schema.redemptions)
-      .where(eq(schema.redemptions.userId, userId))
+      .where(
+        and(
+          eq(schema.redemptions.userId, userId),
+          eq(schema.redemptions.status, 'active'),
+        ),
+      )
       .orderBy(desc(schema.redemptions.redeemedAt))
-
-    const activeRedemptions = rows
-      .filter((r) => r.status === 'active')
-      .map((r) => ({
-        id: r.id,
-        couponId: r.couponId,
-        businessId: r.businessId,
-        userId: r.userId,
-        status: r.status,
-        redeemedAt: r.redeemedAt?.getTime() ?? Date.now(),
-        usedAt: r.usedAt?.getTime(),
-      }))
+      .then((rows) =>
+        rows.map((r) => ({
+          id: r.id,
+          couponId: r.couponId,
+          businessId: r.businessId,
+          userId: r.userId,
+          status: r.status,
+          redeemedAt: r.redeemedAt?.getTime() ?? Date.now(),
+          usedAt: r.usedAt?.getTime(),
+        }))
+      )
 
     return Response.json(activeRedemptions)
   },

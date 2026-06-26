@@ -15,12 +15,30 @@ export const handler = define.handlers({
       return new Response('Forbidden', { status: 403 })
     }
 
+    // Look up business profile for business users
+    let businessId: string | null = null
+    if (session.user.role === 'business') {
+      const [business] = await db.select().from(schema.businesses)
+        .where(eq(schema.businesses.userId, session.user.id))
+      if (!business) {
+        return new Response('Business profile not found', { status: 404 })
+      }
+      businessId = business.id
+    }
+
     const { code } = ctx.params
 
     const [redemption] = await db.select().from(schema.redemptions)
       .where(eq(schema.redemptions.id, code))
     if (!redemption) {
       return new Response('Redemption code not found', { status: 404 })
+    }
+
+    // Verify business ownership
+    if (businessId && redemption.businessId !== businessId) {
+      return new Response('Forbidden: Code belongs to another business', {
+        status: 403,
+      })
     }
 
     const [coupon] = await db.select().from(schema.coupons)

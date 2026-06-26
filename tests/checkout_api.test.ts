@@ -400,6 +400,42 @@ Deno.test({
       )
 
       await t.step(
+        'POST /api/transactions/validate - Admin without business profile succeeds',
+        async () => {
+          currentRole = 'admin'
+          currentUserId = 'admin_' + Math.random().toString(36).slice(2)
+
+          const adminCode = 'ADMIN_' +
+            Math.random().toString(36).slice(2, 8).toUpperCase()
+          await createRedemption(
+            adminCode,
+            couponId,
+            businessId,
+            userId,
+          )
+
+          const req = new Request(
+            'http://localhost:8000/api/transactions/validate',
+            {
+              method: 'POST',
+              body: JSON.stringify({ code: adminCode, amountCents: 10000 }),
+            },
+          )
+          const res = await (validateHandler as unknown as {
+            POST: (ctx: unknown) => Promise<Response>
+          }).POST({ req })
+
+          assertEquals(res.status, 200)
+          const body = await res.json()
+          assertEquals(body.transaction.businessId, businessId)
+
+          // reset
+          currentRole = 'business'
+          currentUserId = businessUserId
+        },
+      )
+
+      await t.step(
         'POST /api/transactions/validate - Coupon Inactive',
         async () => {
           const inactCode = 'INACTIVE'

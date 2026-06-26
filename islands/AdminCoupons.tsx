@@ -269,9 +269,7 @@ export default function AdminCoupons() {
                     </td>
                     <td className='px-4 py-4'>
                       <Badge
-                        variant={
-                          coupon.isActive ? 'default' : 'secondary'
-                        }
+                        variant={coupon.isActive ? 'default' : 'secondary'}
                       >
                         {coupon.isActive ? 'Ativo' : 'Inativo'}
                       </Badge>
@@ -294,9 +292,7 @@ export default function AdminCoupons() {
                         onClick={() => handleDelete(coupon)}
                         disabled={actionLoadingId === coupon.id}
                       >
-                        {actionLoadingId === coupon.id
-                          ? '...'
-                          : 'Excluir'}
+                        {actionLoadingId === coupon.id ? '...' : 'Excluir'}
                       </Button>
                     </td>
                   </tr>
@@ -356,14 +352,12 @@ export default function AdminCoupons() {
 
               <div className='pt-2 text-xs text-slate-500'>
                 <p>
-                  <strong>Comportamento:</strong>{' '}
-                  {BEHAVIOR_LABELS[
+                  <strong>Comportamento:</strong> {BEHAVIOR_LABELS[
                     editingCoupon.behavior.type
                   ] || editingCoupon.behavior.type}
                 </p>
                 <p>
-                  <strong>Empresa:</strong>{' '}
-                  {editingCoupon.businessName}
+                  <strong>Empresa:</strong> {editingCoupon.businessName}
                 </p>
               </div>
 

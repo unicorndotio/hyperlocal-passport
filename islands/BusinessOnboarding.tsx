@@ -12,37 +12,43 @@ const STEPS: Step[] = [
   {
     targetSelector: null,
     title: 'Bem-vindo ao Novo Painel!',
-    description: 'Redesignamos o painel do lojista para você gerenciar cupons, validar descontos e acompanhar métricas — tudo em um só lugar. Vamos te mostrar as novidades.',
+    description:
+      'Redesignamos o painel do lojista para você gerenciar cupons, validar descontos e acompanhar métricas — tudo em um só lugar. Vamos te mostrar as novidades.',
     position: 'center',
   },
   {
     targetSelector: 'a[href="/business/coupons"]',
     title: 'Meus Cupons',
-    description: 'Crie e gerencie seus cupons com templates prontos. Escolha entre desconto percentual, valor fixo, Compre X Leve Y ou desconto por item.',
+    description:
+      'Crie e gerencie seus cupons com templates prontos. Escolha entre desconto percentual, valor fixo, Compre X Leve Y ou desconto por item.',
     position: 'bottom',
   },
   {
     targetSelector: 'a[href="/business/checkout"]',
     title: 'Validar Cupom',
-    description: 'Valide cupons dos clientes no checkout. Digite o código ou use o leitor de QR code para aplicar o desconto na hora.',
+    description:
+      'Valide cupons dos clientes no checkout. Digite o código ou use o leitor de QR code para aplicar o desconto na hora.',
     position: 'bottom',
   },
   {
     targetSelector: 'a[href="/business/analytics"]',
     title: 'Analytics',
-    description: 'Acompanhe o desempenho dos seus cupons: visualizações, resgates, validações e histórico completo de transações.',
+    description:
+      'Acompanhe o desempenho dos seus cupons: visualizações, resgates, validações e histórico completo de transações.',
     position: 'bottom',
   },
   {
     targetSelector: 'a[href="/business/profile"]',
     title: 'Meu Perfil',
-    description: 'Mantenha os dados da sua empresa atualizados: horários, redes sociais, logo e informações de contato.',
+    description:
+      'Mantenha os dados da sua empresa atualizados: horários, redes sociais, logo e informações de contato.',
     position: 'bottom',
   },
   {
     targetSelector: null,
     title: 'Tudo Pronto!',
-    description: 'Você já conhece as principais funcionalidades. Comece criando seu primeiro cupom ou validando um desconto. Boas vendas!',
+    description:
+      'Você já conhece as principais funcionalidades. Comece criando seu primeiro cupom ou validando um desconto. Boas vendas!',
     position: 'center',
   },
 ]
@@ -211,11 +217,13 @@ export default function BusinessOnboarding({ business, businessId }: Props) {
         }}
       >
         {/* Progress */}
-        <div style={{
-          display: 'flex',
-          gap: '4px',
-          marginBottom: '16px',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '4px',
+            marginBottom: '16px',
+          }}
+        >
           {STEPS.map((_, i) => (
             <div
               key={i}
@@ -230,41 +238,49 @@ export default function BusinessOnboarding({ business, businessId }: Props) {
           ))}
         </div>
 
-        <p style={{
-          fontSize: '11px',
-          fontWeight: '700',
-          color: '#64748b',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: '8px',
-        }}>
+        <p
+          style={{
+            fontSize: '11px',
+            fontWeight: '700',
+            color: '#64748b',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            marginBottom: '8px',
+          }}
+        >
           Passo {currentStep + 1} de {totalSteps}
         </p>
 
-        <h3 style={{
-          fontSize: '18px',
-          fontWeight: '700',
-          color: '#0f172a',
-          margin: '0 0 8px 0',
-        }}>
+        <h3
+          style={{
+            fontSize: '18px',
+            fontWeight: '700',
+            color: '#0f172a',
+            margin: '0 0 8px 0',
+          }}
+        >
           {step.title}
         </h3>
 
-        <p style={{
-          fontSize: '14px',
-          color: '#475569',
-          lineHeight: '1.5',
-          margin: '0 0 20px 0',
-        }}>
+        <p
+          style={{
+            fontSize: '14px',
+            color: '#475569',
+            lineHeight: '1.5',
+            margin: '0 0 20px 0',
+          }}
+        >
           {step.description}
         </p>
 
         {/* Navigation */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           {!isFirst
             ? (
               <button
@@ -283,8 +299,7 @@ export default function BusinessOnboarding({ business, businessId }: Props) {
                 Anterior
               </button>
             )
-            : <div />
-          }
+            : <div />}
 
           <div style={{ display: 'flex', gap: '8px' }}>
             <button

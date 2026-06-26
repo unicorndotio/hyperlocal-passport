@@ -140,13 +140,10 @@ export async function handleRegister(req: Request): Promise<Response> {
         phone: formatWhatsApp(whatsappDial, whatsappNumber),
         role: 'resident',
         status: 'pending',
-        documents: [
-          {
-            idPhotoUrl: `${baseUrl}/api/uploads/${idPhotoFilename}`,
-            residenceProofUrl:
-              `${baseUrl}/api/uploads/${residenceProofFilename}`,
-          },
-        ],
+        documents: {
+          idPhotoUrl: `${baseUrl}/api/uploads/${idPhotoFilename}`,
+          residenceProofUrl: `${baseUrl}/api/uploads/${residenceProofFilename}`,
+        },
       })
     })
   } catch (err) {

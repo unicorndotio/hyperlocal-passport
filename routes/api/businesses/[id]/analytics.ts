@@ -2,7 +2,7 @@ import { define } from '@/utils.ts'
 import { auth } from '@/lib/auth.ts'
 import { db } from '@/lib/db.ts'
 import * as schema from '@/db/schema.ts'
-import { eq } from 'drizzle-orm'
+import { desc, eq, inArray, sql } from 'drizzle-orm'
 
 export const handler = define.handlers({
   async GET(ctx) {
@@ -44,42 +44,48 @@ export const handler = define.handlers({
       Math.max(1, parseInt(url.searchParams.get('limit') ?? '20', 10) || 20),
     )
 
-    // Per-coupon analytics from coupon_analytics table
-    const couponAnalytics = await Promise.all(
-      coupons.map(async (coupon) => {
-        const [analytics] = await db
-          .select()
-          .from(schema.couponAnalytics)
-          .where(eq(schema.couponAnalytics.couponId, coupon.id))
-          .limit(1)
+    // Bulk coupon analytics query (avoids N+1)
+    const couponIds = coupons.map((c) => c.id)
+    const analyticsRows = couponIds.length > 0
+      ? await db
+        .select()
+        .from(schema.couponAnalytics)
+        .where(inArray(schema.couponAnalytics.couponId, couponIds))
+      : []
 
-        return {
-          couponId: coupon.id,
-          couponTitle: coupon.title,
-          views: analytics?.views ?? 0,
-          redemptions: analytics?.redemptions ?? 0,
-          validations: analytics?.validations ?? 0,
-        }
-      }),
+    const analyticsMap = new Map(
+      analyticsRows.map((a) => [a.couponId, a]),
     )
 
-    // Read transactions for this business
-    const allTransactions = await db
+    const couponAnalytics = coupons.map((coupon) => {
+      const analytics = analyticsMap.get(coupon.id)
+      return {
+        couponId: coupon.id,
+        couponTitle: coupon.title,
+        views: analytics?.views ?? 0,
+        redemptions: analytics?.redemptions ?? 0,
+        validations: analytics?.validations ?? 0,
+      }
+    })
+
+    // Transactions with DB-side sorting and pagination
+    const offset = (page - 1) * limit
+
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.transactions)
+      .where(eq(schema.transactions.businessId, businessId))
+
+    const totalTransactions = Number(countResult.count)
+    const totalPages = Math.max(1, Math.ceil(totalTransactions / limit))
+
+    const transactionPage = await db
       .select()
       .from(schema.transactions)
       .where(eq(schema.transactions.businessId, businessId))
-      .orderBy(schema.transactions.timestamp)
-
-    allTransactions.sort((a, b) => {
-      const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0
-      const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0
-      return bTime - aTime
-    })
-
-    const totalTransactions = allTransactions.length
-    const totalPages = Math.max(1, Math.ceil(totalTransactions / limit))
-    const offset = (page - 1) * limit
-    const transactionPage = allTransactions.slice(offset, offset + limit)
+      .orderBy(desc(schema.transactions.timestamp))
+      .limit(limit)
+      .offset(offset)
 
     // Coupon title lookup
     const couponMap = new Map(coupons.map((c) => [c.id, c.title]))

@@ -369,6 +369,58 @@ Deno.test({
 })
 
 Deno.test({
+  name: 'Coupon Redeem API - monthly limit uses UTC-consistent boundary',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const userId = 'user_utc_' + Math.random().toString(36).slice(2)
+    const couponId = 'coupon_utc_' + Math.random().toString(36).slice(2)
+    const businessId = 'biz_utc_' + Math.random().toString(36).slice(2)
+
+    await ensureBizUser(userId)
+    await ensureBusiness(businessId, userId)
+    await createTestCoupon(couponId, businessId, {
+      isActive: true,
+      restrictions: { userCap: 1 },
+    })
+
+    // Seed a redemption with redeemedAt at the 1st of the current UTC month
+    // to verify the month-boundary query uses UTC consistently
+    const now = new Date()
+    const startOfMonth = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+    )
+    await db.insert(schema.redemptions).values({
+      id: crypto.randomUUID(),
+      couponId,
+      businessId,
+      userId,
+      status: 'active',
+      redeemedAt: startOfMonth,
+    })
+
+    const getSessionStub = stub(
+      auth.api,
+      'getSession',
+      () => resolveSession(userId, 'resident'),
+    )
+    try {
+      const res = await (redeemHandler as unknown as {
+        POST: (ctx: RedeemCtx) => Promise<Response>
+      }).POST({ req: redeemReq(couponId), params: { id: couponId } })
+      assertEquals(
+        res.status,
+        400,
+        'Monthly cap should block second redemption',
+      )
+    } finally {
+      getSessionStub.restore()
+      await cleanup(couponId)
+    }
+  },
+})
+
+Deno.test({
   name: 'Coupon Redeem API - concurrent redemptions respect global cap',
   sanitizeOps: false,
   sanitizeResources: false,

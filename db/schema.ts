@@ -1,11 +1,11 @@
 import {
+  boolean,
+  index,
+  integer,
+  jsonb,
   pgTable,
   text,
-  integer,
   timestamp,
-  boolean,
-  jsonb,
-  index,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -39,7 +39,9 @@ export const businesses = pgTable('businesses', {
   socialLinks: jsonb('social_links'),
   openingHours: jsonb('opening_hours'),
   isActive: boolean('is_active').notNull().default(false),
-  hasSeenMerchantOnboarding: boolean('has_seen_merchant_onboarding').default(false),
+  hasSeenMerchantOnboarding: boolean('has_seen_merchant_onboarding').default(
+    false,
+  ),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   idxUserId: index('idx_businesses_user_id').on(table.userId),
@@ -69,14 +71,20 @@ export const redemptions = pgTable('redemptions', {
   redeemedAt: timestamp('redeemed_at').notNull().defaultNow(),
   usedAt: timestamp('used_at'),
 }, (table) => ({
-  idxUserCouponMonth: index('idx_redemptions_user_coupon_month').on(table.userId, table.couponId, table.redeemedAt),
+  idxUserCouponMonth: index('idx_redemptions_user_coupon_month').on(
+    table.userId,
+    table.couponId,
+    table.redeemedAt,
+  ),
   idxCouponId: index('idx_redemptions_coupon_id').on(table.couponId),
 }))
 
 // ── Transactions ──
 export const transactions = pgTable('transactions', {
   id: text('id').primaryKey(),
-  redemptionId: text('redemption_id').notNull().references(() => redemptions.id),
+  redemptionId: text('redemption_id').notNull().references(() =>
+    redemptions.id
+  ),
   couponId: text('coupon_id').notNull().references(() => coupons.id),
   businessId: text('business_id').notNull().references(() => businesses.id),
   userId: text('user_id').notNull().references(() => users.id),
@@ -106,7 +114,9 @@ export const signals = pgTable('signals', {
 // ── Coupon Analytics ──
 export const couponAnalytics = pgTable('coupon_analytics', {
   id: text('id').primaryKey(),
-  couponId: text('coupon_id').notNull().unique().references(() => coupons.id, { onDelete: 'cascade' }),
+  couponId: text('coupon_id').notNull().unique().references(() => coupons.id, {
+    onDelete: 'cascade',
+  }),
   views: integer('views').notNull().default(0),
   redemptions: integer('redemptions').notNull().default(0),
   validations: integer('validations').notNull().default(0),
@@ -130,7 +140,9 @@ export const session = pgTable('session', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, {
+    onDelete: 'cascade',
+  }),
 })
 
 // ── Better Auth: Account ──
@@ -138,7 +150,9 @@ export const account = pgTable('account', {
   id: text('id').primaryKey(),
   accountId: text('account_id').notNull(),
   providerId: text('provider_id').notNull(),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, {
+    onDelete: 'cascade',
+  }),
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
   idToken: text('id_token'),
@@ -179,23 +193,44 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
 }))
 
 export const couponsRelations = relations(coupons, ({ one, many }) => ({
-  business: one(businesses, { fields: [coupons.businessId], references: [businesses.id] }),
+  business: one(businesses, {
+    fields: [coupons.businessId],
+    references: [businesses.id],
+  }),
   redemptions: many(redemptions),
   transactions: many(transactions),
   analytics: one(couponAnalytics),
 }))
 
 export const redemptionsRelations = relations(redemptions, ({ one }) => ({
-  coupon: one(coupons, { fields: [redemptions.couponId], references: [coupons.id] }),
-  business: one(businesses, { fields: [redemptions.businessId], references: [businesses.id] }),
+  coupon: one(coupons, {
+    fields: [redemptions.couponId],
+    references: [coupons.id],
+  }),
+  business: one(businesses, {
+    fields: [redemptions.businessId],
+    references: [businesses.id],
+  }),
   user: one(users, { fields: [redemptions.userId], references: [users.id] }),
-  transaction: one(transactions, { fields: [redemptions.id], references: [transactions.redemptionId] }),
+  transaction: one(transactions, {
+    fields: [redemptions.id],
+    references: [transactions.redemptionId],
+  }),
 }))
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({
-  redemption: one(redemptions, { fields: [transactions.redemptionId], references: [redemptions.id] }),
-  coupon: one(coupons, { fields: [transactions.couponId], references: [coupons.id] }),
-  business: one(businesses, { fields: [transactions.businessId], references: [businesses.id] }),
+  redemption: one(redemptions, {
+    fields: [transactions.redemptionId],
+    references: [redemptions.id],
+  }),
+  coupon: one(coupons, {
+    fields: [transactions.couponId],
+    references: [coupons.id],
+  }),
+  business: one(businesses, {
+    fields: [transactions.businessId],
+    references: [businesses.id],
+  }),
   user: one(users, { fields: [transactions.userId], references: [users.id] }),
 }))
 
@@ -203,9 +238,15 @@ export const signalsRelations = relations(signals, ({ one }) => ({
   user: one(users, { fields: [signals.userId], references: [users.id] }),
 }))
 
-export const couponAnalyticsRelations = relations(couponAnalytics, ({ one }) => ({
-  coupon: one(coupons, { fields: [couponAnalytics.couponId], references: [coupons.id] }),
-}))
+export const couponAnalyticsRelations = relations(
+  couponAnalytics,
+  ({ one }) => ({
+    coupon: one(coupons, {
+      fields: [couponAnalytics.couponId],
+      references: [coupons.id],
+    }),
+  }),
+)
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(users, { fields: [session.userId], references: [users.id] }),

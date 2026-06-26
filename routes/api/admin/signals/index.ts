@@ -1,8 +1,7 @@
 import { define } from '../../../../utils.ts'
 import { db } from '../../../../lib/db.ts'
 import * as schema from '../../../../db/schema.ts'
-import { eq, sql } from 'drizzle-orm'
-import { VALID_CATEGORIES } from '../../../../lib/signals.ts'
+import { sql } from 'drizzle-orm'
 
 interface CategoryCount {
   category: string
@@ -41,27 +40,22 @@ export async function handleListSignals(
 }
 
 export async function getCategoryCounts(): Promise<CategoryCount[]> {
-  const counts: CategoryCount[] = []
+  const results = await db
+    .select({
+      category: schema.signals.category,
+      count: sql<number>`count(*)::int`,
+      unreviewed: sql<
+        number
+      >`count(*) filter (where ${schema.signals.status} = 'pending')::int`,
+    })
+    .from(schema.signals)
+    .groupBy(schema.signals.category)
 
-  for (const category of VALID_CATEGORIES) {
-    const result = await db
-      .select({
-        total: sql<number>`count(*)::int`,
-        unreviewed: sql<
-          number
-        >`count(*) filter (where ${schema.signals.status} = 'pending')::int`,
-      })
-      .from(schema.signals)
-      .where(eq(schema.signals.category, category))
-
-    const { total, unreviewed } = result[0]
-
-    if (total > 0 || unreviewed > 0) {
-      counts.push({ category, count: total, unreviewed })
-    }
-  }
-
-  return counts
+  return results.map((r) => ({
+    category: r.category,
+    count: r.count,
+    unreviewed: r.unreviewed,
+  }))
 }
 
 export const handler = define.handlers({

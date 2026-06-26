@@ -7,7 +7,7 @@ import { db } from '../lib/db.ts'
 import * as schema from '../db/schema.ts'
 import { eq } from 'drizzle-orm'
 
-function makeBusiness(id: string): Record<string, unknown> {
+function makeBusiness(id: string): typeof schema.businesses.$inferInsert {
   return {
     id,
     userId: 'user_' + id,
@@ -21,7 +21,10 @@ function makeBusiness(id: string): Record<string, unknown> {
   }
 }
 
-function makeCoupon(id: string, businessId: string): Record<string, unknown> {
+function makeCoupon(
+  id: string,
+  businessId: string,
+): typeof schema.coupons.$inferInsert {
   return {
     id,
     businessId,
@@ -63,9 +66,9 @@ Deno.test({
       name: 'Test User',
     })
     await db.insert(schema.businesses).values(
-      business as Record<string, unknown>,
+      business,
     )
-    await db.insert(schema.coupons).values(coupon as Record<string, unknown>)
+    await db.insert(schema.coupons).values(coupon)
 
     await (handler as unknown as {
       GET: (ctx: HandlerCtx) => Promise<Response | { data: unknown }>
@@ -104,10 +107,10 @@ Deno.test({
       name: 'Test User',
     })
     await db.insert(schema.businesses).values(
-      makeBusiness(bizId) as Record<string, unknown>,
+      makeBusiness(bizId),
     )
     await db.insert(schema.coupons).values(
-      makeCoupon(couponId, bizId) as Record<string, unknown>,
+      makeCoupon(couponId, bizId),
     )
 
     // First view
@@ -164,10 +167,10 @@ Deno.test({
       name: 'Test User',
     })
     await db.insert(schema.businesses).values(
-      makeBusiness(bizId) as Record<string, unknown>,
+      makeBusiness(bizId),
     )
     await db.insert(schema.coupons).values(
-      makeCoupon(couponId, bizId) as Record<string, unknown>,
+      makeCoupon(couponId, bizId),
     )
 
     const start = Date.now()
@@ -213,7 +216,7 @@ Deno.test({
       name: 'Test User',
     })
     await db.insert(schema.businesses).values(
-      makeBusiness(bizId) as Record<string, unknown>,
+      makeBusiness(bizId),
     )
 
     // Create coupon but never visit the business page

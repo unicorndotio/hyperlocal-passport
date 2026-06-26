@@ -45,24 +45,23 @@ export const handler = define.handlers({
       return new Response('Missing redemption code', { status: 400 })
     }
 
-    // 1. Find business associated with the user
-    const [business] = await db.select().from(schema.businesses)
-      .where(eq(schema.businesses.userId, session.user.id))
+    // 1. Find business associated with the user (non-admin only)
+    const isAdmin = session.user.role === 'admin'
 
-    if (!business && session.user.role === 'business') {
-      return new Response('Business profile not found for this user', {
-        status: 404,
-      })
+    let businessId = ''
+
+    if (!isAdmin) {
+      const [business] = await db.select().from(schema.businesses)
+        .where(eq(schema.businesses.userId, session.user.id))
+
+      if (!business) {
+        return new Response('Business profile not found for this user', {
+          status: 404,
+        })
+      }
+
+      businessId = business.id
     }
-
-    if (!business) {
-      return new Response(
-        'A business profile is required to validate transactions',
-        { status: 403 },
-      )
-    }
-
-    const businessId = business.id
 
     try {
       const result = await db.transaction(async (tx) => {
@@ -72,6 +71,11 @@ export const handler = define.handlers({
 
         if (!redemption) {
           throw new TransactionError('Redemption code not found', 404)
+        }
+
+        // For admin users, derive businessId from the redemption record
+        if (isAdmin) {
+          businessId = redemption.businessId
         }
 
         // 3. Verify ownership and status
