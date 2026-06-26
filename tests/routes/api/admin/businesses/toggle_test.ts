@@ -43,7 +43,7 @@ async function seedBusiness(
       name: 'Owner',
     })
   }
-  await db.insert(schema.businesses).values(biz as Record<string, unknown>)
+  await db.insert(schema.businesses).values(biz as any)
   return biz
 }
 

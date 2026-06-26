@@ -42,7 +42,7 @@ export const handler = define.handlers({
     let user: User | null = null
 
     try {
-      await db.transaction(async (tx) => {
+      user = await db.transaction(async (tx) => {
         // Fetch user
         const users = await tx
           .select()
@@ -55,19 +55,20 @@ export const handler = define.handlers({
         }
 
         const dbUser = users[0]
-        user = {
-          id: dbUser.id,
-          email: dbUser.email,
-          name: dbUser.name,
-          cpf: dbUser.cpf || undefined,
-          status: status as 'pending' | 'approved' | 'rejected',
-        }
 
         // Update user status
         await tx
           .update(schema.users)
           .set({ status })
           .where(eq(schema.users.id, userId))
+
+        return {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          cpf: dbUser.cpf || undefined,
+          status: status as 'pending' | 'approved' | 'rejected',
+        }
       })
     } catch (err) {
       const message = err instanceof Error
