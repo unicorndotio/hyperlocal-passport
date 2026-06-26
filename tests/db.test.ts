@@ -1,11 +1,9 @@
-import {
-  assertEquals,
-  assertExists,
-} from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 
 // Skip these tests if PG_CONNECTION is not set
 if (Deno.env.get('PG_CONNECTION')) {
-  const { testConnection, maskConnectionString } = await import('../lib/db.ts')
+  const { testConnection, maskConnectionString, closeConnection } =
+    await import('../lib/db.ts')
 
   Deno.test('lib/db.ts - Connection string masking', async (t) => {
     await t.step('maskConnectionString masks password correctly', () => {
@@ -41,6 +39,11 @@ if (Deno.env.get('PG_CONNECTION')) {
         )
       }
     })
+  })
+
+  Deno.test('lib/db.ts - closeConnection is an exported async function', () => {
+    assertEquals(typeof closeConnection, 'function')
+    assertEquals(closeConnection.constructor.name, 'AsyncFunction')
   })
 } else {
   Deno.test('lib/db.ts - Skipped (PG_CONNECTION not set)', () => {

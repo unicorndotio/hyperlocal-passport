@@ -22,6 +22,11 @@ addEventListener('unload', () => {
   pool.end().catch(() => {})
 })
 
+// Export pool cleanup for tests and controlled shutdowns
+export async function closeConnection(): Promise<void> {
+  await pool.end()
+}
+
 // Helper to test database connectivity
 export async function testConnection(): Promise<boolean> {
   try {
@@ -35,5 +40,15 @@ export async function testConnection(): Promise<boolean> {
 
 // Helper to mask connection string for logging (hide password)
 export function maskConnectionString(connStr: string): string {
-  return connStr.replace(/:([^@]+)@/, ':***@')
+  try {
+    const url = new URL(connStr)
+    if (url.password) {
+      url.password = '***'
+    } else if (connStr.includes(':@')) {
+      return connStr.replace(':@', ':***@')
+    }
+    return url.toString()
+  } catch {
+    return connStr.replace(/(:\/\/[^:]+:)[^@]+(@)/, '$1***$2')
+  }
 }
