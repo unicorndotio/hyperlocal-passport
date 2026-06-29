@@ -70,6 +70,7 @@ export async function applyMiddleware(
     if (
       url.pathname.startsWith('/api/coupons') ||
       url.pathname.startsWith('/api/transactions/') ||
+      url.pathname.startsWith('/api/posts') ||
       url.pathname.match(/^\/api\/businesses\/[^/]+\/(profile|coupons)$/)
     ) {
       if (session.user.role !== 'business' && session.user.role !== 'admin') {

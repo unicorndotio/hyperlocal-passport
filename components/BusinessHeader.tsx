@@ -1,6 +1,6 @@
 export default function BusinessHeader(
   { active, businessName }: {
-    active: 'coupons' | 'checkout' | 'profile' | 'analytics'
+    active: 'coupons' | 'checkout' | 'profile' | 'analytics' | 'posts'
     businessName: string
   },
 ) {
@@ -11,6 +11,7 @@ export default function BusinessHeader(
       label: 'Validar Cupom',
       id: 'checkout' as const,
     },
+    { href: '/business/posts', label: 'Publicações', id: 'posts' as const },
     {
       href: '/business/analytics',
       label: 'Analytics',

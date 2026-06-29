@@ -1,10 +1,10 @@
 ---
-status: pending
+status: completed
 title: 'Merchant post API + publishing UI'
 type: backend
 complexity: medium
 dependencies:
-  - task_01
+    - task_01
 ---
 
 # Task 05: Merchant post API + publishing UI
