@@ -3,7 +3,8 @@
 ## Current State
 
 - Task 03 (feed page) completed — routes/index.tsx rewritten as feed page
-- components/BottomNav.tsx created (part of task 03, needed by tasks 04, 07)
+- Task 04 (shared BottomNav) completed — 3 routes updated, unit tests added
+- components/BottomNav.tsx created (task 03), used by tasks 04, 07
 - components/FeedEventCard.tsx created with type-specific card rendering
 
 ## Shared Decisions

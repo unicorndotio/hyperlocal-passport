@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: 'Shared BottomNav component + update existing pages'
 type: refactor
 complexity: medium

@@ -5,7 +5,6 @@ import {
 import { render } from 'npm:preact-render-to-string@^6.6.3'
 import { h } from 'npm:preact@^10.27.2'
 import { FeedEventCard } from '../components/FeedEventCard.tsx'
-import BottomNav from '../components/BottomNav.tsx'
 import type { FeedEvent } from '../lib/feed.ts'
 
 const baseEvent: Omit<FeedEvent, 'id' | 'type' | 'title'> = {
@@ -159,33 +158,7 @@ Deno.test('FeedEventCard component', async (t) => {
   })
 })
 
-// ─── Unit tests: BottomNav component ──────────────────────────────────────
 
-Deno.test('BottomNav component', async (t) => {
-  await t.step('renders all three tabs', () => {
-    const html = render(h(BottomNav, { active: 'feed' }))
-    assertExists(html.includes('Feed'))
-    assertExists(html.includes('Catálogo'))
-    assertExists(html.includes('Passaporte'))
-    assertExists(html.includes('/catalog'))
-    assertExists(html.includes('/passaporte'))
-  })
-
-  await t.step('highlights feed tab as active', () => {
-    const html = render(h(BottomNav, { active: 'feed' }))
-    assertExists(html.includes('/"')) // feed link to /
-  })
-
-  await t.step('highlights catalog tab as active', () => {
-    const html = render(h(BottomNav, { active: 'catalog' }))
-    assertExists(html.includes('/catalog'))
-  })
-
-  await t.step('highlights passaporte tab as active', () => {
-    const html = render(h(BottomNav, { active: 'passaporte' }))
-    assertExists(html.includes('/passaporte'))
-  })
-})
 
 // ─── Integration tests: handler with database ────────────────────────────────
 
