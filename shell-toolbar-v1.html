@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Shell With Toolbar - Bento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #f8f5f0; color: #111827; min-height: 100vh; }
+  .navbar { position: fixed; top: 0; left: 0; right: 0; height: 52px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 16px; gap: 12px; z-index: 100; }
+  .navbar .hamburger { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; cursor: pointer; color: #6b7280; flex-shrink: 0; }
+  .navbar .brand { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; flex-shrink: 0; }
+  .navbar .brand svg { width: 20px; height: 20px; color: #FAD4C0; }
+  .navbar .search-wrap { flex: 1; max-width: 360px; position: relative; }
+  .navbar .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #9ca3af; pointer-events: none; }
+  .navbar .search-wrap input { width: 100%; height: 32px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px 0 30px; font-size: 13px; font-family: inherit; outline: none; background: #f9fafb; }
+  .navbar .search-wrap input:focus { border-color: #FAD4C0; background: #fff; box-shadow: 0 0 0 2px rgba(250,212,192,.15); }
+  .navbar .right { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .navbar .icon-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; border-radius: 8px; background: transparent; color: #6b7280; cursor: pointer; transition: background .15s; }
+  .navbar .icon-btn:hover { background: #f3f4f6; }
+  .navbar .icon-btn svg { width: 16px; height: 16px; }
+  .navbar .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: none; border-radius: 8px; background: #111827; color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .navbar .action-btn:hover { background: #1f2937; }
+  .navbar .action-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .navbar .user { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: background .15s; }
+  .navbar .user:hover { background: #f3f4f6; }
+  .navbar .avatar { width: 26px; height: 26px; border-radius: 50%; background: #FAD4C0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #111827; flex-shrink: 0; }
+  .navbar .user-name { font-size: 12px; font-weight: 500; }
+  .navbar .chevron { width: 12px; height: 12px; color: #9ca3af; flex-shrink: 0; }
+  .toolbar { position: fixed; top: 52px; left: 0; right: 0; height: 40px; background: #f9fafb; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 16px; gap: 8px; z-index: 99; }
+  .toolbar .nav-links { display: flex; align-items: center; gap: 16px; }
+  .toolbar .nav-links a { font-size: 12px; font-weight: 500; color: #6b7280; text-decoration: none; transition: color .15s; }
+  .toolbar .nav-links a:hover { color: #111827; }
+  .toolbar .nav-links .chevron { width: 10px; height: 10px; color: #9ca3af; margin-left: 2px; flex-shrink: 0; }
+  .toolbar .nav-links .more { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; color: #9ca3af; cursor: pointer; }
+  .toolbar .widgets { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .toolbar .widgets select, .toolbar .widgets input { height: 26px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 11px; font-family: inherit; padding: 0 8px; background: #fff; outline: none; }
+  .toolbar .widgets select { min-width: 80px; }
+  .toolbar .widgets input { width: 120px; padding: 0 8px; }
+  .toolbar .widgets .search-btn { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; }
+  .toolbar .widgets .search-btn svg { width: 12px; height: 12px; }
+  .main { padding-top: 92px; min-height: 100vh; }
+  .main-inner { max-width: 1200px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+  .placeholder { border: 2px dashed #ddd; border-radius: 12px; height: 240px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #9ca3af; font-weight: 500; }
+  @media (max-width: 768px) {
+    .navbar .search-wrap { display: none; }
+    .navbar .user-name { display: none; }
+    .toolbar { height: auto; flex-direction: column; padding: 8px 12px; gap: 8px; align-items: stretch; }
+    .toolbar .nav-links { overflow-x: auto; gap: 12px; padding-bottom: 4px; }
+    .toolbar .widgets { margin-left: 0; flex-wrap: wrap; }
+    .toolbar .widgets input { width: 100px; flex: 1; min-width: 60px; }
+    .main-inner { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="hamburger">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </div>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    <span>Bento</span>
+  </div>
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Search anything...">
+  </div>
+  <div class="right">
+    <button class="icon-btn" aria-label="Theme toggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="icon-btn" aria-label="Dark mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="icon-btn" aria-label="Grid view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </button>
+    <button class="action-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New
+    </button>
+    <div class="user">
+      <div class="avatar">JD</div>
+      <span class="user-name">Jane Doe</span>
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </div>
+</nav>
+<div class="toolbar">
+  <div class="nav-links">
+    <a href="#">Dashboard</a>
+    <a href="#">Projects</a>
+    <a href="#">Analytics</a>
+    <a href="#">Settings <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></a>
+    <a href="#">Integrations</a>
+    <div class="more">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    </div>
+  </div>
+  <div class="widgets">
+    <select><option>All projects</option><option>Design</option><option>Engineering</option></select>
+    <input type="text" placeholder="Filter...">
+    <select><option>This month</option><option>This week</option><option>Today</option></select>
+    <button class="search-btn" aria-label="Search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+  </div>
+</div>
+<main class="main">
+  <div class="main-inner">
+    <div class="placeholder">Content Region — Full Width</div>
+    <div class="placeholder">Content Region — Analytics Summary</div>
+    <div class="placeholder">Content Region — Recent Activity</div>
+    <div class="placeholder">Content Region — Team Feed</div>
+  </div>
+</main>
+
+<div id="typeui-panel" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:9999px;font:500 14px/20px system-ui,sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.25);white-space:nowrap">
+  <a href="https://www.typeui.sh" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:inherit">
+    <img src="https://www.typeui.sh/logo.svg" alt="TypeUI" style="width:18px;height:18px;flex-shrink:0">
+  </a>
+  <span id="typeui-label">TypeUI</span>
+  <span style="width:1px;height:16px;background:rgba(255,255,255,.2);margin:0 4px"></span>
+  <span style="font-size:12px;opacity:.8">5/100 MCP calls</span>
+  <a href="https://www.typeui.sh/#pricing" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:#FAD4C0;text-decoration:none;margin-left:2px">Upgrade to Pro for unlimited calls</a>
+  <span style="width:1px;height:16px;background:rgba(255,255,255,.2);margin:0 4px"></span>
+  <div style="display:flex;gap:4px">
+    <button data-var="0" style="background:transparent;color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:400;cursor:pointer;transition:all .2s">Primary</button>
+    <button data-var="1" style="background:#FAD4C0;color:#111827;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:500;cursor:pointer;transition:opacity .2s">Var 1</button>
+    <button data-var="2" style="background:transparent;color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:400;cursor:pointer;transition:all .2s">Var 2</button>
+  </div>
+  <button id="minimize-typeui" aria-label="Minimize TypeUI panel" style="background:transparent;border:none;color:#fff;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;margin-left:4px" title="Minimize TypeUI panel">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<script>
+  (function() {
+    const panel = document.getElementById('typeui-panel');
+    const minBtn = document.getElementById('minimize-typeui');
+    const originalStyle = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:9999px;font:500 14px/20px system-ui,sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.25);white-space:nowrap';
+    const collapsedStyle = 'position:fixed;right:24px;bottom:24px;left:auto;transform:none;z-index:2147483647;display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:9999px;font:500 14px/20px system-ui,sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.25);white-space:nowrap';
+    let minimized = false;
+
+    function showAllChildren() {
+      Array.from(panel.children).forEach(function(child) {
+        if (child !== minBtn && child.tagName !== 'BUTTON') child.style.display = '';
+      });
+    }
+
+    function hideNonLogoChildren() {
+      Array.from(panel.children).forEach(function(child) {
+        if (child.tagName === 'A' && child.querySelector('img')) { return; }
+        if (child !== minBtn) child.style.display = 'none';
+      });
+    }
+
+    minBtn.addEventListener('click', function() {
+      if (!minimized) {
+        panel.style.cssText = collapsedStyle;
+        hideNonLogoChildren();
+        minBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+        minBtn.setAttribute('aria-label', 'Maximize TypeUI panel');
+        minBtn.title = 'Maximize TypeUI panel';
+        minimized = true;
+      } else {
+        panel.style.cssText = originalStyle;
+        showAllChildren();
+        minBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        minBtn.setAttribute('aria-label', 'Minimize TypeUI panel');
+        minBtn.title = 'Minimize TypeUI panel';
+        minimized = false;
+      }
+    });
+
+    document.querySelectorAll('[data-var]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var idx = this.getAttribute('data-var');
+        if (idx === '0') window.location.href = '2fa-primary.html';
+        else if (idx === '1') window.location.href = 'shell-toolbar-v1.html';
+        else if (idx === '2') window.location.href = 'shell-sidebar-v2.html';
+      });
+    });
+  })();
+</script>
+</body>
+</html>
