@@ -11,6 +11,7 @@
 
 - Middleware `/api/feed` bypass pattern: unauthenticated access is allowed by checking `url.pathname === '/api/feed'` inside the API auth block before the 401 return.
 - FeedEventCard extracted to standalone component to avoid DB dependency in unit tests — any module importing lib/db.ts top-level will fail without PG_CONNECTION
+- PassportCover island uses `data-open` CSS attribute toggle for 2D slide-and-fade transitions (no JS animation libs)
 
 ## Shared Learnings
 
