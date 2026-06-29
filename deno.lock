@@ -45,6 +45,7 @@
     "npm:better-auth@^1.6.11": "1.6.11_drizzle-kit@0.30.6_drizzle-orm@0.38.2__@opentelemetry+api@1.9.0__kysely@0.28.17__pg@8.13.1__react@19.2.7_pg@8.13.1",
     "npm:class-variance-authority@~0.7.1": "0.7.1",
     "npm:clsx@^2.1.1": "2.1.1",
+    "npm:drizzle-kit@*": "0.30.6",
     "npm:drizzle-kit@0.30": "0.30.6",
     "npm:drizzle-orm@0.38.2": "0.38.2_@opentelemetry+api@1.9.0_kysely@0.28.17_pg@8.13.1_react@19.2.7",
     "npm:embla-carousel-react@^8.6.0": "8.6.0_react@19.2.7",

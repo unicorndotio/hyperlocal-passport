@@ -6,6 +6,8 @@ import {
   pgTable,
   text,
   timestamp,
+  uuid,
+  varchar,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -122,6 +124,20 @@ export const couponAnalytics = pgTable('coupon_analytics', {
   validations: integer('validations').notNull().default(0),
 })
 
+// ── Merchant Posts ──
+export const merchantPosts = pgTable('merchant_posts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  businessId: uuid('business_id').notNull().references(() => businesses.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  body: text('body'),
+  imageUrl: varchar('image_url', { length: 500 }),
+  isVisible: boolean('is_visible').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  idxBusinessId: index('idx_merchant_posts_business_id').on(table.businessId),
+}))
+
 // ── File Metadata ──
 export const fileMetadata = pgTable('file_metadata', {
   id: text('id').primaryKey(),
@@ -190,6 +206,7 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
   coupons: many(coupons),
   redemptions: many(redemptions),
   transactions: many(transactions),
+  merchantPosts: many(merchantPosts),
 }))
 
 export const couponsRelations = relations(coupons, ({ one, many }) => ({
@@ -232,6 +249,13 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     references: [businesses.id],
   }),
   user: one(users, { fields: [transactions.userId], references: [users.id] }),
+}))
+
+export const merchantPostsRelations = relations(merchantPosts, ({ one }) => ({
+  business: one(businesses, {
+    fields: [merchantPosts.businessId],
+    references: [businesses.id],
+  }),
 }))
 
 export const signalsRelations = relations(signals, ({ one }) => ({
