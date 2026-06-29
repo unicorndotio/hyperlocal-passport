@@ -3,6 +3,7 @@ import { db } from '../../../../lib/db.ts'
 import * as schema from '../../../../db/schema.ts'
 import { eq } from 'drizzle-orm'
 import { validateBehavior } from '../../../../lib/coupon.ts'
+import { refreshFeedView } from '../../../../lib/feed.ts'
 
 export const handler = define.handlers({
   async GET(ctx) {
@@ -50,6 +51,12 @@ export const handler = define.handlers({
         isActive: data.isActive !== false,
       })
       .returning()
+
+    try {
+      await refreshFeedView(db)
+    } catch (err) {
+      console.error('Failed to refresh feed view after coupon creation:', err)
+    }
 
     return Response.json(coupon, { status: 201 })
   },

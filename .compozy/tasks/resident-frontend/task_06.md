@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: 'MV refresh integration on coupon creation'
 type: backend
 complexity: low
@@ -29,9 +29,9 @@ Add a `refreshFeedView()` call to the existing coupon creation endpoint so that 
 
 ## Subtasks
 
-- [ ] 06.1 Identify all coupon write endpoints (create, update, activate/deactivate)
-- [ ] 06.2 Add `refreshFeedView()` call after each write, guarded by try/catch
-- [ ] 06.3 Write tests verifying MV refresh occurs on coupon creation
+- [x] 06.1 Identify all coupon write endpoints (create, update, activate/deactivate)
+- [x] 06.2 Add `refreshFeedView()` call after each write, guarded by try/catch
+- [x] 06.3 Write tests verifying MV refresh occurs on coupon creation
 
 ## Implementation Details
 

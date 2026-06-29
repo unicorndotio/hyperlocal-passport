@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { auth } from '../../../lib/auth.ts'
 import type { Coupon } from '../../../lib/coupon.ts'
 import { validateBehavior } from '../../../lib/coupon.ts'
+import { refreshFeedView } from '../../../lib/feed.ts'
 
 function validateUpdateData(data: Record<string, unknown>): string | null {
   if (data.behavior !== undefined) {
@@ -52,6 +53,12 @@ async function handleUpdate(ctx: {
     .set(updateData)
     .where(eq(schema.coupons.id, id))
     .returning()
+
+  try {
+    await refreshFeedView(db)
+  } catch (err) {
+    console.error('Failed to refresh feed view after coupon update:', err)
+  }
 
   return Response.json(updated)
 }

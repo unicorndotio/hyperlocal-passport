@@ -5,10 +5,11 @@ import {
 import { stub as mockStub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
 import { db } from '../lib/db.ts'
 import * as schema from '../db/schema.ts'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { auth } from '../lib/auth.ts'
 import { handler as businessCouponsHandler } from '../routes/api/businesses/[id]/coupons.ts'
 import { handler as couponHandler } from '../routes/api/coupons/[id].ts'
+import { refreshFeedView } from '../lib/feed.ts'
 
 type CouponCtx = { req: Request; params: Record<string, string> }
 type CouponHandler = {
@@ -749,5 +750,221 @@ Deno.test({
     })
 
     await db.delete(schema.coupons).where(eq(schema.coupons.id, couponId))
+  },
+})
+
+Deno.test({
+  name: 'Coupon API - MV refresh integration',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async (t) => {
+    const businessId = 'mv_biz_' + Math.random().toString(36).slice(2)
+    const userId = 'admin_user'
+
+    await db.insert(schema.businesses).values({
+      id: businessId,
+      userId,
+      name: 'MV Refresh Business',
+      companyName: 'MV Refresh Ltd',
+      cnpj: `55${Date.now()}000181`,
+      category: 'Test',
+      logoUrl: 'http://localhost/logo.png',
+      isActive: true,
+    }).onConflictDoNothing({ target: schema.businesses.id })
+
+    const createdIds: string[] = []
+
+    try {
+      const getSessionStub = mockStub(auth.api, 'getSession', adminSession)
+
+      try {
+        await t.step(
+          'coupon creation triggers feed_events MV refresh',
+          async () => {
+            const req = new Request(
+              `http://localhost:8000/api/businesses/${businessId}/coupons`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: 'MV Test Coupon',
+                  behavior: { type: 'percentage_discount', percent: 20 },
+                }),
+              },
+            )
+            const res = await (
+              businessCouponsHandler as unknown as CouponHandler
+            ).POST({ req, params: { id: businessId } })
+            assertEquals(res.status, 201)
+            const coupon = await res.json()
+            createdIds.push(coupon.id)
+
+            // Verify coupon appears in feed_events after MV refresh
+            const feedResult = await db.execute(sql`
+              SELECT * FROM feed_events
+              WHERE id = ${coupon.id + '-coupon'}
+            `)
+            assertEquals(feedResult.rows.length, 1)
+            assertEquals(feedResult.rows[0].type, 'coupon_released')
+            assertEquals(feedResult.rows[0].title, 'MV Test Coupon')
+            assertEquals(
+              feedResult.rows[0].business_name,
+              'MV Refresh Business',
+            )
+          },
+        )
+
+        await t.step(
+          'multiple coupons appear in feed_events',
+          async () => {
+            const req2 = new Request(
+              `http://localhost:8000/api/businesses/${businessId}/coupons`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: 'Second Coupon',
+                  behavior: { type: 'fixed_amount', amountCents: 1000 },
+                }),
+              },
+            )
+            const res2 = await (
+              businessCouponsHandler as unknown as CouponHandler
+            ).POST({ req: req2, params: { id: businessId } })
+            assertEquals(res2.status, 201)
+            const coupon2 = await res2.json()
+            createdIds.push(coupon2.id)
+
+            // Both coupons should be in feed_events
+            const feedResult = await db.execute(sql`
+              SELECT * FROM feed_events
+              WHERE business_id = ${businessId}
+              ORDER BY created_at DESC
+            `)
+            assertEquals(feedResult.rows.length, 2)
+          },
+        )
+
+        await t.step(
+          'coupon update triggers feed_events MV refresh',
+          async () => {
+            const cpnId = 'mv_update_' + Math.random().toString(36).slice(2)
+            createdIds.push(cpnId)
+
+            await db.insert(schema.coupons).values({
+              id: cpnId,
+              businessId,
+              title: 'Original Title',
+              behavior: { type: 'percentage_discount', percent: 10 },
+              restrictions: {},
+              isActive: true,
+            })
+
+            // Ensure MV has the original entry
+            await refreshFeedView(db)
+
+            const req = new Request(
+              `http://localhost:8000/api/coupons/${cpnId}`,
+              {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: 'Updated Title' }),
+              },
+            )
+            const res = await (couponHandler as unknown as CouponHandler).PATCH(
+              {
+                req,
+                params: { id: cpnId },
+              },
+            )
+            assertEquals(res.status, 200)
+
+            // After the PATCH, the MV should reflect the updated title
+            const feedResult = await db.execute(sql`
+              SELECT * FROM feed_events
+              WHERE id = ${cpnId + '-coupon'}
+            `)
+            assertEquals(feedResult.rows.length, 1)
+            assertEquals(feedResult.rows[0].title, 'Updated Title')
+          },
+        )
+      } finally {
+        getSessionStub.restore()
+      }
+    } finally {
+      for (const id of createdIds) {
+        await db.delete(schema.coupons).where(eq(schema.coupons.id, id))
+      }
+      await db.delete(schema.businesses)
+        .where(eq(schema.businesses.id, businessId))
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon API - MV refresh failure does not block creation',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const businessId = 'mv_fail_' + Math.random().toString(36).slice(2)
+    const userId = 'admin_user'
+    let couponId: string | undefined
+
+    const originalExecute = db.execute.bind(db)
+
+    try {
+      await db.insert(schema.businesses).values({
+        id: businessId,
+        userId,
+        name: 'MV Fail Business',
+        companyName: 'MV Fail Ltd',
+        cnpj: `66${Date.now()}000181`,
+        category: 'Test',
+        logoUrl: 'http://localhost/logo.png',
+        isActive: true,
+      }).onConflictDoNothing({ target: schema.businesses.id })
+
+      // Make db.execute throw on the REFRESH call
+      const originalDbExecute = db.execute.bind(db)
+      db.execute = (query: unknown) => {
+        const sqlStr = String(query)
+        if (sqlStr.includes('REFRESH MATERIALIZED VIEW')) {
+          throw new Error('Simulated MV refresh failure')
+        }
+        return originalDbExecute(query as Parameters<typeof db.execute>[0])
+      }
+
+      const getSessionStub = mockStub(auth.api, 'getSession', adminSession)
+
+      try {
+        const req = new Request(
+          `http://localhost:8000/api/businesses/${businessId}/coupons`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: 'Fail Test Coupon',
+              behavior: { type: 'percentage_discount', percent: 15 },
+            }),
+          },
+        )
+        const res = await (
+          businessCouponsHandler as unknown as CouponHandler
+        ).POST({ req, params: { id: businessId } })
+        assertEquals(res.status, 201)
+        const data = await res.json()
+        couponId = data.id
+        assertEquals(data.title, 'Fail Test Coupon')
+      } finally {
+        getSessionStub.restore()
+        db.execute = originalExecute
+      }
+    } finally {
+      if (couponId) {
+        await db.delete(schema.coupons).where(eq(schema.coupons.id, couponId))
+      }
+      await db.delete(schema.businesses)
+        .where(eq(schema.businesses.id, businessId))
+    }
   },
 })

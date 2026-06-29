@@ -14,6 +14,8 @@
 
 ## Shared Learnings
 
+- feed_events MV JOIN requires `::text` cast: `merchant_posts.business_id` is `uuid` type while `businesses.id` is `text`. Without this cast the MV creation fails.
+
 ## Open Risks
 
 ## Handoffs

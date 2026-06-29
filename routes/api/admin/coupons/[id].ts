@@ -3,6 +3,7 @@ import { db } from '../../../../lib/db.ts'
 import * as schema from '../../../../db/schema.ts'
 import { eq } from 'drizzle-orm'
 import { validateBehavior } from '../../../../lib/coupon.ts'
+import { refreshFeedView } from '../../../../lib/feed.ts'
 
 export const handler = define.handlers({
   async PUT(ctx) {
@@ -49,6 +50,15 @@ export const handler = define.handlers({
       .set(updateData)
       .where(eq(schema.coupons.id, id))
       .returning()
+
+    try {
+      await refreshFeedView(db)
+    } catch (err) {
+      console.error(
+        'Failed to refresh feed view after admin coupon update:',
+        err,
+      )
+    }
 
     return Response.json(updated)
   },
