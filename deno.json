@@ -79,7 +79,8 @@
     "qrcode-generator": "npm:qrcode-generator@^2.0.4",
     "undici-types": "npm:undici-types@^6.19.8",
     "drizzle-orm": "npm:drizzle-orm@0.38.2",
-    "drizzle-orm/pg-core": "npm:drizzle-orm@0.38.2/pg-core"
+    "drizzle-orm/pg-core": "npm:drizzle-orm@0.38.2/pg-core",
+    "sharp": "npm:sharp@^0.35.2"
   },
   "compilerOptions": {
     "skipLibCheck": true,

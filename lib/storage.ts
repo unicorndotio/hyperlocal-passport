@@ -3,14 +3,71 @@ import { eq } from 'npm:drizzle-orm@0.38.2'
 import { db } from './db.ts'
 import * as schema from '../db/schema.ts'
 
+export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+export const MAX_IMAGE_WIDTH = 1200
+export const JPEG_QUALITY = 80
+
+async function loadSharp() {
+  try {
+    const mod = await import('npm:sharp@^0.35.2')
+    return mod.default
+  } catch {
+    console.warn('sharp not available — image compression skipped')
+    return null
+  }
+}
+
+/**
+ * Optimizes an image file by resizing and compressing it in place.
+ * Supports JPEG and PNG formats. Skips optimization if sharp is unavailable.
+ */
+export async function optimizeImage(
+  uploadsDir: string,
+  filename: string,
+): Promise<void> {
+  const sharp = await loadSharp()
+  if (!sharp) return
+
+  const filePath = join(uploadsDir, filename)
+  const tmpPath = filePath + '.opt.tmp'
+
+  try {
+    const ext = filename.split('.').pop()?.toLowerCase()
+    const image = sharp(filePath)
+    const metadata = await image.metadata()
+
+    if (metadata.width && metadata.width > MAX_IMAGE_WIDTH) {
+      image.resize({ width: MAX_IMAGE_WIDTH, withoutEnlargement: true })
+    }
+
+    if (ext === 'jpg' || ext === 'jpeg') {
+      await image.jpeg({ quality: JPEG_QUALITY }).toFile(tmpPath)
+    } else if (ext === 'png') {
+      await image.png({ compressionLevel: 9 }).toFile(tmpPath)
+    } else {
+      return
+    }
+
+    await Deno.rename(tmpPath, filePath)
+  } catch (err) {
+    console.error('Image optimization failed:', err)
+    try {
+      await Deno.remove(tmpPath)
+    } catch {
+      // ignore cleanup error
+    }
+  }
+}
+
 /**
  * Uploads a file/blob to the local filesystem under the UPLOADS_DIR directory.
  * Generates a unique UUID filename and returns it.
  * Saves access control metadata to PostgreSQL.
+ * Image files (JPEG, PNG) are automatically compressed in the background.
  */
 export async function uploadFile(
   file: Blob | File,
-  options?: { userId?: string; isPublic?: boolean },
+  options?: { userId?: string; isPublic?: boolean; skipOptimization?: boolean },
 ): Promise<string> {
   const uploadsDir = Deno.env.get('UPLOADS_DIR') || '/app/uploads'
 
@@ -66,6 +123,16 @@ export async function uploadFile(
     throw new Error('Invalid file type')
   }
 
+  // Validate file size for images (JPEG/PNG)
+  const isImage = ext === 'jpg' || ext === 'jpeg' || ext === 'png'
+  if (isImage && file.size > MAX_IMAGE_SIZE_BYTES) {
+    throw new Error(
+      `File too large: maximum allowed size is ${
+        MAX_IMAGE_SIZE_BYTES / 1024 / 1024
+      }MB`,
+    )
+  }
+
   // Generate unique filename and save to filesystem
   const uuid = crypto.randomUUID()
   const filename = `${uuid}.${ext}`
@@ -73,6 +140,11 @@ export async function uploadFile(
 
   const arrayBuffer = await file.arrayBuffer()
   await Deno.writeFile(filePath, new Uint8Array(arrayBuffer))
+
+  // Fire-and-forget optimization for JPEG/PNG images
+  if (isImage && !options?.skipOptimization) {
+    void optimizeImage(uploadsDir, filename)
+  }
 
   // Persist access control metadata in PostgreSQL
   await db.insert(schema.fileMetadata).values({

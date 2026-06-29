@@ -1,10 +1,10 @@
 ---
-status: pending
+status: completed
 title: 'Feed image optimization pipeline'
 type: backend
 complexity: low
 dependencies:
-  - task_05
+    - task_05
 ---
 
 # Task 09: Feed image optimization pipeline

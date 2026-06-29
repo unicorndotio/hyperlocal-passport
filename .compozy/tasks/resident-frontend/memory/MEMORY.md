@@ -7,6 +7,8 @@
 - components/BottomNav.tsx created (task 03), used by tasks 04, 07
 - components/FeedEventCard.tsx created with type-specific card rendering
 
+- Task 09 (feed image optimization) completed — sharp via npm, fire-and-forget resize+compress, 5MB size limit, all 17 test steps pass (88.9% line coverage)
+
 ## Shared Decisions
 
 - Middleware `/api/feed` bypass pattern: unauthenticated access is allowed by checking `url.pathname === '/api/feed'` inside the API auth block before the 401 return.
