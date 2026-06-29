@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: 'Feed backend — lib/feed.ts + /api/feed endpoint'
 type: backend
 complexity: medium
@@ -33,12 +33,12 @@ Create the feed query logic in `lib/feed.ts` that queries the `feed_events` MV f
 
 ## Subtasks
 
-- [ ] 02.1 Create `lib/feed.ts` with `FeedEvent` types and `queryFeed()` function
-- [ ] 02.2 Implement MV query with cursor-based pagination
-- [ ] 02.3 Implement user transaction query for savings notices
-- [ ] 02.4 Implement in-memory merge by createdAt DESC
-- [ ] 02.5 Create `routes/api/feed.ts` handler
-- [ ] 02.6 Write unit and integration tests
+- [x] 02.1 Create `lib/feed.ts` with `FeedEvent` types and `queryFeed()` function
+- [x] 02.2 Implement MV query with cursor-based pagination
+- [x] 02.3 Implement user transaction query for savings notices
+- [x] 02.4 Implement in-memory merge by createdAt DESC
+- [x] 02.5 Create `routes/api/feed.ts` handler
+- [x] 02.6 Write unit and integration tests
 
 ## Implementation Details
 
@@ -76,16 +76,16 @@ For unauthenticated users (`userId=null`), skip the transaction query entirely.
 ## Tests
 
 - Unit tests:
-  - [ ] `queryFeed()` with empty MV returns empty events array and null cursor
-  - [ ] `queryFeed()` with 25 seeded events returns page 1 (20 items) with non-null cursor
-  - [ ] `queryFeed()` with cursor returns page 2 with remaining items
-  - [ ] `queryFeed()` with invalid cursor returns page 1 (same as no cursor)
-  - [ ] Transaction events are merged into the result in correct position by createdAt
-  - [ ] Unauthenticated query (userId=null) does not include savings_notice events
+  - [x] `queryFeed()` with empty MV returns empty events array and null cursor
+  - [x] `queryFeed()` with 25 seeded events returns page 1 (20 items) with non-null cursor
+  - [x] `queryFeed()` with cursor returns page 2 with remaining items
+  - [x] `queryFeed()` with invalid cursor returns page 1 (same as no cursor)
+  - [x] Transaction events are merged into the result in correct position by createdAt
+  - [x] Unauthenticated query (userId=null) does not include savings_notice events
 - Integration tests:
-  - [ ] `GET /api/feed` returns 200 with expected event types and correct ordering
-  - [ ] `GET /api/feed?limit=5` returns exactly 5 events
-  - [ ] `GET /api/feed` with no session returns 200 with global events only
+  - [x] `GET /api/feed` returns 200 with expected event types and correct ordering
+  - [x] `GET /api/feed?limit=5` returns exactly 5 events
+  - [x] `GET /api/feed` with no session returns 200 with global events only
 - Test coverage target: >=80%
 - All tests must pass
 

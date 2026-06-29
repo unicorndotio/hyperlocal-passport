@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: 'Database — merchant_posts table + feed_events materialized view'
 type: backend
 complexity: medium

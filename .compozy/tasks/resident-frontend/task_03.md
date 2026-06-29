@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: 'Feed page — rewrite routes/index.tsx as feed page'
 type: frontend
 complexity: medium
