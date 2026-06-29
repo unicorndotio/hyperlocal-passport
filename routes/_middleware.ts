@@ -33,6 +33,12 @@ export async function applyMiddleware(
   // 1. API Protections
   if (url.pathname.startsWith('/api/')) {
     if (!session) {
+      if (url.pathname === '/api/feed') {
+        return await next({
+          user: null,
+          session: null,
+        })
+      }
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
