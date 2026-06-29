@@ -11,5 +11,5 @@
 | 05 | Merchant post API + publishing UI | pending | medium | task_01 |
 | 06 | MV refresh integration on coupon creation | completed | low | task_01 |
 | 07 | PassportCover island + passaporte page update | completed | medium | task_04 |
-| 08 | Savings history API + UI | pending | low | — |
+| 08 | Savings history API + UI | completed | low | — |
 | 09 | Feed image optimization pipeline | pending | low | task_05 |

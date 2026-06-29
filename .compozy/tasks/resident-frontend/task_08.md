@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: 'Savings history API + UI'
 type: frontend
 complexity: low
@@ -29,10 +29,10 @@ Create the savings history API endpoint and UI that show residents their total s
 
 ## Subtasks
 
-- [ ] 08.1 Create `routes/api/users/me/savings.ts` with GET handler
-- [ ] 08.2 Implement the query: join redemptions + transactions + businesses
-- [ ] 08.3 Add the savings summary badge/section to the passport page
-- [ ] 08.4 Write tests
+- [x] 08.1 Create `routes/api/users/me/savings.ts` with GET handler
+- [x] 08.2 Implement the query: join redemptions + transactions + businesses
+- [x] 08.3 Add the savings summary badge/section to the passport page
+- [x] 08.4 Write tests
 
 ## Implementation Details
 
@@ -67,11 +67,11 @@ The frontend rendering goes in the PassportCover island (task_07), as a section 
 ## Tests
 
 - Integration tests:
-  - [ ] `GET /api/users/me/savings` with no used redemptions returns zero totals
-  - [ ] `GET /api/users/me/savings` with used redemptions returns correct totalSavingsCents
-  - [ ] `GET /api/users/me/savings` returns correct per-business breakdown with names
-  - [ ] `GET /api/users/me/savings` without authentication returns 401
-  - [ ] `GET /api/users/me/savings` with business role returns 403
+  - [x] `GET /api/users/me/savings` with no used redemptions returns zero totals
+  - [x] `GET /api/users/me/savings` with used redemptions returns correct totalSavingsCents
+  - [x] `GET /api/users/me/savings` returns correct per-business breakdown with names
+  - [x] `GET /api/users/me/savings` without authentication returns 401
+  - [x] `GET /api/users/me/savings` with business role returns 403
 - Test coverage target: >=80%
 - All tests must pass
 
