@@ -363,11 +363,60 @@ Deno.test(
     )
 
     await t.step(
-      'defaults to .bin when no extension and no MIME type',
+      'rejects blob with no extension and no MIME type (falls to .bin)',
       async () => {
         const blob = new Blob(['binary-content'])
-        const filename = await uploadFile(blob)
-        assertEquals(filename.endsWith('.bin'), true)
+        await assertRejects(
+          () => uploadFile(blob),
+          Error,
+          'Invalid file type',
+        )
+      },
+    )
+
+    await t.step(
+      'rejects file with allowed extension but disallowed MIME type',
+      async () => {
+        const file = new File(
+          ['malicious-content'],
+          'malicious.jpg',
+          { type: 'application/javascript' },
+        )
+        await assertRejects(
+          () => uploadFile(file),
+          Error,
+          'Invalid file type',
+        )
+      },
+    )
+
+    await t.step(
+      'rejects oversized GIF image',
+      async () => {
+        const bigContent = new Uint8Array(6 * 1024 * 1024)
+        const file = new File([bigContent], 'animation.gif', {
+          type: 'image/gif',
+        })
+        await assertRejects(
+          () => uploadFile(file),
+          Error,
+          'File too large',
+        )
+      },
+    )
+
+    await t.step(
+      'rejects oversized WebP image',
+      async () => {
+        const bigContent = new Uint8Array(6 * 1024 * 1024)
+        const file = new File([bigContent], 'photo.webp', {
+          type: 'image/webp',
+        })
+        await assertRejects(
+          () => uploadFile(file),
+          Error,
+          'File too large',
+        )
       },
     )
 

@@ -503,6 +503,26 @@ if (Deno.env.get('PG_CONNECTION')) {
       },
     )
 
+    await t.step(
+      'GET /api/feed?limit=abc returns 200 with default page size (NaN guard)',
+      async () => {
+        await truncate()
+        await seedData()
+
+        const { handler } = await import('../routes/api/feed.ts')
+        const req = new Request('http://localhost/api/feed?limit=abc')
+        const ctx = { req, state: { user: null, session: null } }
+        const response = await handler.GET(
+          ctx as Parameters<typeof handler.GET>[0],
+        )
+        assertEquals(response.status, 200)
+
+        const body = await response.json()
+        assertEquals(Array.isArray(body.events), true)
+        assertEquals(body.events.length, 2)
+      },
+    )
+
     await t.step('GET /api/feed?limit=5 returns exactly 5 events', async () => {
       await truncate()
       await seedData()

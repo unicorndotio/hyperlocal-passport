@@ -1,6 +1,4 @@
-import {
-  assertExists,
-} from 'https://deno.land/std@0.224.0/assert/mod.ts'
+import { assertExists } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { render } from 'npm:preact-render-to-string@^6.6.3'
 import { h } from 'npm:preact@^10.27.2'
 import BottomNav from '../components/BottomNav.tsx'
@@ -128,8 +126,7 @@ if (Deno.env.get('PG_CONNECTION')) {
   })
 } else {
   Deno.test({
-    name:
-      'BottomNav integration - skipped (PG_CONNECTION not set)',
+    name: 'BottomNav integration - skipped (PG_CONNECTION not set)',
     fn: () => {
       console.info(
         '[Test info] bottom_nav.test.ts page integration tests skipped - PG_CONNECTION not set',

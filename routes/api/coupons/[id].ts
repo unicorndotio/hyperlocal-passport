@@ -101,6 +101,13 @@ export const handler = define.handlers({
 
     await db.delete(schema.coupons)
       .where(eq(schema.coupons.id, id))
+
+    try {
+      await refreshFeedView(db)
+    } catch (err) {
+      console.error('Failed to refresh feed view after coupon deletion:', err)
+    }
+
     return new Response(null, { status: 204 })
   },
 })

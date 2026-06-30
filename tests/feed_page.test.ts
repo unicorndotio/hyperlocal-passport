@@ -129,23 +129,6 @@ Deno.test('FeedEventCard component', async (t) => {
     },
   )
 
-  await t.step(
-    'renders admin_announcement card with announcement styling',
-    () => {
-      const event: FeedEvent = {
-        ...baseEvent,
-        id: 'aa-1',
-        type: 'admin_announcement',
-        title: 'Novidades no bairro',
-        description: 'Em breve novos parceiros!',
-      }
-      const html = render(h(FeedEventCard, { event }))
-      assertExists(html.includes('Aviso'))
-      assertExists(html.includes('Novidades no bairro'))
-      assertExists(html.includes('Em breve novos parceiros!'))
-    },
-  )
-
   await t.step('returns null for unknown event type', () => {
     const event: FeedEvent = {
       ...baseEvent,
@@ -157,8 +140,6 @@ Deno.test('FeedEventCard component', async (t) => {
     assertEquals(html, '')
   })
 })
-
-
 
 // ─── Integration tests: handler with database ────────────────────────────────
 

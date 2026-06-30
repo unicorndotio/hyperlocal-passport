@@ -888,6 +888,51 @@ Deno.test({
             assertEquals(feedResult.rows[0].title, 'Updated Title')
           },
         )
+
+        await t.step(
+          'coupon deletion removes entry from feed_events MV',
+          async () => {
+            const cpnId = 'mv_delete_' + Math.random().toString(36).slice(2)
+            createdIds.push(cpnId)
+
+            await db.insert(schema.coupons).values({
+              id: cpnId,
+              businessId,
+              title: 'To Be Deleted',
+              behavior: { type: 'percentage_discount', percent: 5 },
+              restrictions: {},
+              isActive: true,
+            })
+
+            // Ensure MV has the entry before we test deletion
+            await refreshFeedView(db)
+
+            const feedBefore = await db.execute(sql`
+              SELECT * FROM feed_events
+              WHERE id = ${cpnId + '-coupon'}
+            `)
+            assertEquals(feedBefore.rows.length, 1)
+
+            const req = new Request(
+              `http://localhost:8000/api/coupons/${cpnId}`,
+              { method: 'DELETE' },
+            )
+            const res = await (
+              couponHandler as unknown as CouponHandler
+            ).DELETE({
+              req,
+              params: { id: cpnId },
+            })
+            assertEquals(res.status, 204)
+
+            // After deletion, the feed event should be gone
+            const feedAfter = await db.execute(sql`
+              SELECT * FROM feed_events
+              WHERE id = ${cpnId + '-coupon'}
+            `)
+            assertEquals(feedAfter.rows.length, 0)
+          },
+        )
       } finally {
         getSessionStub.restore()
       }
@@ -963,6 +1008,79 @@ Deno.test({
       if (couponId) {
         await db.delete(schema.coupons).where(eq(schema.coupons.id, couponId))
       }
+      await db.delete(schema.businesses)
+        .where(eq(schema.businesses.id, businessId))
+    }
+  },
+})
+
+Deno.test({
+  name: 'Coupon API - MV refresh failure does not block delete',
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const businessId = 'mv_fail_del_' + Math.random().toString(36).slice(2)
+    const userId = 'admin_user'
+    const cpnId = 'mv_fail_del_' + Math.random().toString(36).slice(2)
+
+    const originalExecute = db.execute.bind(db)
+
+    try {
+      await db.insert(schema.businesses).values({
+        id: businessId,
+        userId,
+        name: 'MV Fail Del Business',
+        companyName: 'MV Fail Del Ltd',
+        cnpj: `77${Date.now()}000181`,
+        category: 'Test',
+        logoUrl: 'http://localhost/logo.png',
+        isActive: true,
+      }).onConflictDoNothing({ target: schema.businesses.id })
+
+      await db.insert(schema.coupons).values({
+        id: cpnId,
+        businessId,
+        title: 'Delete Fail Coupon',
+        behavior: { type: 'percentage_discount', percent: 5 },
+        restrictions: {},
+        isActive: true,
+      })
+
+      // Ensure coupon is in feed_events first
+      await refreshFeedView(db)
+
+      // Make db.execute throw on the REFRESH call
+      db.execute = (query: unknown) => {
+        const sqlStr = String(query)
+        if (sqlStr.includes('REFRESH MATERIALIZED VIEW')) {
+          throw new Error('Simulated MV refresh failure on delete')
+        }
+        return originalExecute(query as Parameters<typeof db.execute>[0])
+      }
+
+      const getSessionStub = mockStub(auth.api, 'getSession', adminSession)
+
+      try {
+        const req = new Request(
+          `http://localhost:8000/api/coupons/${cpnId}`,
+          { method: 'DELETE' },
+        )
+        const res = await (couponHandler as unknown as CouponHandler).DELETE({
+          req,
+          params: { id: cpnId },
+        })
+        assertEquals(res.status, 204)
+
+        // Verify the coupon is actually deleted despite MV failure
+        const [deleted] = await db.select().from(schema.coupons)
+          .where(eq(schema.coupons.id, cpnId))
+        assertEquals(deleted, undefined)
+      } finally {
+        getSessionStub.restore()
+        db.execute = originalExecute
+      }
+    } finally {
+      await db.delete(schema.coupons).where(eq(schema.coupons.id, cpnId))
       await db.delete(schema.businesses)
         .where(eq(schema.businesses.id, businessId))
     }

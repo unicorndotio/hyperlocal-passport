@@ -8,7 +8,13 @@ import { refreshFeedView } from '../../../lib/feed.ts'
 export const handler = define.handlers({
   async POST(ctx) {
     const user = ctx.state.user
-    if (!user || (user.role !== 'business' && user.role !== 'admin')) {
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
+    if (user.role !== 'business') {
       return new Response(
         JSON.stringify({ error: 'Forbidden: Business access required' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } },
@@ -68,9 +74,17 @@ export const handler = define.handlers({
           { status: 400, headers: { 'Content-Type': 'application/json' } },
         )
       }
+      if (json.imageUrl) {
+        return new Response(
+          JSON.stringify({
+            error: 'Image must be uploaded via multipart/form-data',
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        )
+      }
       title = (json.title as string) || ''
       body = (json.body as string) || undefined
-      imageUrl = (json.imageUrl as string) || undefined
+      imageUrl = undefined
     }
 
     if (!title.trim()) {
@@ -101,14 +115,24 @@ export const handler = define.handlers({
       isVisible: false,
     }).returning()
 
-    await refreshFeedView(db)
+    try {
+      await refreshFeedView(db)
+    } catch (err) {
+      console.error('Failed to refresh feed view after post creation:', err)
+    }
 
     return Response.json(post, { status: 201 })
   },
 
   async GET(ctx) {
     const user = ctx.state.user
-    if (!user || (user.role !== 'business' && user.role !== 'admin')) {
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
+    if (user.role !== 'business') {
       return new Response(
         JSON.stringify({ error: 'Forbidden: Business access required' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } },

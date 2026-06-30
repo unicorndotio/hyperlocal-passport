@@ -74,11 +74,12 @@ export default function PassportCover({
   }
 
   return (
-    <div class='relative min-h-[420px]' onClick={handleToggle}>
+    <div class='relative min-h-[420px]'>
       <div
         class='absolute inset-0 z-10 transition-all duration-500 ease-in-out cursor-pointer
           data-[open]:-translate-y-full data-[open]:opacity-0 data-[open]:pointer-events-none'
         data-open={isOpen.value ? '' : undefined}
+        onClick={handleToggle}
       >
         <div class='h-full rounded-[2.5rem] bg-gradient-to-br from-[#0f172a] via-[#1e3a5f] to-[#1a2a6c] p-8 shadow-2xl ring-1 ring-white/10 flex flex-col justify-between'>
           <div>

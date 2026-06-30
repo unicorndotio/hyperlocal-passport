@@ -142,31 +142,31 @@ if (Deno.env.get('PG_CONNECTION')) {
           )
         })
 
-        await t.step('creates post with all optional fields', async () => {
-          const req = new Request('http://localhost/api/posts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              title: 'Full Post',
-              body: 'This is the post body',
-              imageUrl: 'https://example.com/image.jpg',
-            }),
-          })
-          const res = await typedPostsHandler.POST({
-            req,
-            state: { user: { id: userId, role: 'business' }, session: null },
-          })
-          assertEquals(res.status, 201)
+        await t.step(
+          'rejects imageUrl in JSON body (must use multipart)',
+          async () => {
+            const req = new Request('http://localhost/api/posts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: 'Full Post',
+                body: 'This is the post body',
+                imageUrl: 'https://example.com/image.jpg',
+              }),
+            })
+            const res = await typedPostsHandler.POST({
+              req,
+              state: { user: { id: userId, role: 'business' }, session: null },
+            })
+            assertEquals(res.status, 400)
 
-          const post = await res.json()
-          assertEquals(post.title, 'Full Post')
-          assertEquals(post.body, 'This is the post body')
-          assertEquals(post.imageUrl, 'https://example.com/image.jpg')
-
-          await db.delete(schema.merchantPosts).where(
-            eq(schema.merchantPosts.id, post.id),
-          )
-        })
+            const data = await res.json()
+            assertEquals(
+              data.error,
+              'Image must be uploaded via multipart/form-data',
+            )
+          },
+        )
 
         await t.step(
           'creates post with isVisible=false by default',
@@ -477,6 +477,32 @@ if (Deno.env.get('PG_CONNECTION')) {
         })
 
         await t.step(
+          'rejects imageUrl in PUT JSON body',
+          async () => {
+            const req = new Request(`http://localhost/api/posts/${postId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: 'Still Visible',
+                imageUrl: 'https://evil.example.com/tracker.gif',
+              }),
+            })
+            const res = await typedPostHandler.PUT({
+              req,
+              state: { user: { id: userId, role: 'business' }, session: null },
+              params: { id: postId },
+            })
+            assertEquals(res.status, 400)
+
+            const data = await res.json()
+            assertEquals(
+              data.error,
+              'Image must be updated via multipart/form-data',
+            )
+          },
+        )
+
+        await t.step(
           'returns 403 when updating another business post',
           async () => {
             const req = new Request(
@@ -642,6 +668,162 @@ if (Deno.env.get('PG_CONNECTION')) {
   })
 
   Deno.test({
+    name:
+      'DELETE /api/posts/[id] - post is removed from feed_events after deletion',
+    sanitizeOps: false,
+    sanitizeResources: false,
+    fn: async (t) => {
+      const userId = 'post-del-mv-user-' + crypto.randomUUID()
+      const businessId = 'post-del-mv-biz-' + crypto.randomUUID()
+
+      try {
+        await db.insert(schema.users).values({
+          id: userId,
+          email: `post-del-mv-${userId}@test.com`,
+          name: 'Delete MV User',
+          role: 'business',
+          emailVerified: true,
+        })
+
+        await db.insert(schema.businesses).values({
+          id: businessId,
+          userId,
+          name: 'Delete MV Biz',
+          companyName: 'Delete MV Biz Co',
+          cnpj: 'DELMV' + crypto.randomUUID().slice(0, 10),
+          category: 'test',
+          logoUrl: '/logo.png',
+          isActive: true,
+        })
+
+        const postId = crypto.randomUUID()
+
+        await db.insert(schema.merchantPosts).values({
+          id: postId,
+          businessId,
+          title: 'To Delete from Feed',
+          body: 'Will be removed from feed_events',
+          isVisible: false,
+        })
+
+        await refreshFeedView(db)
+
+        await t.step(
+          'post is present in feed_events before deletion',
+          async () => {
+            const result = await db.execute(sql`
+              SELECT * FROM feed_events WHERE id = ${postId + '-merchant'}
+            `)
+            assertEquals(result.rows.length, 1)
+            assertEquals(result.rows[0].type, 'merchant_post')
+            assertEquals(result.rows[0].title, 'To Delete from Feed')
+          },
+        )
+
+        await t.step(
+          'post is removed from feed_events after deletion',
+          async () => {
+            const req = new Request(`http://localhost/api/posts/${postId}`, {
+              method: 'DELETE',
+            })
+            const res = await typedPostHandler.DELETE({
+              req,
+              state: {
+                user: { id: userId, role: 'business' },
+                session: null,
+              },
+              params: { id: postId },
+            })
+            assertEquals(res.status, 204)
+
+            const result = await db.execute(sql`
+              SELECT * FROM feed_events WHERE id = ${postId + '-merchant'}
+            `)
+            assertEquals(result.rows.length, 0)
+          },
+        )
+      } finally {
+        await db.delete(schema.merchantPosts)
+        await db.delete(schema.businesses).where(
+          eq(schema.businesses.id, businessId),
+        )
+        await db.delete(schema.users).where(eq(schema.users.id, userId))
+      }
+    },
+  })
+
+  Deno.test({
+    name: 'DELETE /api/posts/[id] - MV refresh failure does not block deletion',
+    sanitizeOps: false,
+    sanitizeResources: false,
+    fn: async () => {
+      const userId = 'del-mv-fail-user-' + crypto.randomUUID()
+      const businessId = 'del-mv-fail-biz-' + crypto.randomUUID()
+      const postId = crypto.randomUUID()
+
+      const originalExecute = db.execute.bind(db)
+
+      try {
+        await db.insert(schema.users).values({
+          id: userId,
+          email: `del-mv-fail-${userId}@test.com`,
+          name: 'Del MV Fail User',
+          role: 'business',
+          emailVerified: true,
+        })
+
+        await db.insert(schema.businesses).values({
+          id: businessId,
+          userId,
+          name: 'Del MV Fail Biz',
+          companyName: 'Del MV Fail Biz Co',
+          cnpj: 'DMVFL' + crypto.randomUUID().slice(0, 10),
+          category: 'test',
+          logoUrl: '/logo.png',
+          isActive: true,
+        })
+
+        await db.insert(schema.merchantPosts).values({
+          id: postId,
+          businessId,
+          title: 'Delete Despite Fail',
+          body: 'Should delete even if MV refresh fails',
+          isVisible: false,
+        })
+
+        db.execute = ((query: unknown) => {
+          const sqlStr = String(query)
+          if (sqlStr.includes('REFRESH MATERIALIZED VIEW')) {
+            throw new Error('Simulated MV refresh failure')
+          }
+          return originalExecute(query as Parameters<typeof db.execute>[0])
+        }) as typeof db.execute
+
+        const req = new Request(`http://localhost/api/posts/${postId}`, {
+          method: 'DELETE',
+        })
+        const res = await typedPostHandler.DELETE({
+          req,
+          state: { user: { id: userId, role: 'business' }, session: null },
+          params: { id: postId },
+        })
+        assertEquals(res.status, 204)
+
+        const [stored] = await db.select().from(schema.merchantPosts)
+          .where(eq(schema.merchantPosts.id, postId)).limit(1)
+        assertEquals(stored, undefined)
+      } finally {
+        db.execute = originalExecute
+        await db.delete(schema.merchantPosts)
+        await db.delete(schema.businesses).where(
+          eq(schema.businesses.id, businessId),
+        )
+        await db.delete(schema.users).where(eq(schema.users.id, userId))
+      }
+    },
+  })
+
+  Deno.test({
     name: 'POST /api/posts - triggers MV refresh and post appears in feed',
     sanitizeOps: false,
     sanitizeResources: false,
@@ -760,6 +942,137 @@ if (Deno.env.get('PG_CONNECTION')) {
           },
         )
       } finally {
+        await db.delete(schema.merchantPosts)
+        await db.delete(schema.businesses).where(
+          eq(schema.businesses.id, businessId),
+        )
+        await db.delete(schema.users).where(eq(schema.users.id, userId))
+      }
+    },
+  })
+  Deno.test({
+    name: 'POST /api/posts - MV refresh failure does not block creation',
+    sanitizeOps: false,
+    sanitizeResources: false,
+    fn: async () => {
+      const userId = 'post-mv-fail-user-' + crypto.randomUUID()
+      const businessId = 'post-mv-fail-biz-' + crypto.randomUUID()
+
+      const originalExecute = db.execute.bind(db)
+
+      try {
+        await db.insert(schema.users).values({
+          id: userId,
+          email: `post-mv-fail-${userId}@test.com`,
+          name: 'MV Fail User',
+          role: 'business',
+          emailVerified: true,
+        })
+
+        await db.insert(schema.businesses).values({
+          id: businessId,
+          userId,
+          name: 'MV Fail Biz',
+          companyName: 'MV Fail Biz Co',
+          cnpj: 'MVFAIL' + crypto.randomUUID().slice(0, 10),
+          category: 'test',
+          logoUrl: '/logo.png',
+          isActive: true,
+        })
+
+        db.execute = ((query: unknown) => {
+          const sqlStr = String(query)
+          if (sqlStr.includes('REFRESH MATERIALIZED VIEW')) {
+            throw new Error('Simulated MV refresh failure')
+          }
+          return originalExecute(query as Parameters<typeof db.execute>[0])
+        }) as typeof db.execute
+
+        const req = new Request('http://localhost/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Fail Test Post' }),
+        })
+        const res = await typedPostsHandler.POST({
+          req,
+          state: { user: { id: userId, role: 'business' }, session: null },
+        })
+        assertEquals(res.status, 201)
+        const data = await res.json()
+        assertEquals(data.title, 'Fail Test Post')
+      } finally {
+        db.execute = originalExecute
+        await db.delete(schema.merchantPosts)
+        await db.delete(schema.businesses).where(
+          eq(schema.businesses.id, businessId),
+        )
+        await db.delete(schema.users).where(eq(schema.users.id, userId))
+      }
+    },
+  })
+
+  Deno.test({
+    name: 'PUT /api/posts/[id] - MV refresh failure does not block update',
+    sanitizeOps: false,
+    sanitizeResources: false,
+    fn: async () => {
+      const userId = 'put-mv-fail-user-' + crypto.randomUUID()
+      const businessId = 'put-mv-fail-biz-' + crypto.randomUUID()
+      const postId = crypto.randomUUID()
+
+      const originalExecute = db.execute.bind(db)
+
+      try {
+        await db.insert(schema.users).values({
+          id: userId,
+          email: `put-mv-fail-${userId}@test.com`,
+          name: 'PUT MV Fail User',
+          role: 'business',
+          emailVerified: true,
+        })
+
+        await db.insert(schema.businesses).values({
+          id: businessId,
+          userId,
+          name: 'PUT MV Fail Biz',
+          companyName: 'PUT MV Fail Biz Co',
+          cnpj: 'PMVFL' + crypto.randomUUID().slice(0, 10),
+          category: 'test',
+          logoUrl: '/logo.png',
+          isActive: true,
+        })
+
+        await db.insert(schema.merchantPosts).values({
+          id: postId,
+          businessId,
+          title: 'Original',
+          body: 'Original body',
+          isVisible: false,
+        })
+
+        db.execute = ((query: unknown) => {
+          const sqlStr = String(query)
+          if (sqlStr.includes('REFRESH MATERIALIZED VIEW')) {
+            throw new Error('Simulated MV refresh failure')
+          }
+          return originalExecute(query as Parameters<typeof db.execute>[0])
+        }) as typeof db.execute
+
+        const req = new Request(`http://localhost/api/posts/${postId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Updated Despite Fail' }),
+        })
+        const res = await typedPostHandler.PUT({
+          req,
+          state: { user: { id: userId, role: 'business' }, session: null },
+          params: { id: postId },
+        })
+        assertEquals(res.status, 200)
+        const data = await res.json()
+        assertEquals(data.title, 'Updated Despite Fail')
+      } finally {
+        db.execute = originalExecute
         await db.delete(schema.merchantPosts)
         await db.delete(schema.businesses).where(
           eq(schema.businesses.id, businessId),

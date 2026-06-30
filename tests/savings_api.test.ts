@@ -2,9 +2,7 @@ import {
   assertEquals,
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
-import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
 import { handler as savingsHandler } from '../routes/api/users/me/savings.ts'
-import { auth } from '../lib/auth.ts'
 import { db } from '../lib/db.ts'
 import * as schema from '../db/schema.ts'
 import { eq } from 'drizzle-orm'
@@ -46,47 +44,49 @@ if (Deno.env.get('PG_CONNECTION')) {
         isActive: true,
       })
 
-      const getSessionStub = stub(
-        auth.api,
-        'getSession',
-        () =>
-          Promise.resolve({
-            user: {
-              id: userId,
-              role: 'resident',
-              email: `${userId}@test.com`,
-              emailVerified: true,
-              name: 'Savings User',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            session: {
-              id: 'sess_sav',
-              userId,
-              expiresAt: new Date(Date.now() + 3600000),
-              token: 'token_sav',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          }),
-      )
-
       try {
-        await t.step('returns zero totals when no used redemptions', async () => {
-          const res = await (savingsHandler as unknown as {
-            GET: (ctx: { req: Request }) => Promise<Response>
-          }).GET({
-            req: new Request('http://localhost:8000/api/users/me/savings'),
-          })
+        await t.step(
+          'returns zero totals when no used redemptions',
+          async () => {
+            const res = await (savingsHandler as unknown as {
+              GET: (ctx: {
+                req: Request
+                state: {
+                  user: Record<string, unknown> | null
+                  session: Record<string, unknown> | null
+                }
+              }) => Promise<Response>
+            }).GET({
+              req: new Request('http://localhost:8000/api/users/me/savings'),
+              state: {
+                user: {
+                  id: userId,
+                  role: 'resident',
+                  email: `${userId}@test.com`,
+                  emailVerified: true,
+                  name: 'Savings User',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+                session: {
+                  id: 'sess_sav',
+                  userId,
+                  expiresAt: new Date(Date.now() + 3600000),
+                  token: 'token_sav',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              },
+            })
 
-          assertEquals(res.status, 200)
-          const body = await res.json()
-          assertEquals(body.totalSavingsCents, 0)
-          assertEquals(body.totalRedemptions, 0)
-          assertEquals(body.byBusiness.length, 0)
-        })
+            assertEquals(res.status, 200)
+            const body = await res.json()
+            assertEquals(body.totalSavingsCents, 0)
+            assertEquals(body.totalRedemptions, 0)
+            assertEquals(body.byBusiness.length, 0)
+          },
+        )
       } finally {
-        getSessionStub.restore()
         await db.delete(schema.coupons).where(eq(schema.coupons.id, couponId))
         await db.delete(schema.businesses).where(
           eq(schema.businesses.id, businessId),
@@ -156,39 +156,39 @@ if (Deno.env.get('PG_CONNECTION')) {
         timestamp: new Date(),
       })
 
-      const getSessionStub = stub(
-        auth.api,
-        'getSession',
-        () =>
-          Promise.resolve({
-            user: {
-              id: userId,
-              role: 'resident',
-              email: `${userId}@test.com`,
-              emailVerified: true,
-              name: 'Used User',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            session: {
-              id: 'sess_used',
-              userId,
-              expiresAt: new Date(Date.now() + 3600000),
-              token: 'token_used',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          }),
-      )
-
       try {
         await t.step(
           'returns correct totalSavingsCents and totalRedemptions',
           async () => {
             const res = await (savingsHandler as unknown as {
-              GET: (ctx: { req: Request }) => Promise<Response>
+              GET: (ctx: {
+                req: Request
+                state: {
+                  user: Record<string, unknown> | null
+                  session: Record<string, unknown> | null
+                }
+              }) => Promise<Response>
             }).GET({
               req: new Request('http://localhost:8000/api/users/me/savings'),
+              state: {
+                user: {
+                  id: userId,
+                  role: 'resident',
+                  email: `${userId}@test.com`,
+                  emailVerified: true,
+                  name: 'Used User',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+                session: {
+                  id: 'sess_used',
+                  userId,
+                  expiresAt: new Date(Date.now() + 3600000),
+                  token: 'token_used',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              },
             })
 
             assertEquals(res.status, 200)
@@ -202,7 +202,6 @@ if (Deno.env.get('PG_CONNECTION')) {
           },
         )
       } finally {
-        getSessionStub.restore()
         await db.delete(schema.transactions).where(
           eq(schema.transactions.id, transactionId),
         )
@@ -326,39 +325,39 @@ if (Deno.env.get('PG_CONNECTION')) {
         timestamp: new Date(),
       })
 
-      const getSessionStub = stub(
-        auth.api,
-        'getSession',
-        () =>
-          Promise.resolve({
-            user: {
-              id: userId,
-              role: 'resident',
-              email: `${userId}@test.com`,
-              emailVerified: true,
-              name: 'Multi User',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            session: {
-              id: 'sess_multi',
-              userId,
-              expiresAt: new Date(Date.now() + 3600000),
-              token: 'token_multi',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          }),
-      )
-
       try {
         await t.step(
           'returns correct per-business breakdown with names and counts',
           async () => {
             const res = await (savingsHandler as unknown as {
-              GET: (ctx: { req: Request }) => Promise<Response>
+              GET: (ctx: {
+                req: Request
+                state: {
+                  user: Record<string, unknown> | null
+                  session: Record<string, unknown> | null
+                }
+              }) => Promise<Response>
             }).GET({
               req: new Request('http://localhost:8000/api/users/me/savings'),
+              state: {
+                user: {
+                  id: userId,
+                  role: 'resident',
+                  email: `${userId}@test.com`,
+                  emailVerified: true,
+                  name: 'Multi User',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+                session: {
+                  id: 'sess_multi',
+                  userId,
+                  expiresAt: new Date(Date.now() + 3600000),
+                  token: 'token_multi',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              },
             })
 
             assertEquals(res.status, 200)
@@ -385,7 +384,6 @@ if (Deno.env.get('PG_CONNECTION')) {
           },
         )
       } finally {
-        getSessionStub.restore()
         await db.delete(schema.transactions).where(
           eq(schema.transactions.id, txn1Id),
         )
@@ -415,23 +413,20 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeOps: false,
     sanitizeResources: false,
     fn: async () => {
-      const getSessionStub = stub(
-        auth.api,
-        'getSession',
-        () => Promise.resolve(null),
-      )
+      const res = await (savingsHandler as unknown as {
+        GET: (ctx: {
+          req: Request
+          state: {
+            user: Record<string, unknown> | null
+            session: Record<string, unknown> | null
+          }
+        }) => Promise<Response>
+      }).GET({
+        req: new Request('http://localhost:8000/api/users/me/savings'),
+        state: { user: null, session: null },
+      })
 
-      try {
-        const res = await (savingsHandler as unknown as {
-          GET: (ctx: { req: Request }) => Promise<Response>
-        }).GET({
-          req: new Request('http://localhost:8000/api/users/me/savings'),
-        })
-
-        assertEquals(res.status, 401)
-      } finally {
-        getSessionStub.restore()
-      }
+      assertEquals(res.status, 401)
     },
   })
 
@@ -442,42 +437,38 @@ if (Deno.env.get('PG_CONNECTION')) {
     fn: async () => {
       const userId = 'sav_biz_role_' + Math.random().toString(36).slice(2)
 
-      const getSessionStub = stub(
-        auth.api,
-        'getSession',
-        () =>
-          Promise.resolve({
-            user: {
-              id: userId,
-              role: 'business',
-              email: `${userId}@test.com`,
-              emailVerified: true,
-              name: 'Biz User',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            session: {
-              id: 'sess_biz_role',
-              userId,
-              expiresAt: new Date(Date.now() + 3600000),
-              token: 'token_biz_role',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          }),
-      )
+      const res = await (savingsHandler as unknown as {
+        GET: (ctx: {
+          req: Request
+          state: {
+            user: Record<string, unknown> | null
+            session: Record<string, unknown> | null
+          }
+        }) => Promise<Response>
+      }).GET({
+        req: new Request('http://localhost:8000/api/users/me/savings'),
+        state: {
+          user: {
+            id: userId,
+            role: 'business',
+            email: `${userId}@test.com`,
+            emailVerified: true,
+            name: 'Biz User',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          session: {
+            id: 'sess_biz_role',
+            userId,
+            expiresAt: new Date(Date.now() + 3600000),
+            token: 'token_biz_role',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
+      })
 
-      try {
-        const res = await (savingsHandler as unknown as {
-          GET: (ctx: { req: Request }) => Promise<Response>
-        }).GET({
-          req: new Request('http://localhost:8000/api/users/me/savings'),
-        })
-
-        assertEquals(res.status, 403)
-      } finally {
-        getSessionStub.restore()
-      }
+      assertEquals(res.status, 403)
     },
   })
 } else {

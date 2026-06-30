@@ -1,5 +1,4 @@
 import { define } from '@/utils.ts'
-import { auth } from '@/lib/auth.ts'
 import { db } from '@/lib/db.ts'
 import * as schema from '@/db/schema.ts'
 import { desc, eq } from 'drizzle-orm'
@@ -15,9 +14,9 @@ import {
 } from '@/components/ui/card.tsx'
 
 export default define.page(async function BusinessPostsPage(ctx) {
-  const session = await auth.api.getSession({ headers: ctx.req.headers })
+  const user = ctx.state.user
 
-  if (!session || session.user.role !== 'business') {
+  if (!user || user.role !== 'business') {
     return new Response(null, {
       status: 302,
       headers: { Location: '/login' },
@@ -25,8 +24,8 @@ export default define.page(async function BusinessPostsPage(ctx) {
   }
 
   const [business] = await db.select().from(schema.businesses).where(
-    eq(schema.businesses.userId, session.user.id),
-  ).limit(1) as unknown as Business[]
+    eq(schema.businesses.userId, user.id),
+  ).limit(1) as unknown as [Business | undefined]
 
   if (!business) {
     return (

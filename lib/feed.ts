@@ -6,7 +6,6 @@ export type FeedEventType =
   | 'merchant_post'
   | 'coupon_released'
   | 'savings_notice'
-  | 'admin_announcement'
 
 export interface FeedEvent {
   id: string
@@ -48,7 +47,10 @@ export async function queryFeed(
   cursor?: string,
   limit?: number,
 ): Promise<FeedQueryResult> {
-  const pageSize = Math.min(Math.max(limit ?? 20, 1), 100)
+  const safeLimit = typeof limit === 'number' && Number.isFinite(limit)
+    ? limit
+    : 20
+  const pageSize = Math.min(Math.max(safeLimit, 1), 100)
   const cursorDate = parseCursor(cursor)
   const events: FeedEvent[] = []
 

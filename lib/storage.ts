@@ -117,14 +117,14 @@ export async function uploadFile(
   }
 
   if (
-    !allowedExtensions.includes(ext) &&
+    !allowedExtensions.includes(ext) ||
     (mimeType && !allowedMimeTypes.includes(mimeType))
   ) {
     throw new Error('Invalid file type')
   }
 
   // Validate file size for images (JPEG/PNG)
-  const isImage = ext === 'jpg' || ext === 'jpeg' || ext === 'png'
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
   if (isImage && file.size > MAX_IMAGE_SIZE_BYTES) {
     throw new Error(
       `File too large: maximum allowed size is ${
@@ -141,9 +141,9 @@ export async function uploadFile(
   const arrayBuffer = await file.arrayBuffer()
   await Deno.writeFile(filePath, new Uint8Array(arrayBuffer))
 
-  // Fire-and-forget optimization for JPEG/PNG images
+  // Optimize JPEG/PNG images before returning
   if (isImage && !options?.skipOptimization) {
-    void optimizeImage(uploadsDir, filename)
+    await optimizeImage(uploadsDir, filename)
   }
 
   // Persist access control metadata in PostgreSQL

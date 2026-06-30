@@ -2,7 +2,7 @@ import { define } from '../utils.ts'
 import { page } from 'fresh'
 import { db } from '../lib/db.ts'
 import { businesses } from '../db/schema.ts'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { Business } from '../lib/business.ts'
 import { Head } from 'fresh/runtime'
 import {
@@ -17,9 +17,31 @@ import BottomNav from '../components/BottomNav.tsx'
 
 export const handler = define.handlers({
   async GET(ctx) {
-    const rows = await db.select()
+    const url = new URL(ctx.req.url)
+    const category = url.searchParams.get('category')
+
+    // Lightweight query: only categories for building the filter chips
+    const categoryRows = await db.select({ category: businesses.category })
       .from(businesses)
       .where(eq(businesses.isActive, true))
+
+    const allCategories = [
+      'Todos',
+      ...new Set(categoryRows.map((r) => r.category)),
+    ].sort()
+    const selectedCategory = category || 'Todos'
+
+    // Main query: apply category filter in SQL when specified
+    const rows = await db.select()
+      .from(businesses)
+      .where(
+        category && category !== 'Todos'
+          ? and(
+            eq(businesses.isActive, true),
+            eq(businesses.category, category),
+          )
+          : eq(businesses.isActive, true),
+      )
 
     const businessesList: Business[] = rows.map((row) => ({
       id: row.id,
@@ -37,23 +59,8 @@ export const handler = define.handlers({
       hasSeenMerchantOnboarding: row.hasSeenMerchantOnboarding ?? undefined,
     }))
 
-    const url = new URL(ctx.req.url)
-    const category = url.searchParams.get('category')
-
-    let filtered = businessesList
-    if (category && category !== 'Todos') {
-      filtered = businessesList.filter((b) => b.category === category)
-    }
-
-    // Extract unique categories from all businesses
-    const allCategories = [
-      'Todos',
-      ...new Set(businessesList.map((b) => b.category)),
-    ].sort()
-    const selectedCategory = category || 'Todos'
-
     return page({
-      businesses: filtered,
+      businesses: businessesList,
       categories: allCategories,
       selectedCategory,
       user: ctx.state.user,

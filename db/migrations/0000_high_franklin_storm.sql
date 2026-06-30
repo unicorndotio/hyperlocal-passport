@@ -198,3 +198,5 @@ WHERE c.is_active = true
 ORDER BY created_at DESC;
 --> statement-breakpoint
 CREATE UNIQUE INDEX idx_feed_events_id ON feed_events (id);
+--> statement-breakpoint
+CREATE INDEX idx_feed_events_created_at ON feed_events (created_at DESC);

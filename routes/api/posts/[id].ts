@@ -7,7 +7,13 @@ import { refreshFeedView } from '../../../lib/feed.ts'
 export const handler = define.handlers({
   async PUT(ctx) {
     const user = ctx.state.user
-    if (!user || (user.role !== 'business' && user.role !== 'admin')) {
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
+    if (user.role !== 'business') {
       return new Response(
         JSON.stringify({ error: 'Forbidden: Business access required' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } },
@@ -53,7 +59,15 @@ export const handler = define.handlers({
 
     const title = json.title as string | undefined
     const body = json.body as string | undefined
-    const imageUrl = json.imageUrl as string | undefined
+
+    if (json.imageUrl !== undefined) {
+      return new Response(
+        JSON.stringify({
+          error: 'Image must be updated via multipart/form-data',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
 
     if (title !== undefined && !title.trim()) {
       return new Response(
@@ -71,7 +85,7 @@ export const handler = define.handlers({
     const updateData: Record<string, unknown> = {}
     if (title !== undefined) updateData.title = title.trim()
     if (body !== undefined) updateData.body = body || null
-    if (imageUrl !== undefined) updateData.imageUrl = imageUrl || null
+    if (json.removeImage === true) updateData.imageUrl = null
     updateData.updatedAt = new Date()
 
     const [updated] = await db.update(schema.merchantPosts)
@@ -79,14 +93,24 @@ export const handler = define.handlers({
       .where(eq(schema.merchantPosts.id, postId))
       .returning()
 
-    await refreshFeedView(db)
+    try {
+      await refreshFeedView(db)
+    } catch (err) {
+      console.error('Failed to refresh feed view after post update:', err)
+    }
 
     return Response.json(updated)
   },
 
   async DELETE(ctx) {
     const user = ctx.state.user
-    if (!user || (user.role !== 'business' && user.role !== 'admin')) {
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
+    if (user.role !== 'business') {
       return new Response(
         JSON.stringify({ error: 'Forbidden: Business access required' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } },
@@ -122,6 +146,12 @@ export const handler = define.handlers({
 
     await db.delete(schema.merchantPosts)
       .where(eq(schema.merchantPosts.id, postId))
+
+    try {
+      await refreshFeedView(db)
+    } catch (err) {
+      console.error('Failed to refresh feed view after post deletion:', err)
+    }
 
     return new Response(null, { status: 204 })
   },

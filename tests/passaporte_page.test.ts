@@ -2,9 +2,7 @@ import {
   assertEquals,
   assertExists,
 } from 'https://deno.land/std@0.224.0/assert/mod.ts'
-import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts'
 import { handler as passaporteHandler } from '../routes/passaporte.tsx'
-import { auth } from '../lib/auth.ts'
 import { db } from '../lib/db.ts'
 import * as schema from '../db/schema.ts'
 import { eq } from 'drizzle-orm'
@@ -77,31 +75,6 @@ if (Deno.env.get('PG_CONNECTION')) {
         redeemedAt: new Date(),
       })
 
-      const getSessionStub = stub(
-        auth.api,
-        'getSession',
-        () =>
-          Promise.resolve({
-            user: {
-              id: userId,
-              role: 'resident',
-              email: userId + '@test.com',
-              name: 'Passaporte User',
-              emailVerified: true,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            session: {
-              id: 'sess_pass',
-              userId,
-              expiresAt: new Date(Date.now() + 3600000),
-              token: 'token_pass',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          }),
-      )
-
       try {
         await t.step(
           'returns active redemptions with businessName',
@@ -109,7 +82,25 @@ if (Deno.env.get('PG_CONNECTION')) {
             const res =
               await (passaporteHandler as unknown as PassaporteHandler).GET({
                 req: new Request('http://localhost:8000/passaporte'),
-                state: {},
+                state: {
+                  user: {
+                    id: userId,
+                    role: 'resident',
+                    email: userId + '@test.com',
+                    name: 'Passaporte User',
+                    emailVerified: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                  },
+                  session: {
+                    id: 'sess_pass',
+                    userId,
+                    expiresAt: new Date(Date.now() + 3600000),
+                    token: 'token_pass',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                  },
+                },
                 redirect: mockRedirect,
               })
 
@@ -130,7 +121,6 @@ if (Deno.env.get('PG_CONNECTION')) {
           },
         )
       } finally {
-        getSessionStub.restore()
         await db.delete(schema.redemptions).where(
           eq(schema.redemptions.id, redemptionId),
         )
@@ -190,37 +180,30 @@ if (Deno.env.get('PG_CONNECTION')) {
         redeemedAt: new Date(),
       })
 
-      const getSessionStub = stub(
-        auth.api,
-        'getSession',
-        () =>
-          Promise.resolve({
-            user: {
-              id: userId,
-              role: 'resident',
-              email: userId + '@test.com',
-              name: 'Empty User',
-              emailVerified: true,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            session: {
-              id: 'sess_empty',
-              userId,
-              expiresAt: new Date(Date.now() + 3600000),
-              token: 'token_empty',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          }),
-      )
-
       try {
         await t.step('returns empty redemptions array', async () => {
           const res = await (passaporteHandler as unknown as PassaporteHandler)
             .GET({
               req: new Request('http://localhost:8000/passaporte'),
-              state: {},
+              state: {
+                user: {
+                  id: userId,
+                  role: 'resident',
+                  email: userId + '@test.com',
+                  name: 'Empty User',
+                  emailVerified: true,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+                session: {
+                  id: 'sess_empty',
+                  userId,
+                  expiresAt: new Date(Date.now() + 3600000),
+                  token: 'token_empty',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              },
               redirect: mockRedirect,
             })
 
@@ -233,7 +216,6 @@ if (Deno.env.get('PG_CONNECTION')) {
           assertEquals(res.data.redemptions.length, 0)
         })
       } finally {
-        getSessionStub.restore()
         await db.delete(schema.redemptions).where(
           eq(schema.redemptions.id, redemptionId),
         )
@@ -250,29 +232,19 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeOps: false,
     sanitizeResources: false,
     fn: async () => {
-      const getSessionStub = stub(
-        auth.api,
-        'getSession',
-        () => Promise.resolve(null),
-      )
+      const res = await (passaporteHandler as unknown as PassaporteHandler)
+        .GET({
+          req: new Request('http://localhost:8000/passaporte'),
+          state: { user: null, session: null },
+          redirect: mockRedirect,
+        })
 
-      try {
-        const res = await (passaporteHandler as unknown as PassaporteHandler)
-          .GET({
-            req: new Request('http://localhost:8000/passaporte'),
-            state: {},
-            redirect: mockRedirect,
-          })
-
-        if (!(res instanceof Response)) {
-          throw new Error('Expected Response redirect, got page data')
-        }
-
-        assertEquals(res.status, 303)
-        assertEquals(res.headers.get('location'), '/login')
-      } finally {
-        getSessionStub.restore()
+      if (!(res instanceof Response)) {
+        throw new Error('Expected Response redirect, got page data')
       }
+
+      assertEquals(res.status, 303)
+      assertEquals(res.headers.get('location'), '/login')
     },
   })
 } else {

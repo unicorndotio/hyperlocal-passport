@@ -13,7 +13,10 @@ export const handler = define.handlers({
     const url = new URL(ctx.req.url)
     const cursor = url.searchParams.get('cursor') || undefined
     const limitParam = url.searchParams.get('limit')
-    const limit = limitParam ? parseInt(limitParam, 10) : undefined
+    const parsedLimit = limitParam ? parseInt(limitParam, 10) : NaN
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0
+      ? parsedLimit
+      : undefined
     const result = await queryFeed(db, userId, cursor, limit)
     return page({
       events: result.events,
@@ -30,7 +33,8 @@ export default define.page<typeof handler>(function FeedPage(ctx) {
     <div class='px-4 py-6 max-w-md mx-auto min-h-screen bg-background'>
       <Head>
         <title>Feed - Passaporte Local</title>
-        <style>{`
+        <style>
+          {`
           @keyframes skeleton-pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -39,7 +43,8 @@ export default define.page<typeof handler>(function FeedPage(ctx) {
             animation: skeleton-pulse 1.5s ease-in-out infinite;
             border-radius: 4px;
           }
-        `}</style>
+        `}
+        </style>
       </Head>
 
       <div id='feed-skeleton' class='hidden'>
@@ -53,7 +58,9 @@ export default define.page<typeof handler>(function FeedPage(ctx) {
         ))}
       </div>
 
-      <script>{`document.addEventListener('click',function(e){var l=e.target.closest('a');if(l&&l.href&&l.href.startsWith(location.origin)&&!l.hasAttribute('download')){document.getElementById('feed-skeleton')?.classList.remove('hidden')}})`}</script>
+      <script>
+        {`document.addEventListener('click',function(e){var l=e.target.closest('a');if(l&&l.href&&l.href.startsWith(location.origin)&&!l.hasAttribute('download')){document.getElementById('feed-skeleton')?.classList.remove('hidden')}})`}
+      </script>
 
       <header class='mb-8'>
         <h1 class='text-3xl font-bold text-primary mb-2'>Descubra</h1>
@@ -85,7 +92,7 @@ export default define.page<typeof handler>(function FeedPage(ctx) {
               Nenhuma novidade por aqui ainda.
             </p>
             <p class='text-muted-foreground text-xs mt-2'>
-          Fique de olho — em breve novos benefícios aparecerão.
+              Fique de olho — em breve novos benefícios aparecerão.
             </p>
           </div>
         )

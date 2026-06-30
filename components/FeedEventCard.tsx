@@ -11,8 +11,6 @@ export function FeedEventCard({ event }: { event: FeedEvent }) {
       return <CouponReleasedCard event={event} />
     case 'savings_notice':
       return <SavingsNoticeCard event={event} />
-    case 'admin_announcement':
-      return <AdminAnnouncementCard event={event} />
     default:
       return null
   }
@@ -64,9 +62,7 @@ function CouponReleasedCard({ event }: { event: FeedEvent }) {
 }
 
 function SavingsNoticeCard({ event }: { event: FeedEvent }) {
-  const savings = event.amountCents
-    ? formatBRL(event.amountCents)
-    : null
+  const savings = event.amountCents ? formatBRL(event.amountCents) : null
 
   return (
     <Card
@@ -79,32 +75,10 @@ function SavingsNoticeCard({ event }: { event: FeedEvent }) {
         </p>
         <p class='text-muted-foreground text-xs leading-relaxed'>
           Você economizou{' '}
-          {savings && (
-            <span class='text-success font-bold'>{savings}</span>
-          )}{' '}
-          na {event.businessName}
+          {savings && <span class='text-success font-bold'>{savings}</span>} na
+          {' '}
+          {event.businessName}
         </p>
-      </CardContent>
-    </Card>
-  )
-}
-
-function AdminAnnouncementCard({ event }: { event: FeedEvent }) {
-  return (
-    <Card
-      size='sm'
-      className='border-none shadow-sm bg-card overflow-hidden border-l-4 border-l-primary'
-    >
-      <CardContent className='px-4 py-3'>
-        <p class='text-xs font-bold text-primary uppercase tracking-wider mb-1'>
-          Aviso
-        </p>
-        <h3 class='font-bold text-foreground text-sm mb-1'>{event.title}</h3>
-        {event.description && (
-          <p class='text-muted-foreground text-xs leading-relaxed'>
-            {event.description}
-          </p>
-        )}
       </CardContent>
     </Card>
   )
