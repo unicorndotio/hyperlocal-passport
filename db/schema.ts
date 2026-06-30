@@ -6,7 +6,6 @@ import {
   pgTable,
   text,
   timestamp,
-  uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
@@ -126,8 +125,8 @@ export const couponAnalytics = pgTable('coupon_analytics', {
 
 // ── Merchant Posts ──
 export const merchantPosts = pgTable('merchant_posts', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  businessId: uuid('business_id').notNull().references(() => businesses.id),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  businessId: text('business_id').notNull().references(() => businesses.id),
   title: varchar('title', { length: 255 }).notNull(),
   body: text('body'),
   imageUrl: varchar('image_url', { length: 500 }),
