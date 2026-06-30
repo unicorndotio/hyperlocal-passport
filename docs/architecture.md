@@ -121,6 +121,18 @@ type CouponBehavior =
 ### `file_metadata`
 Tracks uploaded files (resident documents, business logos). Actual bytes on disk at Docker volume mount.
 
+### `merchant_posts`
+| Field | Type | Notes |
+|-------|------|-------|
+| id | string (uuid) | PK |
+| businessId | string | FK → businesses |
+| title | string | Max 255 chars |
+| body | string | |
+| imageUrl | string | Optional uploaded post image |
+| isVisible | boolean | Moderation status |
+| createdAt | timestamp | |
+| updatedAt | timestamp | |
+
 ---
 
 ## Request Lifecycle
@@ -140,11 +152,11 @@ Three roles enforced at middleware + API handler level:
 
 | Role | Access |
 |------|--------|
-| `resident` | Catalog, own profile, coupon redemption, own passport |
-| `business` | Validation panel, own business profile, own coupons |
+| `resident` | Catalog, own profile, coupon redemption, own passport, hybrid feed |
+| `business` | Validation panel, own business profile, own coupons, post publishing |
 | `admin` | Approval queue, full business CRUD, user management |
 
-Ownership validation is enforced at the API level (e.g., a business user can only manage their own coupons and transactions).
+Ownership validation is enforced at the API level (e.g., a business user can only manage their own coupons, transactions, and posts).
 
 ---
 
@@ -152,7 +164,7 @@ Ownership validation is enforced at the API level (e.g., a business user can onl
 
 - Upload endpoint: `POST /api/uploads` (multipart form)
 - Serve endpoint: `GET /api/uploads/:filename`
-- Authorization: logos are public; resident documents restricted to owner + admin
+- Authorization: logos and feed images are public; resident documents restricted to owner + admin
 - Volume mount: `./uploads:/app/uploads` in `docker-compose.yml`
 
 ---
@@ -178,6 +190,35 @@ Cashier scans QR or types code
           → atomic: mark Redemption as used + save Transaction
             → return { discountApplied, finalAmount } to cashier UI
 ```
+
+---
+
+## Hybrid Feed & Materialized View Flow
+
+The Resident Home Feed mixes global posts/events with user-specific savings notifications:
+
+1. **Global Events & Merchant Posts**:
+   Aggregated via a PostgreSQL Materialized View `feed_events`. The view compiles:
+   - System events (e.g. coupon release announcements)
+   - Verified merchant-authored posts (`merchant_posts` where `is_visible` is true)
+   This view is refreshed concurrently (`REFRESH MATERIALIZED VIEW CONCURRENTLY feed_events`) on coupon or merchant post creation/updates to ensure high read performance.
+   
+2. **User Savings notices**:
+   Queried dynamically at request time to show personalized transaction notifications ("Você economizou R$ XX na Padaria").
+   
+3. **Query Engine**:
+   - `queryFeed(db, userId, cursor, limit)` queries global records from `feed_events` matching the pagination cursor.
+   - If a resident `userId` is active, it queries recent personal transactions from the database.
+   - Merges and sorts both sets by timestamp, returning a paginated list of feed events.
+
+---
+
+## Image Optimization Pipeline
+
+For merchant post uploads, images are compressed and optimized on the backend:
+- **Library**: `sharp` via npm.
+- **Constraints**: Max 5MB upload size.
+- **Processing**: Uploaded images are resized to maximum width and compressed to reduce mobile bandwidth usage.
 
 ---
 

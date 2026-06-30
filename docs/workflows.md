@@ -125,6 +125,43 @@ Deno KV's `findMany` falls back to O(N) full-table scans with no secondary index
 
 ---
 
+## Workflow 4 — Resident Frontend V1
+
+**Status:** Completed  
+**Scope:** Replaced the default landing catalog with a hybrid social/system feed, implemented a persistent bottom-nav layout, built a premium Bento-style digital passport with hardware-accelerated animations, added a savings history tracker, created a merchant publishing interface, and set up a server-side image compression pipeline.
+
+### Problems Fixed
+- Residents lacked a single interactive timeline to discover new deals, merchant postings, and local community updates.
+- The digital passport check-out experience felt plain and lacked a premium visual "wow" element.
+- Merchant-authored post images were uncompressed and caused high bandwidth usage.
+
+### What Was Built
+
+**F1 — Hybrid Feed**
+- DB schema table `merchant_posts` to store posts.
+- Materialized View `feed_events` for O(1) query performance on globally public events (coupon releases, admin notices, merchant posts).
+- Concurrent materialized view refreshes (`REFRESH MATERIALIZED VIEW CONCURRENTLY feed_events`) triggered on write operations.
+- Backend feed query engine combining public feed events and user-specific recent savings notifications.
+
+**F2 — Bottom Navigation**
+- Shared `BottomNav` layout component applied to core user pages (Feed, Catalog, Passport), ensuring mobile-first tabbed app UX.
+
+**F3 — Premium Digital Passport & Transitions**
+- Bento-style passport card with a custom cover design.
+- Custom hardware-accelerated 2D transitions (slide-and-fade) that open the passport.
+- Access gating restricting pending and rejected users from opening the passport or generating redemption codes.
+
+**F4 — Merchant Post Publishing & Image Pipeline**
+- Simple post-creation form dashboard for verified business users.
+- Server-side image optimization pipeline using `sharp` to automatically compress and resize merchant images upon upload.
+
+### Key Decisions
+- Public visitors are allowed to view the hybrid feed by bypassing the Better Auth middleware check for `/api/feed` requests.
+- Concurrency was added to materialized view refreshes to prevent write locks during post or coupon publication.
+- Animations were restricted to hardware-accelerated 2D CSS (transform, opacity) to ensure smoothness on lower-end mobile viewports.
+
+---
+
 ## Open Questions (Across All Workflows)
 
 These have not been resolved and should be addressed before or during the relevant future workflow:

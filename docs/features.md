@@ -6,30 +6,41 @@ Complete inventory of features across all shipped workflows.
 
 ## Resident Experience
 
+### Hybrid Feed (Home Page)
+- Dynamic reverse-chronological timeline on the home page.
+- Combines system announcements, new coupon releases, and community transaction event updates ("Maria saved R$ 20 at Padaria do Joao") with merchant-authored text and image posts.
+- Personalized "savings notices" appear for logged-in residents when they make a transaction.
+- Bypasses authentication logic for public visitors so the feed is accessible prior to registration/login.
+
 ### Registration & Onboarding
-- Form collects: name, CPF, email
-- Document uploads: photo ID (RG/CNH) and proof of residence
-- Status transitions: `pending` → `approved` | `rejected`
-- Post-submission screen: "Seu cadastro está em análise… aprovado em até 1 dia útil"
-- Approval email notification on status change
+- Form collects: name, CPF, email, WhatsApp, and document photo uploads.
+- Document uploads: photo ID (RG/CNH) and proof of residence.
+- Status transitions: `pending` → `approved` | `rejected`.
+- Post-submission screen: "Seu cadastro está em análise… aprovado em até 1 dia útil".
+- Approval email notification on status change.
 
 ### Business Catalog
-- Mobile-first category-filtered listing
-- Categories: Casa, Corpo, Alimentação, Esporte (extensible)
-- Each business card shows: logo, name, category, discount percentage (5–30%), description, contact
-- Demand signals: "I want this service" button aggregates neighborhood interest
+- Mobile-first category-filtered listing.
+- Categories: Casa, Corpo, Alimentação, Esporte (extensible).
+- Each business card shows: logo, name, category, discount percentage (5–30%), description, contact.
+- Demand signals: "I want this service" button aggregates neighborhood interest.
 
 ### Digital Passport (QR Code)
-- Authenticated resident dashboard shows a personal QR code
-- QR encodes the resident's CPF-linked identifier
-- Alphanumeric fallback code displayed below QR (e.g. `JUR-X7F9`) for cashiers without a scanner
-- Active and used code history visible to resident
+- Bento-style passport card with a premium Brazilian Passport cover design.
+- Hardware-accelerated 2D slide-and-fade flip transition when tapped to reveal the inner passport pages.
+- Inner passport displays active, unused coupon redemption codes with unique QR representation.
+- Locked state: displays a locked status badge and locks all coupon redemption actions if the resident's status is `pending` or `rejected`.
 
 ### Coupon Redemption
-- Resident selects a coupon from a business page and redeems with one tap
-- System enforces `userMonthlyLimit` and `globalLimit` before generating a code
-- Unique short alphanumeric code + QR generated per redemption
-- Expired and used codes visible in history with status labels
+- Resident selects a coupon from a business page and redeems with one tap.
+- System enforces `userMonthlyLimit` and `globalLimit` before generating a code.
+- Unique short alphanumeric code + QR generated per redemption.
+- Expired and used codes visible in history with status labels.
+
+### Savings History
+- Total savings counter dynamically shows the cumulative value the resident has received from checkouts.
+- Full breakdown of past redemptions, including business name, discount amount, and date.
+- Access is gated to approved residents.
 
 ---
 
@@ -62,6 +73,11 @@ Dispatches by coupon behavior type:
 ### Opening Hours
 - Per-day open/close hours stored on business profile
 - Individual days can be removed (marked as closed)
+
+### Post Publishing
+- Simplified publisher UI form for businesses to write text updates and upload promotional images.
+- Integrates with the backend image optimization pipeline (using `sharp`) to compress image sizes dynamically.
+- Automatically refreshes the global feed materialized view upon creation/updates.
 
 ---
 

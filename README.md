@@ -23,6 +23,7 @@ A closed-loop neighborhood benefits platform:
 | ORM | Drizzle ORM |
 | Database | PostgreSQL |
 | Auth | Better Auth (Drizzle adapter) |
+| Image Processing | `sharp` via npm |
 | Storage | Local filesystem (Docker volume) |
 | Containerization | Docker + Docker Compose |
 
@@ -30,8 +31,8 @@ A closed-loop neighborhood benefits platform:
 
 | Role | What they do |
 |------|-------------|
-| **Resident** | Registers with documents → gets approved → browses catalog → redeems coupons → shows QR at checkout |
-| **Business** | Listed in catalog → cashier validates resident QR/CPF → checkout calculator applies discount |
+| **Resident** | Registers with documents → gets approved → views hybrid feed & catalog → redeems coupons → shows QR at passport card checkout |
+| **Business** | Publishes posts → cashier validates resident QR/CPF → checkout calculator applies discount |
 | **Admin** | Approves/rejects resident registrations → manages business catalog (CRUD) |
 
 ## Running the Project
@@ -49,7 +50,7 @@ Environment variables required: `PG_CONNECTION`, `BETTER_AUTH_SECRET`, `APP_BASE
 
 ## Status
 
-MVP completed (June 2026). The database was migrated from Deno KV to PostgreSQL via Drizzle ORM in the `db-migration` workflow. All core features are live and audited.
+Resident Frontend V1 and Core Database Migration completed (June 2026). The app now features a hybrid resident home feed (merchant posts + system events + personal savings), a persistent bottom navigation system, a premium Bento-style digital passport with hardware-accelerated transitions, and server-side image compression. All features are live, tested, and audited.
 
 ## Docs
 

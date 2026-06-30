@@ -135,6 +135,7 @@ All entities are in PostgreSQL via Drizzle. Key tables:
 | `coupons` | Coupon offers created by businesses |
 | `redemptions` | Active codes generated when a resident redeems a coupon |
 | `transactions` | Completed checkouts recorded by the business cashier |
+| `merchant_posts` | Post announcements published by merchants to the feed |
 | `file_metadata` | Metadata for uploaded documents and logos |
 
 Coupon behavior is stored as a discriminated union (`behavior` field) supporting: `percentage_discount`, `fixed_amount`, `buy_x_get_y`, `item_specific`.
@@ -154,11 +155,16 @@ Coupon behavior is stored as a discriminated union (`behavior` field) supporting
 | GET | `/api/businesses/:id/coupons` | Active coupons for a business |
 | POST | `/api/coupons/:id/redeem` | Generate a unique redemption code |
 | GET | `/api/users/me/redemptions` | Resident's active (unused) codes |
+| GET | `/api/feed` | Query hybrid home feed (events, posts, and personal savings) |
 
 ### Business / Cashier
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/transactions/validate` | Body: `{ code, amountCents }` — validates and records the sale |
+| POST | `/api/posts` | Create a new merchant post (title, body, optional image) |
+| GET | `/api/posts` | List the authenticated business's own posts |
+| PUT | `/api/posts/:id` | Update an existing merchant post |
+| DELETE | `/api/posts/:id` | Delete a merchant post |
 
 ### Admin
 | Method | Path | Description |
