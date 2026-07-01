@@ -24,8 +24,10 @@ export const users = pgTable('user', {
   phone: text('phone'),
   address: text('address'),
   documents: jsonb('documents').default([]),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull()
+    .defaultNow(),
 })
 
 // ── Businesses ──
@@ -46,7 +48,8 @@ export const businesses = pgTable('businesses', {
   hasSeenMerchantOnboarding: boolean('has_seen_merchant_onboarding').default(
     false,
   ),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
 }, (table) => ({
   idxUserId: index('idx_businesses_user_id').on(table.userId),
 }))
@@ -62,7 +65,8 @@ export const coupons = pgTable('coupons', {
   behavior: jsonb('behavior').notNull(),
   restrictions: jsonb('restrictions').notNull(),
   isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
 }, (table) => ({
   idxBusinessId: index('idx_coupons_business_id').on(table.businessId),
 }))
@@ -80,8 +84,9 @@ export const redemptions = pgTable('redemptions', {
     onDelete: 'cascade',
   }),
   status: text('status').notNull().default('active'),
-  redeemedAt: timestamp('redeemed_at').notNull().defaultNow(),
-  usedAt: timestamp('used_at'),
+  redeemedAt: timestamp('redeemed_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
 }, (table) => ({
   idxUserCouponMonth: index('idx_redemptions_user_coupon_month').on(
     table.userId,
@@ -89,6 +94,10 @@ export const redemptions = pgTable('redemptions', {
     table.redeemedAt,
   ),
   idxCouponId: index('idx_redemptions_coupon_id').on(table.couponId),
+  idxUserStatus: index('idx_redemptions_user_id_status').on(
+    table.userId,
+    table.status,
+  ),
 }))
 
 // ── Transactions ──
@@ -110,11 +119,15 @@ export const transactions = pgTable('transactions', {
   totalAmountCents: integer('total_amount_cents').notNull(),
   discountAppliedCents: integer('discount_applied_cents').notNull(),
   finalAmountCents: integer('final_amount_cents').notNull(),
-  timestamp: timestamp('timestamp').notNull().defaultNow(),
+  timestamp: timestamp('timestamp', { withTimezone: true }).notNull()
+    .defaultNow(),
 }, (table) => ({
   idxCouponId: index('idx_transactions_coupon_id').on(table.couponId),
   idxBusinessId: index('idx_transactions_business_id').on(table.businessId),
   idxUserId: index('idx_transactions_user_id').on(table.userId),
+  idxRedemptionId: index('idx_transactions_redemption_id').on(
+    table.redemptionId,
+  ),
 }))
 
 // ── Signals ──
@@ -126,7 +139,8 @@ export const signals = pgTable('signals', {
   category: text('category').notNull(),
   description: text('description'),
   status: text('status').notNull().default('pending'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
 }, (table) => ({
   idxUserId: index('idx_signals_user_id').on(table.userId),
   idxStatus: index('idx_signals_status').on(table.status),
@@ -153,8 +167,10 @@ export const merchantPosts = pgTable('merchant_posts', {
   body: text('body'),
   imageUrl: varchar('image_url', { length: 500 }),
   isVisible: boolean('is_visible').notNull().default(false),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull()
+    .defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
   idxBusinessId: index('idx_merchant_posts_business_id').on(table.businessId),
 }))
@@ -167,16 +183,21 @@ export const fileMetadata = pgTable('file_metadata', {
     onDelete: 'cascade',
   }),
   isPublic: boolean('is_public').notNull().default(false),
-  uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
-})
+  uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+}, (table) => ({
+  idxUserId: index('idx_file_metadata_user_id').on(table.userId),
+}))
 
 // ── Better Auth: Session ──
 export const session = pgTable('session', {
   id: text('id').primaryKey(),
-  expiresAt: timestamp('expires_at').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   token: text('token').notNull().unique(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull()
+    .defaultNow(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
   userId: text('user_id').notNull().references(() => users.id, {
@@ -195,12 +216,18 @@ export const account = pgTable('account', {
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
   idToken: text('id_token'),
-  accessTokenExpiresAt: timestamp('access_token_expires_at'),
-  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at', {
+    withTimezone: true,
+  }),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at', {
+    withTimezone: true,
+  }),
   scope: text('scope'),
   password: text('password'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull()
+    .defaultNow(),
 })
 
 // ── Better Auth: Verification ──
@@ -208,10 +235,14 @@ export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-})
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+}, (table) => ({
+  idxIdentifier: index('idx_verification_identifier').on(table.identifier),
+}))
 
 // ── Relations ──
 

@@ -175,7 +175,7 @@ SELECT
   mp.image_url,
   mp.business_id AS business_id,
   b.name AS business_name,
-  mp.created_at::timestamptz AS created_at
+  mp.created_at AS created_at
 FROM merchant_posts mp
 JOIN businesses b ON b.id = mp.business_id
 WHERE mp.is_visible = true
@@ -190,7 +190,7 @@ SELECT
   NULL::varchar AS image_url,
   c.business_id,
   b.name AS business_name,
-  c.created_at::timestamptz AS created_at
+  c.created_at AS created_at
 FROM coupons c
 JOIN businesses b ON b.id = c.business_id
 WHERE c.is_active = true

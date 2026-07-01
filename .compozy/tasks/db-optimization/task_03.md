@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Timezone + Indexes — `withTimezone`, 4 indexes, `$onUpdate`
 type: refactor
 complexity: medium
@@ -39,16 +39,16 @@ for automatic update-timestamp management.
 
 ## Subtasks
 
-- [ ] 03.1 Add `withTimezone: true` to all timestamp columns in `user`, `businesses`, `coupons`, `redemptions`, `transactions`, `signals`
-- [ ] 03.2 Add `withTimezone: true` to `merchant_posts.created_at`, `merchant_posts.updated_at`; add `$onUpdate(() => new Date())` to `updated_at`
-- [ ] 03.3 Add `withTimezone: true` to `file_metadata.uploaded_at`
-- [ ] 03.4 Add `withTimezone: true` to Better Auth table timestamps (`session`, `account`, `verification`)
-- [ ] 03.5 Add index `idx_redemptions_user_id_status` on `redemptions(user_id, status)`
-- [ ] 03.6 Add index `idx_verification_identifier` on `verification(identifier)`
-- [ ] 03.7 Add index `idx_transactions_redemption_id` on `transactions(redemption_id)`
-- [ ] 03.8 Add index `idx_file_metadata_user_id` on `file_metadata(user_id)`
-- [ ] 03.9 Update `feed_events` MV definition — remove `::timestamptz` casts (redundant after withTimezone)
-- [ ] 03.10 Run `deno task test` and fix any test failures
+- [x] 03.1 Add `withTimezone: true` to all timestamp columns in `user`, `businesses`, `coupons`, `redemptions`, `transactions`, `signals`
+- [x] 03.2 Add `withTimezone: true` to `merchant_posts.created_at`, `merchant_posts.updated_at`; add `$onUpdate(() => new Date())` to `updated_at`
+- [x] 03.3 Add `withTimezone: true` to `file_metadata.uploaded_at`
+- [x] 03.4 Add `withTimezone: true` to Better Auth table timestamps (`session`, `account`, `verification`)
+- [x] 03.5 Add index `idx_redemptions_user_id_status` on `redemptions(user_id, status)`
+- [x] 03.6 Add index `idx_verification_identifier` on `verification(identifier)`
+- [x] 03.7 Add index `idx_transactions_redemption_id` on `transactions(redemption_id)`
+- [x] 03.8 Add index `idx_file_metadata_user_id` on `file_metadata(user_id)`
+- [x] 03.9 Update `feed_events` MV definition — remove `::timestamptz` casts (redundant after withTimezone)
+- [x] 03.10 Run `deno task test` and fix any test failures
 
 ## Implementation Details
 
