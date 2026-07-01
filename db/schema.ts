@@ -244,6 +244,18 @@ export const verification = pgTable('verification', {
   idxIdentifier: index('idx_verification_identifier').on(table.identifier),
 }))
 
+// ── Feed Events Materialized View (read-only query mapping) ──
+export const feedEvents = pgTable('feed_events', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  imageUrl: text('image_url'),
+  businessId: text('business_id'),
+  businessName: text('business_name'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+})
+
 // ── Relations ──
 
 export const usersRelations = relations(users, ({ many }) => ({

@@ -1,6 +1,7 @@
-import { sql } from 'drizzle-orm'
+import { and, desc, eq, gte, lt, sql } from 'drizzle-orm'
 import type { NodePgDatabase } from 'npm:drizzle-orm@0.38.2/node-postgres'
 import * as schema from '../db/schema.ts'
+import { businesses, feedEvents, transactions } from '../db/schema.ts'
 
 export type FeedEventType =
   | 'merchant_post'
@@ -55,24 +56,24 @@ export async function queryFeed(
   const events: FeedEvent[] = []
 
   // 1. Query the feed_events MV for global content
-  let mvSql = sql`SELECT * FROM feed_events`
+  const mvQuery = db.select().from(feedEvents)
   if (cursorDate) {
-    mvSql = sql`${mvSql} WHERE created_at < ${cursorDate}::timestamptz`
+    mvQuery.where(lt(feedEvents.createdAt, cursorDate))
   }
-  mvSql = sql`${mvSql} ORDER BY created_at DESC LIMIT ${pageSize}`
+  const mvRows = await mvQuery
+    .orderBy(desc(feedEvents.createdAt))
+    .limit(pageSize)
 
-  const mvResult = await db.execute(mvSql)
-
-  for (const row of mvResult.rows) {
+  for (const row of mvRows) {
     events.push({
-      id: String(row.id),
-      type: String(row.type) as FeedEventType,
-      title: String(row.title),
-      description: row.description ? String(row.description) : '',
-      imageUrl: row.image_url ? String(row.image_url) : undefined,
-      businessId: row.business_id ? String(row.business_id) : undefined,
-      businessName: row.business_name ? String(row.business_name) : undefined,
-      createdAt: new Date(row.created_at).getTime(),
+      id: row.id,
+      type: row.type as FeedEventType,
+      title: row.title,
+      description: row.description ?? '',
+      imageUrl: row.imageUrl ?? undefined,
+      businessId: row.businessId ?? undefined,
+      businessName: row.businessName ?? undefined,
+      createdAt: row.createdAt.getTime(),
     })
   }
 
@@ -80,30 +81,35 @@ export async function queryFeed(
   if (userId) {
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
 
-    let txSql = sql`
-      SELECT t.id, t.discount_applied_cents, t."timestamp", b.id AS business_id, b.name AS business_name
-      FROM transactions t
-      JOIN businesses b ON b.id = t.business_id
-      WHERE t.user_id = ${userId}
-        AND t."timestamp" >= ${ninetyDaysAgo}::timestamptz
-    `
-    if (cursorDate) {
-      txSql = sql`${txSql} AND t."timestamp" < ${cursorDate}::timestamptz`
-    }
-    txSql = sql`${txSql} ORDER BY t."timestamp" DESC LIMIT ${pageSize}`
+    const txRows = await db.select({
+      id: transactions.id,
+      discountAppliedCents: transactions.discountAppliedCents,
+      timestamp: transactions.timestamp,
+      businessId: businesses.id,
+      businessName: businesses.name,
+    })
+      .from(transactions)
+      .innerJoin(businesses, eq(businesses.id, transactions.businessId))
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          gte(transactions.timestamp, ninetyDaysAgo),
+          ...(cursorDate ? [lt(transactions.timestamp, cursorDate)] : []),
+        ),
+      )
+      .orderBy(desc(transactions.timestamp))
+      .limit(pageSize)
 
-    const txResult = await db.execute(txSql)
-
-    for (const row of txResult.rows) {
+    for (const row of txRows) {
       events.push({
-        id: `savings-${String(row.id)}`,
+        id: `savings-${row.id}`,
         type: 'savings_notice',
         title: 'Você economizou!',
-        description: `Você economizou na ${String(row.business_name)}`,
-        businessId: row.business_id ? String(row.business_id) : undefined,
-        businessName: row.business_name ? String(row.business_name) : undefined,
-        amountCents: Number(row.discount_applied_cents),
-        createdAt: new Date(row.timestamp).getTime(),
+        description: `Você economizou na ${row.businessName}`,
+        businessId: row.businessId,
+        businessName: row.businessName,
+        amountCents: row.discountAppliedCents,
+        createdAt: row.timestamp.getTime(),
       })
     }
 
