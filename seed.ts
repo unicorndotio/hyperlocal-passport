@@ -107,9 +107,8 @@ async function upsertBusiness(
 
 async function upsertCoupon(
   values: typeof schema.coupons.$inferInsert,
-): Promise<string> {
+): Promise<void> {
   await db.insert(schema.coupons).values(values).onConflictDoNothing()
-  return values.id
 }
 
 async function upsertCouponAnalytics(
@@ -230,7 +229,7 @@ async function main() {
   )
 
   // ── Sample businesses ──
-  const bizId = 'seed-biz-central-cafe'
+  const bizId = crypto.randomUUID()
   await upsertBusiness({
     id: bizId,
     userId: businessUserId,
@@ -245,7 +244,7 @@ async function main() {
     isActive: true,
   })
 
-  const bizId2 = 'seed-biz-central-livros'
+  const bizId2 = crypto.randomUUID()
   await upsertBusiness({
     id: bizId2,
     userId: businessUserId,
@@ -265,7 +264,7 @@ async function main() {
   // Coupons are given explicit createdAt timestamps spread across two weeks
   // so they interleave with merchant posts in the feed instead of bunching together.
 
-  const couponId1 = 'demo-coupon-10off'
+  const couponId1 = crypto.randomUUID()
   await upsertCoupon({
     id: couponId1,
     businessId: bizId,
@@ -284,7 +283,7 @@ async function main() {
     validations: 0,
   })
 
-  const couponId2 = 'demo-coupon-fixo5'
+  const couponId2 = crypto.randomUUID()
   await upsertCoupon({
     id: couponId2,
     businessId: bizId2,
@@ -304,7 +303,7 @@ async function main() {
   })
 
   // Additional coupons to populate the feed (coupon_released events)
-  const couponId3 = 'demo-coupon-cafe-bogo'
+  const couponId3 = crypto.randomUUID()
   await upsertCoupon({
     id: couponId3,
     businessId: bizId,
@@ -328,7 +327,7 @@ async function main() {
     validations: 0,
   })
 
-  const couponId4 = 'demo-coupon-livro-20off'
+  const couponId4 = crypto.randomUUID()
   await upsertCoupon({
     id: couponId4,
     businessId: bizId2,
@@ -361,7 +360,7 @@ async function main() {
   //   Jun 27 – post:   Clube do Livro
   //   Jun 29 – coupon: 20% romances
   await upsertMerchantPost({
-    id: 'seed-post-cafe-festival',
+    id: crypto.randomUUID(),
     businessId: bizId,
     title: 'Festival de Inverno no Café Central 🎉',
     body:
@@ -373,7 +372,7 @@ async function main() {
   })
 
   await upsertMerchantPost({
-    id: 'seed-post-livraria-lancamento',
+    id: crypto.randomUUID(),
     businessId: bizId2,
     title: 'Lançamento: Coleção de Autores Catarinenses',
     body:
@@ -385,7 +384,7 @@ async function main() {
   })
 
   await upsertMerchantPost({
-    id: 'seed-post-cafe-novidades',
+    id: crypto.randomUUID(),
     businessId: bizId,
     title: 'Novo cardápio de verão disponível ☀️',
     body:
@@ -397,7 +396,7 @@ async function main() {
   })
 
   await upsertMerchantPost({
-    id: 'seed-post-livraria-clube',
+    id: crypto.randomUUID(),
     businessId: bizId2,
     title: 'Clube do Livro de Julho — inscrições abertas 📚',
     body:
@@ -410,7 +409,7 @@ async function main() {
 
   // Draft post (not visible — exercises the moderation gate)
   await upsertMerchantPost({
-    id: 'seed-post-cafe-draft',
+    id: crypto.randomUUID(),
     businessId: bizId,
     title: 'Rascunho: Promoção de Aniversário',
     body: 'Ainda em elaboração...',
@@ -426,7 +425,7 @@ async function main() {
   // Three past used redemptions for the resident, each with a matching transaction.
 
   // Redemption 1: 10% off at Café Central — purchase R$ 45,00 → discount R$ 4,50
-  const redemption1Id = 'seed-redemption-r1'
+  const redemption1Id = crypto.randomUUID()
   await upsertRedemption({
     id: redemption1Id,
     couponId: couponId1,
@@ -437,7 +436,7 @@ async function main() {
     usedAt: new Date('2026-06-20T11:15:00Z'),
   })
   await upsertTransaction({
-    id: 'seed-tx-1',
+    id: crypto.randomUUID(),
     redemptionId: redemption1Id,
     couponId: couponId1,
     businessId: bizId,
@@ -449,7 +448,7 @@ async function main() {
   })
 
   // Redemption 2: R$ 5,00 off at Livraria Central — purchase R$ 38,00 → discount R$ 5,00
-  const redemption2Id = 'seed-redemption-r2'
+  const redemption2Id = crypto.randomUUID()
   await upsertRedemption({
     id: redemption2Id,
     couponId: couponId2,
@@ -460,7 +459,7 @@ async function main() {
     usedAt: new Date('2026-06-22T15:30:00Z'),
   })
   await upsertTransaction({
-    id: 'seed-tx-2',
+    id: crypto.randomUUID(),
     redemptionId: redemption2Id,
     couponId: couponId2,
     businessId: bizId2,
@@ -472,7 +471,7 @@ async function main() {
   })
 
   // Redemption 3: another 10% off at Café Central — purchase R$ 22,00 → discount R$ 2,20
-  const redemption3Id = 'seed-redemption-r3'
+  const redemption3Id = crypto.randomUUID()
   await upsertRedemption({
     id: redemption3Id,
     couponId: couponId1,
@@ -483,7 +482,7 @@ async function main() {
     usedAt: new Date('2026-06-26T09:45:00Z'),
   })
   await upsertTransaction({
-    id: 'seed-tx-3',
+    id: crypto.randomUUID(),
     redemptionId: redemption3Id,
     couponId: couponId1,
     businessId: bizId,
@@ -496,7 +495,7 @@ async function main() {
 
   // Active redemption (pending — shows in resident's passport wallet)
   await upsertRedemption({
-    id: 'seed-redemption-active',
+    id: crypto.randomUUID(),
     couponId: couponId2,
     businessId: bizId2,
     userId: residentId,

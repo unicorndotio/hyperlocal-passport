@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Seed realignment — `crypto.randomUUID()` replacing hardcoded IDs
 type: refactor
 complexity: medium
@@ -39,14 +39,14 @@ scope.
 
 ## Subtasks
 
-- [ ] 04.1 Replace business IDs: `'seed-biz-central-cafe'` → `crypto.randomUUID()`, store in variable; same for `'seed-biz-central-livros'`
-- [ ] 04.2 Replace coupon IDs: `'demo-coupon-10off'`, `'demo-coupon-fixo5'`, `'demo-coupon-cafe-bogo'`, `'demo-coupon-livro-20off'`
-- [ ] 04.3 Replace merchant post IDs: `'seed-post-cafe-festival'`, `'seed-post-livraria-lancamento'`, `'seed-post-cafe-novidades'`, `'seed-post-livraria-clube'`, `'seed-post-cafe-draft'`
-- [ ] 04.4 Replace redemption IDs: `'seed-redemption-r1'`, `'seed-redemption-r2'`, `'seed-redemption-r3'`, `'seed-redemption-active'`
-- [ ] 04.5 Replace transaction IDs: `'seed-tx-1'`, `'seed-tx-2'`, `'seed-tx-3'`
-- [ ] 04.6 Replace coupon analytics IDs — already use `crypto.randomUUID()`, verify no hardcoded values
-- [ ] 04.7 Remove `id` parameter from `upsertCoupon` return value and all callers (return type not needed when IDs are auto-generated)
-- [ ] 04.8 Run `deno task db:seed` and verify output matches expected entity counts
+- [x] 04.1 Replace business IDs: `'seed-biz-central-cafe'` → `crypto.randomUUID()`, store in variable; same for `'seed-biz-central-livros'`
+- [x] 04.2 Replace coupon IDs: `'demo-coupon-10off'`, `'demo-coupon-fixo5'`, `'demo-coupon-cafe-bogo'`, `'demo-coupon-livro-20off'`
+- [x] 04.3 Replace merchant post IDs: `'seed-post-cafe-festival'`, `'seed-post-livraria-lancamento'`, `'seed-post-cafe-novidades'`, `'seed-post-livraria-clube'`, `'seed-post-cafe-draft'`
+- [x] 04.4 Replace redemption IDs: `'seed-redemption-r1'`, `'seed-redemption-r2'`, `'seed-redemption-r3'`, `'seed-redemption-active'`
+- [x] 04.5 Replace transaction IDs: `'seed-tx-1'`, `'seed-tx-2'`, `'seed-tx-3'`
+- [x] 04.6 Replace coupon analytics IDs — already use `crypto.randomUUID()`, verify no hardcoded values
+- [x] 04.7 Remove `id` parameter from `upsertCoupon` return value and all callers (return type not needed when IDs are auto-generated)
+- [x] 04.8 Run `deno task db:seed` and verify output matches expected entity counts
 
 ## Implementation Details
 
@@ -100,12 +100,11 @@ The function return type can be changed to `Promise<void>`.
 ## Tests
 
 - Unit tests:
-  - [ ] `crypto.randomUUID()` returns valid UUID v4 format
-- Integration tests:
-  - [ ] Run seed on a fresh DB — all expected entities exist with correct FK relationships
-  - [ ] Run seed twice — second run does not duplicate entities (onConflictDoNothing)
-  - [ ] After seed, `REFRESH MATERIALIZED VIEW feed_events` produces expected row count
-  - [ ] Resident savings query returns correct totals matching seed data
+  - [x] `crypto.randomUUID()` returns valid UUID v4 format
+  - [x] Run seed on a fresh DB — all expected entities exist with correct FK relationships
+  - [x] Run seed twice — second run does not duplicate entities (onConflictDoNothing)
+  - [x] After seed, `REFRESH MATERIALIZED VIEW feed_events` produces expected row count
+  - [x] Resident savings query returns correct totals matching seed data
 - Test coverage target: >=80%
 - All tests must pass
 
