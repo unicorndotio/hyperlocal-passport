@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: FK hardening — explicit `onDelete` on all 15 FKs + missing FK
 type: refactor
 complexity: high

@@ -57,7 +57,7 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-      const businessId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
     const getSessionStub = stub(
       auth.api,
       'getSession',
@@ -80,7 +80,7 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-      const userId = 'user_nf_' + crypto.randomUUID()
+    const userId = 'user_nf_' + crypto.randomUUID()
     const getSessionStub = stub(
       auth.api,
       'getSession',
@@ -106,9 +106,9 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-      const businessId = crypto.randomUUID()
-      const ownerUserId = 'owner_' + crypto.randomUUID()
-      const otherUserId = 'other_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
+    const ownerUserId = 'owner_' + crypto.randomUUID()
+    const otherUserId = 'other_' + crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: ownerUserId,
@@ -148,8 +148,8 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-      const businessId = crypto.randomUUID()
-      const ownerUserId = 'owner_admin_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
+    const ownerUserId = 'owner_admin_' + crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: ownerUserId,
@@ -193,10 +193,10 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-      const userId = 'user_funnel_' + crypto.randomUUID()
-      const businessId = crypto.randomUUID()
-      const coupon1Id = crypto.randomUUID()
-      const coupon2Id = crypto.randomUUID()
+    const userId = 'user_funnel_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
+    const coupon1Id = crypto.randomUUID()
+    const coupon2Id = crypto.randomUUID()
 
     // Setup user, business, and coupons
     await db.insert(schema.users).values({
@@ -300,9 +300,9 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-      const userId = 'user_empty_' + crypto.randomUUID()
-      const businessId = crypto.randomUUID()
-      const couponId = crypto.randomUUID()
+    const userId = 'user_empty_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
+    const couponId = crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: userId,
@@ -362,9 +362,9 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-      const userId = 'user_tx_' + crypto.randomUUID()
-      const businessId = crypto.randomUUID()
-      const couponId = crypto.randomUUID()
+    const userId = 'user_tx_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
+    const couponId = crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: userId,
@@ -482,8 +482,8 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-      const userId = 'user_noc_' + crypto.randomUUID()
-      const businessId = crypto.randomUUID()
+    const userId = 'user_noc_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: userId,

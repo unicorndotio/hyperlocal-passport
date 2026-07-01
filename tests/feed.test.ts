@@ -236,16 +236,20 @@ if (Deno.env.get('PG_CONNECTION')) {
       'queryFeed with 25 seeded events returns page 1 with 20 items and non-null cursor',
       async () => {
         await truncate()
-        await seedBusinessAndUser('u-feed-p1', '00000000-0000-0000-0000-000000000021', 'Feed P1 Biz')
+        await seedBusinessAndUser(
+          'u-feed-p1',
+          '00000000-0000-0000-0000-000000000021',
+          'Feed P1 Biz',
+        )
 
         for (let i = 0; i < 25; i++) {
           const id = `a0000000-0000-0000-0000-${String(i).padStart(12, '0')}`
           const createdAt = new Date(Date.now() - i * 60000).toISOString()
           await db.execute(sql`
           INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-          (${id}::uuid, '00000000-0000-0000-0000-000000000021'::uuid, ${'Post ' + i}, ${
-            'Body ' + i
-          }, true, ${createdAt}::timestamptz)
+          (${id}::uuid, '00000000-0000-0000-0000-000000000021'::uuid, ${
+            'Post ' + i
+          }, ${'Body ' + i}, true, ${createdAt}::timestamptz)
         `)
         }
 
@@ -269,16 +273,20 @@ if (Deno.env.get('PG_CONNECTION')) {
       'queryFeed with cursor returns page 2 with remaining items',
       async () => {
         await truncate()
-        await seedBusinessAndUser('u-feed-p2', '00000000-0000-0000-0000-000000000022', 'Feed P2 Biz')
+        await seedBusinessAndUser(
+          'u-feed-p2',
+          '00000000-0000-0000-0000-000000000022',
+          'Feed P2 Biz',
+        )
 
         for (let i = 0; i < 25; i++) {
           const id = `a0000000-0000-0000-0000-${String(i).padStart(12, '0')}`
           const createdAt = new Date(Date.now() - i * 60000).toISOString()
           await db.execute(sql`
           INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-          (${id}::uuid, '00000000-0000-0000-0000-000000000022'::uuid, ${'Post ' + i}, ${
-            'Body ' + i
-          }, true, ${createdAt}::timestamptz)
+          (${id}::uuid, '00000000-0000-0000-0000-000000000022'::uuid, ${
+            'Post ' + i
+          }, ${'Body ' + i}, true, ${createdAt}::timestamptz)
         `)
         }
 
@@ -304,7 +312,11 @@ if (Deno.env.get('PG_CONNECTION')) {
       'queryFeed with invalid cursor returns page 1 (same as no cursor)',
       async () => {
         await truncate()
-        await seedBusinessAndUser('u-feed-inv', '00000000-0000-0000-0000-000000000031', 'Feed Inv Biz')
+        await seedBusinessAndUser(
+          'u-feed-inv',
+          '00000000-0000-0000-0000-000000000031',
+          'Feed Inv Biz',
+        )
 
         await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible) VALUES
@@ -532,11 +544,11 @@ if (Deno.env.get('PG_CONNECTION')) {
         const id = `a0000000-0000-0000-0000-${
           String(300 + i).padStart(12, '0')
         }`
-                  await db.execute(sql`
+        await db.execute(sql`
           INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-          (${id}::uuid, '00000000-0000-0000-0000-000000000061'::uuid, ${'Extra Post ' + i}, ${
-          'Body ' + i
-        }, true, now() - interval '1 minute')
+          (${id}::uuid, '00000000-0000-0000-0000-000000000061'::uuid, ${
+          'Extra Post ' + i
+        }, ${'Body ' + i}, true, now() - interval '1 minute')
         `)
       }
       await refreshFeedView(db)

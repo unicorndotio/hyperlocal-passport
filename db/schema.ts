@@ -31,7 +31,9 @@ export const users = pgTable('user', {
 // ── Businesses ──
 export const businesses = pgTable('businesses', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => users.id),
+  userId: text('user_id').notNull().references(() => users.id, {
+    onDelete: 'cascade',
+  }),
   name: text('name').notNull(),
   companyName: text('company_name').notNull(),
   cnpj: text('cnpj').notNull().unique(),
@@ -52,7 +54,9 @@ export const businesses = pgTable('businesses', {
 // ── Coupons ──
 export const coupons = pgTable('coupons', {
   id: uuid('id').primaryKey().defaultRandom(),
-  businessId: uuid('business_id').notNull().references(() => businesses.id),
+  businessId: uuid('business_id').notNull().references(() => businesses.id, {
+    onDelete: 'cascade',
+  }),
   title: text('title').notNull(),
   description: text('description'),
   behavior: jsonb('behavior').notNull(),
@@ -66,9 +70,15 @@ export const coupons = pgTable('coupons', {
 // ── Redemptions ──
 export const redemptions = pgTable('redemptions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  couponId: uuid('coupon_id').notNull().references(() => coupons.id),
-  businessId: uuid('business_id').notNull().references(() => businesses.id),
-  userId: text('user_id').notNull().references(() => users.id),
+  couponId: uuid('coupon_id').notNull().references(() => coupons.id, {
+    onDelete: 'cascade',
+  }),
+  businessId: uuid('business_id').notNull().references(() => businesses.id, {
+    onDelete: 'cascade',
+  }),
+  userId: text('user_id').notNull().references(() => users.id, {
+    onDelete: 'cascade',
+  }),
   status: text('status').notNull().default('active'),
   redeemedAt: timestamp('redeemed_at').notNull().defaultNow(),
   usedAt: timestamp('used_at'),
@@ -84,12 +94,19 @@ export const redemptions = pgTable('redemptions', {
 // ── Transactions ──
 export const transactions = pgTable('transactions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  redemptionId: uuid('redemption_id').notNull().references(() =>
-    redemptions.id
+  redemptionId: uuid('redemption_id').notNull().references(
+    () => redemptions.id,
+    { onDelete: 'restrict' },
   ),
-  couponId: uuid('coupon_id').notNull().references(() => coupons.id),
-  businessId: uuid('business_id').notNull().references(() => businesses.id),
-  userId: text('user_id').notNull().references(() => users.id),
+  couponId: uuid('coupon_id').notNull().references(() => coupons.id, {
+    onDelete: 'restrict',
+  }),
+  businessId: uuid('business_id').notNull().references(() => businesses.id, {
+    onDelete: 'restrict',
+  }),
+  userId: text('user_id').notNull().references(() => users.id, {
+    onDelete: 'restrict',
+  }),
   totalAmountCents: integer('total_amount_cents').notNull(),
   discountAppliedCents: integer('discount_applied_cents').notNull(),
   finalAmountCents: integer('final_amount_cents').notNull(),
@@ -103,7 +120,9 @@ export const transactions = pgTable('transactions', {
 // ── Signals ──
 export const signals = pgTable('signals', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => users.id),
+  userId: text('user_id').notNull().references(() => users.id, {
+    onDelete: 'restrict',
+  }),
   category: text('category').notNull(),
   description: text('description'),
   status: text('status').notNull().default('pending'),
@@ -127,7 +146,9 @@ export const couponAnalytics = pgTable('coupon_analytics', {
 // ── Merchant Posts ──
 export const merchantPosts = pgTable('merchant_posts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  businessId: uuid('business_id').notNull().references(() => businesses.id),
+  businessId: uuid('business_id').notNull().references(() => businesses.id, {
+    onDelete: 'cascade',
+  }),
   title: varchar('title', { length: 255 }).notNull(),
   body: text('body'),
   imageUrl: varchar('image_url', { length: 500 }),
@@ -142,7 +163,9 @@ export const merchantPosts = pgTable('merchant_posts', {
 export const fileMetadata = pgTable('file_metadata', {
   id: uuid('id').primaryKey().defaultRandom(),
   filename: text('filename').notNull().unique(),
-  userId: text('user_id'),
+  userId: text('user_id').references(() => users.id, {
+    onDelete: 'cascade',
+  }),
   isPublic: boolean('is_public').notNull().default(false),
   uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
 })
