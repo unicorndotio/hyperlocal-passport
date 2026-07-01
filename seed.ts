@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { eq, sql } from 'drizzle-orm'
-import { db } from './lib/db.ts'
+import { closeConnection, db } from './lib/db.ts'
 import * as schema from './db/schema.ts'
 
 const ADMIN_EMAIL = Deno.env.get('SEED_EMAIL') || 'admin@example.com'
@@ -15,6 +15,14 @@ const BUSINESS_NAME = 'Loja Central'
 const RESIDENT_EMAIL = 'morador@example.com'
 const RESIDENT_PASSWORD = 'morador123'
 const RESIDENT_NAME = 'Ana Souza'
+
+const PENDING_RESIDENT_EMAIL = 'carlos@example.com'
+const PENDING_RESIDENT_PASSWORD = 'morador123'
+const PENDING_RESIDENT_NAME = 'Carlos Lima'
+
+const REJECTED_RESIDENT_EMAIL = 'lucas@example.com'
+const REJECTED_RESIDENT_PASSWORD = 'morador123'
+const REJECTED_RESIDENT_NAME = 'Lucas Rocha'
 
 const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -171,6 +179,54 @@ async function main() {
     .where(eq(schema.users.id, residentId))
   console.log(
     `Resident ready — email: ${RESIDENT_EMAIL}  password: ${RESIDENT_PASSWORD}`,
+  )
+
+  // ── Pending resident user ──
+  const pendingResidentId = await signUpOrGetUser(
+    PENDING_RESIDENT_EMAIL,
+    PENDING_RESIDENT_PASSWORD,
+    PENDING_RESIDENT_NAME,
+  )
+  await db
+    .update(schema.users)
+    .set({
+      role: 'resident',
+      status: 'pending',
+      cpf: '456.789.012-34',
+      phone: '(48) 98888-4321',
+      address: 'Rua das Flores, 120 – Jurerê',
+      documents: {
+        idPhotoUrl: '/uploads/default-id.png',
+        residenceProofUrl: '/uploads/default-proof.png',
+      },
+    })
+    .where(eq(schema.users.id, pendingResidentId))
+  console.log(
+    `Pending resident ready — email: ${PENDING_RESIDENT_EMAIL}  password: ${PENDING_RESIDENT_PASSWORD}`,
+  )
+
+  // ── Rejected resident user ──
+  const rejectedResidentId = await signUpOrGetUser(
+    REJECTED_RESIDENT_EMAIL,
+    REJECTED_RESIDENT_PASSWORD,
+    REJECTED_RESIDENT_NAME,
+  )
+  await db
+    .update(schema.users)
+    .set({
+      role: 'resident',
+      status: 'rejected',
+      cpf: '567.890.123-45',
+      phone: '(48) 97777-5678',
+      address: 'Servidão do Sol, 8 – Canasvieiras',
+      documents: {
+        idPhotoUrl: '/uploads/default-id.png',
+        residenceProofUrl: '/uploads/default-proof.png',
+      },
+    })
+    .where(eq(schema.users.id, rejectedResidentId))
+  console.log(
+    `Rejected resident ready — email: ${REJECTED_RESIDENT_EMAIL}  password: ${REJECTED_RESIDENT_PASSWORD}`,
   )
 
   // ── Sample businesses ──
@@ -465,6 +521,8 @@ async function main() {
   console.log('feed_events materialized view refreshed.')
 
   console.log('Seed complete.')
+  await closeConnection()
+  Deno.exit(0)
 }
 
 await main()
