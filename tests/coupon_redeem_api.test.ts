@@ -100,7 +100,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const couponId = 'coupon_unauth_' + Math.random().toString(36).slice(2)
+    const couponId = crypto.randomUUID()
     const getSessionStub = stub(
       auth.api,
       'getSession',
@@ -123,7 +123,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const userId = 'user_nf_' + Math.random().toString(36).slice(2)
+    const userId = 'user_nf_' + crypto.randomUUID()
     const getSessionStub = stub(
       auth.api,
       'getSession',
@@ -145,9 +145,9 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const userId = 'user_inact_' + Math.random().toString(36).slice(2)
-    const couponId = 'coupon_inact_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_inact_' + Math.random().toString(36).slice(2)
+    const userId = 'user_inact_' + crypto.randomUUID()
+    const couponId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     await ensureBizUser(userId)
     await ensureBusiness(businessId, userId)
@@ -175,9 +175,9 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const userId = 'user_exp_' + Math.random().toString(36).slice(2)
-    const couponId = 'coupon_exp_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_exp_' + Math.random().toString(36).slice(2)
+    const userId = 'user_exp_' + crypto.randomUUID()
+    const couponId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     await ensureBizUser(userId)
     await ensureBusiness(businessId, userId)
@@ -208,9 +208,9 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const userId = 'user_gl_' + Math.random().toString(36).slice(2)
-    const couponId = 'coupon_gl_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_gl_' + Math.random().toString(36).slice(2)
+    const userId = 'user_gl_' + crypto.randomUUID()
+    const couponId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
     const cap = 5
 
     await ensureBizUser(userId)
@@ -249,9 +249,9 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const userId = 'user_ml_' + Math.random().toString(36).slice(2)
-    const couponId = 'coupon_ml_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_ml_' + Math.random().toString(36).slice(2)
+    const userId = 'user_ml_' + crypto.randomUUID()
+    const couponId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     await ensureBizUser(userId)
     await ensureBusiness(businessId, userId)
@@ -291,9 +291,9 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const userId = 'user_succ_' + Math.random().toString(36).slice(2)
-    const couponId = 'coupon_succ_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_succ_' + Math.random().toString(36).slice(2)
+    const userId = 'user_succ_' + crypto.randomUUID()
+    const couponId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     await ensureBizUser(userId)
     await ensureBusiness(businessId, userId)
@@ -332,9 +332,9 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const userId = 'user_aci_' + Math.random().toString(36).slice(2)
-    const couponId = 'coupon_aci_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_aci_' + Math.random().toString(36).slice(2)
+    const userId = 'user_aci_' + crypto.randomUUID()
+    const couponId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     await ensureBizUser(userId)
     await ensureBusiness(businessId, userId)
@@ -373,9 +373,9 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const userId = 'user_utc_' + Math.random().toString(36).slice(2)
-    const couponId = 'coupon_utc_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_utc_' + Math.random().toString(36).slice(2)
+    const userId = 'user_utc_' + crypto.randomUUID()
+    const couponId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     await ensureBizUser(userId)
     await ensureBusiness(businessId, userId)
@@ -425,8 +425,8 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const couponId = 'coupon_conc_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_conc_' + Math.random().toString(36).slice(2)
+    const couponId = crypto.randomUUID()
+    const businessId = crypto.randomUUID()
     const cap = 1
 
     await ensureBizUser('conc_user')

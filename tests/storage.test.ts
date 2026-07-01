@@ -275,7 +275,7 @@ Deno.test(
 
       // Store metadata in PostgreSQL database
       await db.insert(schema.fileMetadata).values({
-        id: 'test_delete_id',
+        id: crypto.randomUUID(),
         filename: 'test_delete.txt',
         userId: 'u1',
         isPublic: false,
@@ -313,7 +313,7 @@ Deno.test(
 
         // Store metadata in database
         await db.insert(schema.fileMetadata).values({
-          id: 'test_perm_deny_id',
+          id: crypto.randomUUID(),
           filename: 'test_perm_deny.txt',
           userId: 'u1',
           isPublic: false,

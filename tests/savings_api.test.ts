@@ -13,9 +13,9 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeOps: false,
     sanitizeResources: false,
     fn: async (t) => {
-      const userId = 'sav_user_' + Math.random().toString(36).slice(2)
-      const businessId = 'sav_biz_' + Math.random().toString(36).slice(2)
-      const couponId = 'sav_coup_' + Math.random().toString(36).slice(2)
+      const userId = 'sav_user_' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
+      const couponId = crypto.randomUUID()
 
       await db.insert(schema.users).values({
         id: userId,
@@ -100,12 +100,11 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeOps: false,
     sanitizeResources: false,
     fn: async (t) => {
-      const uniqueId = Math.random().toString(36).slice(2, 8)
-      const userId = 'sav_used_' + uniqueId
-      const businessId = 'biz_used_' + uniqueId
-      const couponId = 'coup_used_' + uniqueId
-      const redemptionId = 'USED_' + uniqueId
-      const transactionId = 'txn_used_' + uniqueId
+      const userId = 'sav_used_' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
+      const couponId = crypto.randomUUID()
+      const redemptionId = crypto.randomUUID()
+      const transactionId = crypto.randomUUID()
 
       await db.insert(schema.users).values({
         id: userId,
@@ -222,16 +221,15 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeOps: false,
     sanitizeResources: false,
     fn: async (t) => {
-      const uniqueId = Math.random().toString(36).slice(2, 8)
-      const userId = 'sav_multi_' + uniqueId
-      const biz1Id = 'biz_m1_' + uniqueId
-      const biz2Id = 'biz_m2_' + uniqueId
-      const coup1Id = 'coup_m1_' + uniqueId
-      const coup2Id = 'coup_m2_' + uniqueId
-      const red1Id = 'REDM1_' + uniqueId
-      const red2Id = 'REDM2_' + uniqueId
-      const txn1Id = 'txn_m1_' + uniqueId
-      const txn2Id = 'txn_m2_' + uniqueId
+      const userId = 'sav_multi_' + crypto.randomUUID()
+      const biz1Id = crypto.randomUUID()
+      const biz2Id = crypto.randomUUID()
+      const coup1Id = crypto.randomUUID()
+      const coup2Id = crypto.randomUUID()
+      const red1Id = crypto.randomUUID()
+      const red2Id = crypto.randomUUID()
+      const txn1Id = crypto.randomUUID()
+      const txn2Id = crypto.randomUUID()
 
       await db.insert(schema.users).values({
         id: userId,
@@ -435,7 +433,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeOps: false,
     sanitizeResources: false,
     fn: async () => {
-      const userId = 'sav_biz_role_' + Math.random().toString(36).slice(2)
+      const userId = 'sav_biz_role_' + crypto.randomUUID()
 
       const res = await (savingsHandler as unknown as {
         GET: (ctx: {

@@ -42,12 +42,12 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async (t) => {
-    const biz1Id = 'ada_biz1_' + Math.random().toString(36).slice(2)
-    const biz2Id = 'ada_biz2_' + Math.random().toString(36).slice(2)
-    const cpn1Id = 'ada_cpn1_' + Math.random().toString(36).slice(2)
-    const cpn2Id = 'ada_cpn2_' + Math.random().toString(36).slice(2)
-    const cpn3Id = 'ada_cpn3_' + Math.random().toString(36).slice(2)
-    const cpn4Id = 'ada_cpn4_' + Math.random().toString(36).slice(2)
+    const biz1Id = crypto.randomUUID()
+    const biz2Id = crypto.randomUUID()
+    const cpn1Id = crypto.randomUUID()
+    const cpn2Id = crypto.randomUUID()
+    const cpn3Id = crypto.randomUUID()
+    const cpn4Id = crypto.randomUUID()
     const userId = 'ana-user-' + crypto.randomUUID()
 
     try {
@@ -107,11 +107,17 @@ Deno.test({
       ])
 
       // Insert transactions for discount calculation
+      const tx1Id = crypto.randomUUID()
+      const tx2Id = crypto.randomUUID()
+      const tx3Id = crypto.randomUUID()
+      const r1Id = crypto.randomUUID()
+      const r2Id = crypto.randomUUID()
+      const r3Id = crypto.randomUUID()
       const now = Date.now()
       await db.insert(schema.transactions).values([
         {
-          id: 'tx1',
-          redemptionId: 'r1',
+          id: tx1Id,
+          redemptionId: r1Id,
           couponId: cpn1Id,
           businessId: biz1Id,
           userId,
@@ -121,8 +127,8 @@ Deno.test({
           timestamp: new Date(now - 1000),
         },
         {
-          id: 'tx2',
-          redemptionId: 'r2',
+          id: tx2Id,
+          redemptionId: r2Id,
           couponId: cpn2Id,
           businessId: biz1Id,
           userId,
@@ -132,8 +138,8 @@ Deno.test({
           timestamp: new Date(now - 2000),
         },
         {
-          id: 'tx3',
-          redemptionId: 'r3',
+          id: tx3Id,
+          redemptionId: r3Id,
           couponId: cpn3Id,
           businessId: biz2Id,
           userId,

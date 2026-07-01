@@ -11,8 +11,8 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async (t) => {
-    const userId = 'user_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_' + Math.random().toString(36).slice(2)
+    const userId = 'user_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     // Create prerequisites for FK constraints
     await db.insert(schema.users).values({
@@ -34,8 +34,8 @@ Deno.test({
     }).onConflictDoNothing({ target: schema.businesses.id })
 
     // Create coupons for redemption FK
-    const coupon1Id = 'c1_' + Math.random().toString(36).slice(2)
-    const coupon2Id = 'c2_' + Math.random().toString(36).slice(2)
+    const coupon1Id = crypto.randomUUID()
+    const coupon2Id = crypto.randomUUID()
 
     await db.insert(schema.coupons).values({
       id: coupon1Id,
@@ -100,7 +100,7 @@ Deno.test({
 
       await t.step('GET /api/users/me/redemptions - Success', async () => {
         const now = new Date()
-        const r1Id = 'CODE1_' + Math.random().toString(36).slice(2)
+        const r1Id = crypto.randomUUID()
 
         await db.insert(schema.redemptions).values({
           id: r1Id,
@@ -111,7 +111,7 @@ Deno.test({
           redeemedAt: now,
         })
 
-        const r2Id = 'CODE2_' + Math.random().toString(36).slice(2)
+        const r2Id = crypto.randomUUID()
         const earlier = new Date(now.getTime() - 1000)
         await db.insert(schema.redemptions).values({
           id: r2Id,

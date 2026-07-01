@@ -57,7 +57,7 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-    const businessId = 'biz_unauth_' + Math.random().toString(36).slice(2)
+      const businessId = crypto.randomUUID()
     const getSessionStub = stub(
       auth.api,
       'getSession',
@@ -80,7 +80,7 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-    const userId = 'user_nf_' + Math.random().toString(36).slice(2)
+      const userId = 'user_nf_' + crypto.randomUUID()
     const getSessionStub = stub(
       auth.api,
       'getSession',
@@ -106,9 +106,9 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-    const businessId = 'biz_forbid_' + Math.random().toString(36).slice(2)
-    const ownerUserId = 'owner_' + Math.random().toString(36).slice(2)
-    const otherUserId = 'other_' + Math.random().toString(36).slice(2)
+      const businessId = crypto.randomUUID()
+      const ownerUserId = 'owner_' + crypto.randomUUID()
+      const otherUserId = 'other_' + crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: ownerUserId,
@@ -148,8 +148,8 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-    const businessId = 'biz_admin_' + Math.random().toString(36).slice(2)
-    const ownerUserId = 'owner_admin_' + Math.random().toString(36).slice(2)
+      const businessId = crypto.randomUUID()
+      const ownerUserId = 'owner_admin_' + crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: ownerUserId,
@@ -193,10 +193,10 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-    const userId = 'user_funnel_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_funnel_' + Math.random().toString(36).slice(2)
-    const coupon1Id = 'c_f1_' + Math.random().toString(36).slice(2)
-    const coupon2Id = 'c_f2_' + Math.random().toString(36).slice(2)
+      const userId = 'user_funnel_' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
+      const coupon1Id = crypto.randomUUID()
+      const coupon2Id = crypto.randomUUID()
 
     // Setup user, business, and coupons
     await db.insert(schema.users).values({
@@ -300,9 +300,9 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-    const userId = 'user_empty_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_empty_' + Math.random().toString(36).slice(2)
-    const couponId = 'c_empty_' + Math.random().toString(36).slice(2)
+      const userId = 'user_empty_' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
+      const couponId = crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: userId,
@@ -362,9 +362,9 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-    const userId = 'user_tx_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_tx_' + Math.random().toString(36).slice(2)
-    const couponId = 'c_tx_' + Math.random().toString(36).slice(2)
+      const userId = 'user_tx_' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
+      const couponId = crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: userId,
@@ -402,7 +402,7 @@ Deno.test({
     }
     const redemptionIds: string[] = []
     for (let i = 0; i < 5; i++) {
-      const rId = 'r_' + i + '_' + Math.random().toString(36).slice(2)
+      const rId = crypto.randomUUID()
       redemptionIds.push(rId)
       await db.insert(schema.redemptions).values({
         id: rId,
@@ -415,7 +415,7 @@ Deno.test({
     const baseTime = Date.now() - 60000
     const txIds: string[] = []
     for (let i = 0; i < 5; i++) {
-      const txId = 'tx_' + i + '_' + Math.random().toString(36).slice(2)
+      const txId = crypto.randomUUID()
       txIds.push(txId)
       await db.insert(schema.transactions).values({
         id: txId,
@@ -482,8 +482,8 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     await cleanupAll()
-    const userId = 'user_noc_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_noc_' + Math.random().toString(36).slice(2)
+      const userId = 'user_noc_' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
 
     await db.insert(schema.users).values({
       id: userId,

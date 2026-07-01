@@ -101,16 +101,16 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async (t) => {
-    const bizUserId1 = 'bizuser_cbc_' + Math.random().toString(36).slice(2)
-    const bizUserId2 = 'bizuser_cbc2_' + Math.random().toString(36).slice(2)
-    const residentUserId = 'resident_cbc_' + Math.random().toString(36).slice(2)
-    const adminUserId = 'admin_cbc_' + Math.random().toString(36).slice(2)
-    const businessId1 = 'biz_cbc_' + Math.random().toString(36).slice(2)
-    const businessId2 = 'biz_cbc2_' + Math.random().toString(36).slice(2)
-    const couponId1 = 'coupon_cbc_' + Math.random().toString(36).slice(2)
-    const couponId2 = 'coupon_cbc2_' + Math.random().toString(36).slice(2)
-    const code1 = 'CBC_' + Math.random().toString(36).slice(2, 8).toUpperCase()
-    const code2 = 'CBC2_' + Math.random().toString(36).slice(2, 8).toUpperCase()
+    const bizUserId1 = 'bizuser_cbc_' + crypto.randomUUID()
+    const bizUserId2 = 'bizuser_cbc2_' + crypto.randomUUID()
+    const residentUserId = 'resident_cbc_' + crypto.randomUUID()
+    const adminUserId = 'admin_cbc_' + crypto.randomUUID()
+    const businessId1 = crypto.randomUUID()
+    const businessId2 = crypto.randomUUID()
+    const couponId1 = crypto.randomUUID()
+    const couponId2 = crypto.randomUUID()
+    const code1 = crypto.randomUUID()
+    const code2 = crypto.randomUUID()
 
     // Setup: two businesses with their own coupons and redemptions
     await ensureUser(bizUserId1)

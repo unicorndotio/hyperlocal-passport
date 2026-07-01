@@ -31,7 +31,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async (t) => {
       const userId = 'post-auth-user-' + crypto.randomUUID()
-      const businessId = 'post-auth-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
 
       try {
         await db.insert(schema.users).values({
@@ -95,7 +95,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async (t) => {
       const userId = 'post-create-user-' + crypto.randomUUID()
-      const businessId = 'post-create-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
 
       try {
         await db.insert(schema.users).values({
@@ -232,9 +232,9 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async (t) => {
       const userId = 'post-list-user-' + crypto.randomUUID()
-      const businessId = 'post-list-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
       const otherUserId = 'post-list-other-' + crypto.randomUUID()
-      const otherBusinessId = 'post-list-other-biz-' + crypto.randomUUID()
+      const otherBusinessId = crypto.randomUUID()
 
       try {
         await db.insert(schema.users).values([
@@ -328,7 +328,7 @@ if (Deno.env.get('PG_CONNECTION')) {
           'returns empty list when business has no posts',
           async () => {
             const tempUserId = 'post-empty-user-' + crypto.randomUUID()
-            const tempBizId = 'post-empty-biz-' + crypto.randomUUID()
+            const tempBizId = crypto.randomUUID()
 
             try {
               await db.insert(schema.users).values({
@@ -385,9 +385,9 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async (t) => {
       const userId = 'post-upd-user-' + crypto.randomUUID()
-      const businessId = 'post-upd-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
       const otherUserId = 'post-upd-other-' + crypto.randomUUID()
-      const otherBusinessId = 'post-upd-other-biz-' + crypto.randomUUID()
+      const otherBusinessId = crypto.randomUUID()
 
       try {
         await db.insert(schema.users).values([
@@ -550,9 +550,9 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async (t) => {
       const userId = 'post-del-user-' + crypto.randomUUID()
-      const businessId = 'post-del-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
       const otherUserId = 'post-del-other-' + crypto.randomUUID()
-      const otherBusinessId = 'post-del-other-biz-' + crypto.randomUUID()
+      const otherBusinessId = crypto.randomUUID()
 
       try {
         await db.insert(schema.users).values([
@@ -674,7 +674,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async (t) => {
       const userId = 'post-del-mv-user-' + crypto.randomUUID()
-      const businessId = 'post-del-mv-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
 
       try {
         await db.insert(schema.users).values({
@@ -758,7 +758,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async () => {
       const userId = 'del-mv-fail-user-' + crypto.randomUUID()
-      const businessId = 'del-mv-fail-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
       const postId = crypto.randomUUID()
 
       const originalExecute = db.execute.bind(db)
@@ -829,7 +829,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async (t) => {
       const userId = 'post-mv-user-' + crypto.randomUUID()
-      const businessId = 'post-mv-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
 
       try {
         await db.insert(schema.users).values({
@@ -893,7 +893,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async (t) => {
       const userId = 'post-mp-user-' + crypto.randomUUID()
-      const businessId = 'post-mp-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
 
       try {
         await db.insert(schema.users).values({
@@ -956,7 +956,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async () => {
       const userId = 'post-mv-fail-user-' + crypto.randomUUID()
-      const businessId = 'post-mv-fail-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
 
       const originalExecute = db.execute.bind(db)
 
@@ -1017,7 +1017,7 @@ if (Deno.env.get('PG_CONNECTION')) {
     sanitizeResources: false,
     fn: async () => {
       const userId = 'put-mv-fail-user-' + crypto.randomUUID()
-      const businessId = 'put-mv-fail-biz-' + crypto.randomUUID()
+      const businessId = crypto.randomUUID()
       const postId = crypto.randomUUID()
 
       const originalExecute = db.execute.bind(db)

@@ -109,11 +109,11 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async (t) => {
-    const userId = 'user_' + Math.random().toString(36).slice(2)
-    const businessUserId = 'bizuser_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_' + Math.random().toString(36).slice(2)
-    const couponId = 'coupon_' + Math.random().toString(36).slice(2)
-    const code = 'TESTV' + Math.random().toString(36).slice(2, 5).toUpperCase()
+    const userId = 'user_' + crypto.randomUUID()
+    const businessUserId = 'bizuser_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
+    const couponId = crypto.randomUUID()
+    const code = crypto.randomUUID()
 
     // Setup: create FK chain user -> business -> coupon -> redemption
     await ensureUser(businessUserId)
@@ -210,13 +210,13 @@ Deno.test({
         'POST /api/transactions/validate - Wrong Business',
         async () => {
           const otherBizUserId = 'user_other_' +
-            Math.random().toString(36).slice(2)
-          const otherBizId = 'biz_other_' + Math.random().toString(36).slice(2)
+            crypto.randomUUID()
+          const otherBizId = crypto.randomUUID()
 
           await ensureUser(otherBizUserId)
           await ensureBusiness(otherBizId, otherBizUserId)
 
-          const newCode = 'OTHER1'
+          const newCode = crypto.randomUUID()
           await createRedemption(newCode, couponId, otherBizId, userId)
 
           const req = new Request(
@@ -246,9 +246,8 @@ Deno.test({
       await t.step(
         'POST /api/transactions/validate - Expired Coupon',
         async () => {
-          const expCode = 'EXPIRED_' + Math.random().toString(36).slice(2)
-          const expCouponId = 'coupon_exp_' +
-            Math.random().toString(36).slice(2)
+          const expCode = crypto.randomUUID()
+          const expCouponId = crypto.randomUUID()
 
           await createCoupon(expCouponId, businessId, {
             restrictions: { validUntil: Date.now() - 10000 },
@@ -316,7 +315,7 @@ Deno.test({
           assertEquals(await res.text(), 'Missing redemption code')
 
           // Test missing amountCents
-          const knownCode = 'AMTCNT'
+          const knownCode = crypto.randomUUID()
           await createRedemption(knownCode, couponId, businessId, userId)
 
           const req2 = new Request(
@@ -403,10 +402,9 @@ Deno.test({
         'POST /api/transactions/validate - Admin without business profile succeeds',
         async () => {
           currentRole = 'admin'
-          currentUserId = 'admin_' + Math.random().toString(36).slice(2)
+          currentUserId = 'admin_' + crypto.randomUUID()
 
-          const adminCode = 'ADMIN_' +
-            Math.random().toString(36).slice(2, 8).toUpperCase()
+          const adminCode = crypto.randomUUID()
           await createRedemption(
             adminCode,
             couponId,
@@ -438,8 +436,8 @@ Deno.test({
       await t.step(
         'POST /api/transactions/validate - Coupon Inactive',
         async () => {
-          const inactCode = 'INACTIVE'
-          const inactCouponId = 'coupon_inact'
+          const inactCode = crypto.randomUUID()
+          const inactCouponId = crypto.randomUUID()
 
           await createCoupon(inactCouponId, businessId, { isActive: false })
           await createRedemption(inactCode, inactCouponId, businessId, userId)
@@ -478,8 +476,8 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async (t) => {
-    const businessUserId = 'bizuser_mbd_' + Math.random().toString(36).slice(2)
-    const businessId = 'biz_mbd_' + Math.random().toString(36).slice(2)
+    const businessUserId = 'bizuser_mbd_' + crypto.randomUUID()
+    const businessId = crypto.randomUUID()
 
     await ensureUser(businessUserId)
     await ensureBusiness(businessId, businessUserId)
@@ -523,7 +521,7 @@ Deno.test({
     }
 
     function makeCouponId(): string {
-      const id = 'c_' + Math.random().toString(36).slice(2)
+      const id = crypto.randomUUID()
       createdIds.coupons.push(id)
       return id
     }
@@ -531,8 +529,8 @@ Deno.test({
     async function makeRedemption(
       couponId: string,
     ): Promise<{ code: string }> {
-      const code = 'MBD_' + Math.random().toString(36).slice(2, 8).toUpperCase()
-      const userId = 'user_mbd_' + Math.random().toString(36).slice(2)
+      const code = crypto.randomUUID()
+      const userId = 'user_mbd_' + crypto.randomUUID()
       await ensureUser(userId)
       createdIds.users.push(userId)
       await createRedemption(code, couponId, businessId, userId)
@@ -743,8 +741,8 @@ Deno.test({
       await t.step(
         'analytics validation counter increments on success',
         async () => {
-          const couponId = 'c_ac_' + Math.random().toString(36).slice(2)
-          const userId = 'user_ac_' + Math.random().toString(36).slice(2)
+          const couponId = crypto.randomUUID()
+          const userId = 'user_ac_' + crypto.randomUUID()
           createdIds.coupons.push(couponId)
           createdIds.users.push(userId)
           await ensureUser(userId)

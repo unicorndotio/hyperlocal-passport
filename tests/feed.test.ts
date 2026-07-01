@@ -45,12 +45,12 @@ if (Deno.env.get('PG_CONNECTION')) {
 
       await db.execute(sql`
         INSERT INTO businesses (id, user_id, name, company_name, cnpj, category, logo_url, is_active) VALUES
-          ('b-test-01', 'u-test-01-merchant', 'Test Business 01', 'Test Business Co 01', '00000000000001', 'test', '/logo.png', true)
+          ('00000000-0000-0000-0000-000000000001'::uuid, 'u-test-01-merchant', 'Test Business 01', 'Test Business Co 01', '00000000000001', 'test', '/logo.png', true)
       `)
 
       await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible) VALUES
-          ('a0000000-0000-0000-0000-000000000001', 'b-test-01', 'Test Post', 'Test Body', true)
+          ('a0000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 'Test Post', 'Test Body', true)
       `)
 
       await refreshFeedView(db)
@@ -78,12 +78,12 @@ if (Deno.env.get('PG_CONNECTION')) {
 
         await db.execute(sql`
         INSERT INTO businesses (id, user_id, name, company_name, cnpj, category, logo_url, is_active) VALUES
-          ('b-test-02', 'u-test-02-coupon', 'Coupon Business 02', 'Coupon Business Co 02', '00000000000002', 'test', '/logo.png', true)
+          ('00000000-0000-0000-0000-000000000002'::uuid, 'u-test-02-coupon', 'Coupon Business 02', 'Coupon Business Co 02', '00000000000002', 'test', '/logo.png', true)
       `)
 
         await db.execute(sql`
         INSERT INTO coupons (id, business_id, title, description, behavior, restrictions, is_active) VALUES
-          ('c-test-feed-02', 'b-test-02', 'Test Coupon 02', 'Test Description 02', '{}', '{}', true)
+          ('00000000-0000-0000-0000-000000000010'::uuid, '00000000-0000-0000-0000-000000000002'::uuid, 'Test Coupon 02', 'Test Description 02', '{}', '{}', true)
       `)
 
         await refreshFeedView(db)
@@ -112,12 +112,12 @@ if (Deno.env.get('PG_CONNECTION')) {
 
         await db.execute(sql`
         INSERT INTO businesses (id, user_id, name, company_name, cnpj, category, logo_url, is_active) VALUES
-          ('b-test-03', 'u-test-03-hidden', 'Hidden Business 03', 'Hidden Business Co 03', '00000000000003', 'test', '/logo.png', true)
+          ('00000000-0000-0000-0000-000000000003'::uuid, 'u-test-03-hidden', 'Hidden Business 03', 'Hidden Business Co 03', '00000000000003', 'test', '/logo.png', true)
       `)
 
         await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible) VALUES
-          ('a0000000-0000-0000-0000-000000000003', 'b-test-03', 'Hidden Post', 'Hidden Body', false)
+          ('a0000000-0000-0000-0000-000000000003'::uuid, '00000000-0000-0000-0000-000000000003'::uuid, 'Hidden Post', 'Hidden Body', false)
       `)
 
         await refreshFeedView(db)
@@ -140,12 +140,12 @@ if (Deno.env.get('PG_CONNECTION')) {
 
       await db.execute(sql`
         INSERT INTO businesses (id, user_id, name, company_name, cnpj, category, logo_url, is_active) VALUES
-          ('b-test-04', 'u-test-04-inactive', 'Inactive Business 04', 'Inactive Business Co 04', '00000000000004', 'test', '/logo.png', true)
+          ('00000000-0000-0000-0000-000000000004'::uuid, 'u-test-04-inactive', 'Inactive Business 04', 'Inactive Business Co 04', '00000000000004', 'test', '/logo.png', true)
       `)
 
       await db.execute(sql`
         INSERT INTO coupons (id, business_id, title, description, behavior, restrictions, is_active) VALUES
-          ('c-test-inactive-04', 'b-test-04', 'Inactive Coupon 04', 'Inactive Description 04', '{}', '{}', false)
+          ('00000000-0000-0000-0000-000000000011'::uuid, '00000000-0000-0000-0000-000000000004'::uuid, 'Inactive Coupon 04', 'Inactive Description 04', '{}', '{}', false)
       `)
 
       await refreshFeedView(db)
@@ -169,17 +169,17 @@ if (Deno.env.get('PG_CONNECTION')) {
 
         await db.execute(sql`
         INSERT INTO businesses (id, user_id, name, company_name, cnpj, category, logo_url, is_active) VALUES
-          ('b-test-05', 'u-test-05-both', 'Both Business 05', 'Both Business Co 05', '00000000000005', 'test', '/logo.png', true)
+          ('00000000-0000-0000-0000-000000000005'::uuid, 'u-test-05-both', 'Both Business 05', 'Both Business Co 05', '00000000000005', 'test', '/logo.png', true)
       `)
 
         await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible) VALUES
-          ('a0000000-0000-0000-0000-000000000005', 'b-test-05', 'Both Post 05', 'Both Body 05', true)
+          ('a0000000-0000-0000-0000-000000000005'::uuid, '00000000-0000-0000-0000-000000000005'::uuid, 'Both Post 05', 'Both Body 05', true)
       `)
 
         await db.execute(sql`
         INSERT INTO coupons (id, business_id, title, description, behavior, restrictions, is_active) VALUES
-          ('c-test-both-05', 'b-test-05', 'Both Coupon 05', 'Both Description 05', '{}', '{}', true)
+          ('00000000-0000-0000-0000-000000000012'::uuid, '00000000-0000-0000-0000-000000000005'::uuid, 'Both Coupon 05', 'Both Description 05', '{}', '{}', true)
       `)
 
         await refreshFeedView(db)
@@ -236,14 +236,14 @@ if (Deno.env.get('PG_CONNECTION')) {
       'queryFeed with 25 seeded events returns page 1 with 20 items and non-null cursor',
       async () => {
         await truncate()
-        await seedBusinessAndUser('u-feed-p1', 'b-feed-p1', 'Feed P1 Biz')
+        await seedBusinessAndUser('u-feed-p1', '00000000-0000-0000-0000-000000000021', 'Feed P1 Biz')
 
         for (let i = 0; i < 25; i++) {
           const id = `a0000000-0000-0000-0000-${String(i).padStart(12, '0')}`
           const createdAt = new Date(Date.now() - i * 60000).toISOString()
           await db.execute(sql`
           INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-          (${id}::uuid, 'b-feed-p1', ${'Post ' + i}, ${
+          (${id}::uuid, '00000000-0000-0000-0000-000000000021'::uuid, ${'Post ' + i}, ${
             'Body ' + i
           }, true, ${createdAt}::timestamptz)
         `)
@@ -269,14 +269,14 @@ if (Deno.env.get('PG_CONNECTION')) {
       'queryFeed with cursor returns page 2 with remaining items',
       async () => {
         await truncate()
-        await seedBusinessAndUser('u-feed-p2', 'b-feed-p2', 'Feed P2 Biz')
+        await seedBusinessAndUser('u-feed-p2', '00000000-0000-0000-0000-000000000022', 'Feed P2 Biz')
 
         for (let i = 0; i < 25; i++) {
           const id = `a0000000-0000-0000-0000-${String(i).padStart(12, '0')}`
           const createdAt = new Date(Date.now() - i * 60000).toISOString()
           await db.execute(sql`
           INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-          (${id}::uuid, 'b-feed-p2', ${'Post ' + i}, ${
+          (${id}::uuid, '00000000-0000-0000-0000-000000000022'::uuid, ${'Post ' + i}, ${
             'Body ' + i
           }, true, ${createdAt}::timestamptz)
         `)
@@ -304,11 +304,11 @@ if (Deno.env.get('PG_CONNECTION')) {
       'queryFeed with invalid cursor returns page 1 (same as no cursor)',
       async () => {
         await truncate()
-        await seedBusinessAndUser('u-feed-inv', 'b-feed-inv', 'Feed Inv Biz')
+        await seedBusinessAndUser('u-feed-inv', '00000000-0000-0000-0000-000000000031', 'Feed Inv Biz')
 
         await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible) VALUES
-        ('a0000000-0000-0000-0000-000000000099'::uuid, 'b-feed-inv', 'Test Post', 'Test Body', true)
+        ('a0000000-0000-0000-0000-000000000099'::uuid, '00000000-0000-0000-0000-000000000031'::uuid, 'Test Post', 'Test Body', true)
       `)
         await refreshFeedView(db)
 
@@ -347,32 +347,32 @@ if (Deno.env.get('PG_CONNECTION')) {
       `)
         await db.execute(sql`
         INSERT INTO businesses (id, user_id, name, company_name, cnpj, category, logo_url, is_active) VALUES
-        ('b-feed-savings', 'u-feed-savings', 'Savings Biz', 'Savings Biz Co', 'CNPJ-savings', 'test', '/logo.png', true)
+        ('00000000-0000-0000-0000-000000000041'::uuid, 'u-feed-savings', 'Savings Biz', 'Savings Biz Co', 'CNPJ-savings', 'test', '/logo.png', true)
       `)
 
         // Seed a merchant post
         await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-        ('a0000000-0000-0000-0000-000000000101'::uuid, 'b-feed-savings', 'Merchant Post', 'Merchant Body', true, now() - interval '10 minutes')
+        ('a0000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000041'::uuid, 'Merchant Post', 'Merchant Body', true, now() - interval '10 minutes')
       `)
         await refreshFeedView(db)
 
         // Seed a coupon + redemption + transaction for savings notice
-        const couponId = 'c-feed-savings'
+        const couponId = '00000000-0000-0000-0000-000000000042'
         await db.execute(sql`
         INSERT INTO coupons (id, business_id, title, description, behavior, restrictions, is_active) VALUES
-        (${couponId}, 'b-feed-savings', 'Savings Coupon', 'Savings Desc', '{}', '{}', true)
+        (${couponId}::uuid, '00000000-0000-0000-0000-000000000041'::uuid, 'Savings Coupon', 'Savings Desc', '{}', '{}', true)
       `)
 
-        const redemptionId = 'r-feed-savings'
+        const redemptionId = '00000000-0000-0000-0000-000000000043'
         await db.execute(sql`
         INSERT INTO redemptions (id, coupon_id, business_id, user_id, status) VALUES
-        (${redemptionId}, ${couponId}, 'b-feed-savings', 'u-feed-savings', 'used')
+        (${redemptionId}::uuid, ${couponId}::uuid, '00000000-0000-0000-0000-000000000041'::uuid, 'u-feed-savings', 'used')
       `)
 
         await db.execute(sql`
         INSERT INTO transactions (id, redemption_id, coupon_id, business_id, user_id, total_amount_cents, discount_applied_cents, final_amount_cents, "timestamp") VALUES
-        ('tx-feed-savings', ${redemptionId}, ${couponId}, 'b-feed-savings', 'u-feed-savings', 1000, 200, 800, now())
+        ('00000000-0000-0000-0000-000000000044'::uuid, ${redemptionId}::uuid, ${couponId}::uuid, '00000000-0000-0000-0000-000000000041'::uuid, 'u-feed-savings', 1000, 200, 800, now())
       `)
 
         // Query with userId should include savings_notice
@@ -410,27 +410,27 @@ if (Deno.env.get('PG_CONNECTION')) {
       `)
         await db.execute(sql`
         INSERT INTO businesses (id, user_id, name, company_name, cnpj, category, logo_url, is_active) VALUES
-        ('b-feed-no-sess', 'u-feed-no-sess', 'NoSess Biz', 'NoSess Biz Co', 'CNPJ-nosess', 'test', '/logo.png', true)
+        ('00000000-0000-0000-0000-000000000051'::uuid, 'u-feed-no-sess', 'NoSess Biz', 'NoSess Biz Co', 'CNPJ-nosess', 'test', '/logo.png', true)
       `)
 
         await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible) VALUES
-        ('a0000000-0000-0000-0000-000000000102'::uuid, 'b-feed-no-sess', 'Public Post', 'Public Body', true)
+        ('a0000000-0000-0000-0000-000000000102'::uuid, '00000000-0000-0000-0000-000000000051'::uuid, 'Public Post', 'Public Body', true)
       `)
         await refreshFeedView(db)
 
-        const couponId = 'c-feed-no-sess'
+        const couponId = '00000000-0000-0000-0000-000000000052'
         await db.execute(sql`
         INSERT INTO coupons (id, business_id, title, description, behavior, restrictions, is_active) VALUES
-        (${couponId}, 'b-feed-no-sess', 'Coupon', 'Desc', '{}', '{}', true)
+        (${couponId}::uuid, '00000000-0000-0000-0000-000000000051'::uuid, 'Coupon', 'Desc', '{}', '{}', true)
       `)
         await db.execute(sql`
         INSERT INTO redemptions (id, coupon_id, business_id, user_id, status) VALUES
-        ('r-feed-no-sess', ${couponId}, 'b-feed-no-sess', 'u-feed-no-sess', 'used')
+        ('00000000-0000-0000-0000-000000000053'::uuid, ${couponId}::uuid, '00000000-0000-0000-0000-000000000051'::uuid, 'u-feed-no-sess', 'used')
       `)
         await db.execute(sql`
         INSERT INTO transactions (id, redemption_id, coupon_id, business_id, user_id, total_amount_cents, discount_applied_cents, final_amount_cents, "timestamp") VALUES
-        ('tx-feed-no-sess', 'r-feed-no-sess', ${couponId}, 'b-feed-no-sess', 'u-feed-no-sess', 1000, 200, 800, now())
+        ('00000000-0000-0000-0000-000000000054'::uuid, '00000000-0000-0000-0000-000000000053'::uuid, ${couponId}::uuid, '00000000-0000-0000-0000-000000000051'::uuid, 'u-feed-no-sess', 1000, 200, 800, now())
       `)
 
         const result = await queryFeed(db, null, undefined, 20)
@@ -455,15 +455,15 @@ if (Deno.env.get('PG_CONNECTION')) {
       `)
       await db.execute(sql`
         INSERT INTO businesses (id, user_id, name, company_name, cnpj, category, logo_url, is_active) VALUES
-        ('b-feed-api', 'u-feed-api', 'Feed API Biz', 'Feed API Biz Co', 'CNPJ-feed-api', 'test', '/logo.png', true)
+        ('00000000-0000-0000-0000-000000000061'::uuid, 'u-feed-api', 'Feed API Biz', 'Feed API Biz Co', 'CNPJ-feed-api', 'test', '/logo.png', true)
       `)
       await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-        ('a0000000-0000-0000-0000-000000000201'::uuid, 'b-feed-api', 'API Post 1', 'Body 1', true, now() - interval '5 minutes')
+        ('a0000000-0000-0000-0000-000000000201'::uuid, '00000000-0000-0000-0000-000000000061'::uuid, 'API Post 1', 'Body 1', true, now() - interval '5 minutes')
       `)
       await db.execute(sql`
         INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-        ('a0000000-0000-0000-0000-000000000202'::uuid, 'b-feed-api', 'API Post 2', 'Body 2', true, now() - interval '3 minutes')
+        ('a0000000-0000-0000-0000-000000000202'::uuid, '00000000-0000-0000-0000-000000000061'::uuid, 'API Post 2', 'Body 2', true, now() - interval '3 minutes')
       `)
       await refreshFeedView(db)
     }
@@ -532,9 +532,9 @@ if (Deno.env.get('PG_CONNECTION')) {
         const id = `a0000000-0000-0000-0000-${
           String(300 + i).padStart(12, '0')
         }`
-        await db.execute(sql`
+                  await db.execute(sql`
           INSERT INTO merchant_posts (id, business_id, title, body, is_visible, created_at) VALUES
-          (${id}::uuid, 'b-feed-api', ${'Extra Post ' + i}, ${
+          (${id}::uuid, '00000000-0000-0000-0000-000000000061'::uuid, ${'Extra Post ' + i}, ${
           'Body ' + i
         }, true, now() - interval '1 minute')
         `)

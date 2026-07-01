@@ -7,8 +7,8 @@ import * as schema from '../db/schema.ts'
 import { eq } from 'drizzle-orm'
 
 Deno.test('Business API CRUD Operations', async (t) => {
-  const testId = `biz-api-test-${Date.now()}`
-  const userId = `user-${Date.now()}`
+  const testId = crypto.randomUUID()
+  const userId = `user-${crypto.randomUUID()}`
 
   // Create parent user for FK constraint
   await db.insert(schema.users).values({

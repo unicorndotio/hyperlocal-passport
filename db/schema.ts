@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
@@ -29,7 +30,7 @@ export const users = pgTable('user', {
 
 // ── Businesses ──
 export const businesses = pgTable('businesses', {
-  id: text('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').notNull().references(() => users.id),
   name: text('name').notNull(),
   companyName: text('company_name').notNull(),
@@ -50,8 +51,8 @@ export const businesses = pgTable('businesses', {
 
 // ── Coupons ──
 export const coupons = pgTable('coupons', {
-  id: text('id').primaryKey(),
-  businessId: text('business_id').notNull().references(() => businesses.id),
+  id: uuid('id').primaryKey().defaultRandom(),
+  businessId: uuid('business_id').notNull().references(() => businesses.id),
   title: text('title').notNull(),
   description: text('description'),
   behavior: jsonb('behavior').notNull(),
@@ -64,9 +65,9 @@ export const coupons = pgTable('coupons', {
 
 // ── Redemptions ──
 export const redemptions = pgTable('redemptions', {
-  id: text('id').primaryKey(),
-  couponId: text('coupon_id').notNull().references(() => coupons.id),
-  businessId: text('business_id').notNull().references(() => businesses.id),
+  id: uuid('id').primaryKey().defaultRandom(),
+  couponId: uuid('coupon_id').notNull().references(() => coupons.id),
+  businessId: uuid('business_id').notNull().references(() => businesses.id),
   userId: text('user_id').notNull().references(() => users.id),
   status: text('status').notNull().default('active'),
   redeemedAt: timestamp('redeemed_at').notNull().defaultNow(),
@@ -82,12 +83,12 @@ export const redemptions = pgTable('redemptions', {
 
 // ── Transactions ──
 export const transactions = pgTable('transactions', {
-  id: text('id').primaryKey(),
-  redemptionId: text('redemption_id').notNull().references(() =>
+  id: uuid('id').primaryKey().defaultRandom(),
+  redemptionId: uuid('redemption_id').notNull().references(() =>
     redemptions.id
   ),
-  couponId: text('coupon_id').notNull().references(() => coupons.id),
-  businessId: text('business_id').notNull().references(() => businesses.id),
+  couponId: uuid('coupon_id').notNull().references(() => coupons.id),
+  businessId: uuid('business_id').notNull().references(() => businesses.id),
   userId: text('user_id').notNull().references(() => users.id),
   totalAmountCents: integer('total_amount_cents').notNull(),
   discountAppliedCents: integer('discount_applied_cents').notNull(),
@@ -101,7 +102,7 @@ export const transactions = pgTable('transactions', {
 
 // ── Signals ──
 export const signals = pgTable('signals', {
-  id: text('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').notNull().references(() => users.id),
   category: text('category').notNull(),
   description: text('description'),
@@ -114,8 +115,8 @@ export const signals = pgTable('signals', {
 
 // ── Coupon Analytics ──
 export const couponAnalytics = pgTable('coupon_analytics', {
-  id: text('id').primaryKey(),
-  couponId: text('coupon_id').notNull().unique().references(() => coupons.id, {
+  id: uuid('id').primaryKey().defaultRandom(),
+  couponId: uuid('coupon_id').notNull().unique().references(() => coupons.id, {
     onDelete: 'cascade',
   }),
   views: integer('views').notNull().default(0),
@@ -125,8 +126,8 @@ export const couponAnalytics = pgTable('coupon_analytics', {
 
 // ── Merchant Posts ──
 export const merchantPosts = pgTable('merchant_posts', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  businessId: text('business_id').notNull().references(() => businesses.id),
+  id: uuid('id').primaryKey().defaultRandom(),
+  businessId: uuid('business_id').notNull().references(() => businesses.id),
   title: varchar('title', { length: 255 }).notNull(),
   body: text('body'),
   imageUrl: varchar('image_url', { length: 500 }),
@@ -139,7 +140,7 @@ export const merchantPosts = pgTable('merchant_posts', {
 
 // ── File Metadata ──
 export const fileMetadata = pgTable('file_metadata', {
-  id: text('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   filename: text('filename').notNull().unique(),
   userId: text('user_id'),
   isPublic: boolean('is_public').notNull().default(false),

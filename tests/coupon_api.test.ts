@@ -79,7 +79,7 @@ Deno.test({
     const getSessionStub = mockStub(auth.api, 'getSession', adminSession)
 
     try {
-      const businessId = 'biz_api_' + Math.random().toString(36).slice(2)
+      const businessId = crypto.randomUUID()
       const userId = 'admin_user'
       let couponId: string
 
@@ -228,7 +228,7 @@ Deno.test({
   sanitizeResources: false,
   fn: async (t) => {
     const getSessionStub = mockStub(auth.api, 'getSession', adminSession)
-    const businessId = 'behav_biz_' + Math.random().toString(36).slice(2)
+    const businessId = crypto.randomUUID()
     const userId = 'admin_user'
     const createdIds: string[] = []
 
