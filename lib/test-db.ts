@@ -68,6 +68,7 @@ export async function cleanupDatabase(): Promise<void> {
       merchant_posts,
       file_metadata,
       coupons,
+      partner_ledger,
       businesses
   `)
 }

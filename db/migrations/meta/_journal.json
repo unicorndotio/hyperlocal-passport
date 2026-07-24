@@ -8,6 +8,20 @@
       "when": 1784856927525,
       "tag": "0000_0000_initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784908000000,
+      "tag": "0001_add_business_address_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784908225096,
+      "tag": "0002_add_partner_ledger",
+      "breakpoints": true
     }
   ]
 }

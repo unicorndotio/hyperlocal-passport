@@ -5,12 +5,12 @@ import * as schema from '../../../../db/schema.ts'
 import { eq } from 'drizzle-orm'
 import { uploadFile } from '../../../../lib/storage.ts'
 import {
-  validateOpeningHours,
-  validateSocialLinks,
+  normalizeCep,
+  validateBusinessCategory,
   validateCep,
   validateMapsUrl,
-  validateBusinessCategory,
-  normalizeCep,
+  validateOpeningHours,
+  validateSocialLinks,
 } from '../../../../lib/business.ts'
 import { json } from '../../../../lib/utils.ts'
 

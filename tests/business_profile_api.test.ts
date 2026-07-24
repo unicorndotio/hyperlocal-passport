@@ -6,13 +6,13 @@ import {
 import { db } from '../lib/db.ts'
 import * as schema from '../db/schema.ts'
 import { eq } from 'drizzle-orm'
-import { useDatabase, cleanupDatabase } from '../lib/test-db.ts'
+import { cleanupDatabase, useDatabase } from '../lib/test-db.ts'
 import {
+  BUSINESS_CATEGORIES,
+  normalizeCep,
+  validateBusinessCategory,
   validateCep,
   validateMapsUrl,
-  validateBusinessCategory,
-  normalizeCep,
-  BUSINESS_CATEGORIES,
 } from '../lib/business.ts'
 import type { SessionUser } from '../utils.ts'
 
@@ -57,7 +57,9 @@ Deno.test('Business Profile API — unit: validateMapsUrl', async (t) => {
       undefined,
     )
     assertEquals(
-      validateMapsUrl('https://www.google.com/maps/place/Teste/@-23.5,-46.6,15z'),
+      validateMapsUrl(
+        'https://www.google.com/maps/place/Teste/@-23.5,-46.6,15z',
+      ),
       undefined,
     )
     assertEquals(
@@ -84,7 +86,11 @@ Deno.test('Business Profile API — unit: validateMapsUrl', async (t) => {
 Deno.test('Business Profile API — unit: validateBusinessCategory', async (t) => {
   await t.step('accepts all valid categories', () => {
     for (const cat of BUSINESS_CATEGORIES) {
-      assertEquals(validateBusinessCategory(cat), undefined, `should accept ${cat}`)
+      assertEquals(
+        validateBusinessCategory(cat),
+        undefined,
+        `should accept ${cat}`,
+      )
     }
   })
 
@@ -249,11 +255,14 @@ Deno.test('Business Profile API — integration: validateCep rejects invalid via
 
   // Test invalid CEP via JSON path
   const body = JSON.stringify({ cep: 'abc' })
-  const req = new Request(`http://localhost/api/businesses/${businessId}/profile`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
+  const req = new Request(
+    `http://localhost/api/businesses/${businessId}/profile`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    },
+  )
 
   const { handleProfileUpdate } = await import(
     '../routes/api/businesses/[id]/profile.ts'
@@ -295,11 +304,14 @@ Deno.test('Business Profile API — integration: validateMapsUrl rejects invalid
   })
 
   const body = JSON.stringify({ mapsUrl: 'not-a-valid-url' })
-  const req = new Request(`http://localhost/api/businesses/${businessId}/profile`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
+  const req = new Request(
+    `http://localhost/api/businesses/${businessId}/profile`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    },
+  )
 
   const { handleProfileUpdate } = await import(
     '../routes/api/businesses/[id]/profile.ts'
@@ -341,11 +353,14 @@ Deno.test('Business Profile API — integration: validateCategory rejects invali
   })
 
   const body = JSON.stringify({ category: 'InvalidCategory' })
-  const req = new Request(`http://localhost/api/businesses/${businessId}/profile`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
+  const req = new Request(
+    `http://localhost/api/businesses/${businessId}/profile`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    },
+  )
 
   const { handleProfileUpdate } = await import(
     '../routes/api/businesses/[id]/profile.ts'
@@ -394,11 +409,14 @@ Deno.test('Business Profile API — integration: handler saves all new fields', 
     mapsUrl: 'https://maps.google.com/?q=-23.5,-46.6',
     category: 'Serviços',
   })
-  const req = new Request(`http://localhost/api/businesses/${businessId}/profile`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
+  const req = new Request(
+    `http://localhost/api/businesses/${businessId}/profile`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    },
+  )
 
   const { handleProfileUpdate } = await import(
     '../routes/api/businesses/[id]/profile.ts'
@@ -456,11 +474,14 @@ Deno.test('Business Profile API — integration: handler clears fields with null
     neighborhood: null,
     mapsUrl: null,
   })
-  const req = new Request(`http://localhost/api/businesses/${businessId}/profile`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
+  const req = new Request(
+    `http://localhost/api/businesses/${businessId}/profile`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    },
+  )
 
   const { handleProfileUpdate } = await import(
     '../routes/api/businesses/[id]/profile.ts'
@@ -510,11 +531,14 @@ Deno.test('Business Profile API — integration: handler clears fields with empt
   })
 
   const body = JSON.stringify({ cep: '', street: '', number: '', mapsUrl: '' })
-  const req = new Request(`http://localhost/api/businesses/${businessId}/profile`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
+  const req = new Request(
+    `http://localhost/api/businesses/${businessId}/profile`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    },
+  )
 
   const { handleProfileUpdate } = await import(
     '../routes/api/businesses/[id]/profile.ts'

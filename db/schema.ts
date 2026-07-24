@@ -262,6 +262,21 @@ export const feedEvents = pgTable('feed_events', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 })
 
+// ── Partner Ledger ──
+export const partnerLedger = pgTable('partner_ledger', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  businessId: uuid('business_id').notNull().references(() => businesses.id, {
+    onDelete: 'cascade',
+  }),
+  amountCents: integer('amount_cents').notNull(),
+  months: integer('months').notNull(),
+  paymentDate: timestamp('payment_date', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull()
+    .defaultNow(),
+}, (table) => ({
+  idxBusinessId: index('idx_partner_ledger_business_id').on(table.businessId),
+}))
+
 // ── Relations ──
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -279,6 +294,7 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
   redemptions: many(redemptions),
   transactions: many(transactions),
   merchantPosts: many(merchantPosts),
+  partnerLedger: many(partnerLedger),
 }))
 
 export const couponsRelations = relations(coupons, ({ one, many }) => ({
@@ -326,6 +342,13 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
 export const merchantPostsRelations = relations(merchantPosts, ({ one }) => ({
   business: one(businesses, {
     fields: [merchantPosts.businessId],
+    references: [businesses.id],
+  }),
+}))
+
+export const partnerLedgerRelations = relations(partnerLedger, ({ one }) => ({
+  business: one(businesses, {
+    fields: [partnerLedger.businessId],
     references: [businesses.id],
   }),
 }))

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Database Schema Updates
 type: backend
 complexity: low
@@ -26,9 +26,9 @@ Adds required address fields and subscription tracking to the business schema, e
 </requirements>
 
 ## Subtasks
-- [ ] 01.1 Update `db/schema.ts` to include new columns in `businesses`.
-- [ ] 01.2 Update `db/schema.ts` to include the `partner_ledger` table schema.
-- [ ] 01.3 Generate SQL migrations using `drizzle-kit generate`.
+- [x] 01.1 Update `db/schema.ts` to include new columns in `businesses`.
+- [x] 01.2 Update `db/schema.ts` to include the `partner_ledger` table schema.
+- [x] 01.3 Generate SQL migrations using `drizzle-kit generate`.
 
 ## Implementation Details
 Reference the Data Models section in the TechSpec.
@@ -49,10 +49,10 @@ Reference the Data Models section in the TechSpec.
 
 ## Tests
 - Unit tests:
-  - [ ] Schema validation: test insertion into `partner_ledger`.
-  - [ ] Schema validation: test insertion of new address fields into `businesses`.
+  - [x] Schema validation: test insertion into `partner_ledger`.
+  - [x] Schema validation: test insertion of new address fields into `businesses`.
 - Integration tests:
-  - [ ] End-to-end flow from DB insert to query for `partner_ledger`.
+  - [x] End-to-end flow from DB insert to query for `partner_ledger`.
 - Test coverage target: >=80%
 - All tests must pass
 

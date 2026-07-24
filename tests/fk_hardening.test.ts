@@ -33,8 +33,8 @@ Deno.test('FK hardening - has onDelete cascade pattern', () => {
 
   assertEquals(
     cascadeCount,
-    10,
-    `Expected 10 cascade FKs, found ${cascadeCount}`,
+    11,
+    `Expected 11 cascade FKs, found ${cascadeCount}`,
   )
   assertEquals(
     restrictCount,
