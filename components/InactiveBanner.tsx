@@ -22,14 +22,14 @@ export default function InactiveBanner({ isActive }: Props) {
           />
         </svg>
         <p class='text-sm text-amber-800'>
-          Sua conta está inativa. Entre em contato com{' '}
+          Sua conta está pendente. Entre em contato com{' '}
           <a
             href='mailto:passaporte@nodolabs.xyz'
             class='font-semibold underline hover:text-amber-900'
           >
             passaporte@nodolabs.xyz
           </a>{' '}
-          para reativar seu plano e voltar a criar campanhas e publicações.
+          para ativar seu plano e começar a criar suas campanhas e publicações.
         </p>
       </div>
     </div>

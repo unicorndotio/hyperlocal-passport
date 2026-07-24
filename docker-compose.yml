@@ -1,58 +1,84 @@
 services:
-  postgres:
+  # PostgreSQL for Passaporte Local
+  passport-postgres:
     image: postgres:18-alpine
-    ports:
-      - '5432:5432'
+    container_name: passport-postgres
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: pg
+      POSTGRES_USER: ${DB_USER:-root}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-passport}
     volumes:
-      - pgdata:/var/lib/postgresql
+      - passport-postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U root -d pg']
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-root} -d ${DB_NAME:-passport}']
       interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
-  gateway:
-    image: ghcr.io/drizzle-team/gateway:latest
+    networks:
+      - passport-network
     ports:
-      - '4983:4983'
+      # Only expose if you need local access; omit for production
+      - '${DB_PORT:-5432}:5432'
+
+  # Drizzle Gateway (optional, for Drizzle Studio)
+  passport-drizzle-gateway:
+    image: ghcr.io/drizzle-team/gateway:latest
+    container_name: passport-drizzle-gateway
     environment:
-      MASTERPASS: ${MASTERPASS:-password}
-      PG_CONNECTION: postgresql://root:password@postgres:5432/pg
+      MASTERPASS: ${DRIZZLE_MASTERPASS:-password}
+      PG_CONNECTION: postgresql://${DB_USER:-root}:${DB_PASSWORD:-password}@passport-postgres:5432/${DB_NAME:-passport}
       STORE_PATH: /app/data
     volumes:
-      - drizzle-store:/app/data
+      - passport-drizzle-gateway-data:/app/data
     depends_on:
-      postgres:
+      passport-postgres:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - passport-network
+    ports:
+      - '${DRIZZLE_GATEWAY_PORT:-4983}:4983'
 
-  web:
+  # Deno Fresh app server (serves all neighborhoods)
+  passport-web:
     build:
       context: .
+      dockerfile: Dockerfile
       args:
         GIT_REVISION: ${GIT_REVISION:-dev}
-    ports:
-      - '8000:8000'
+    container_name: passport-web
     environment:
-      - UPLOADS_DIR=/app/uploads
-      - PG_CONNECTION=postgresql://root:password@postgres:5432/pg
-      - APP_BASE_URL=http://localhost:8000
-      - BETTER_AUTH_URL=http://localhost:8000
-      - BETTER_AUTH_SECRET=c94a90989040561858f261455d0e7fde0d905f7a2c39633d17d68b3712edf756
+      # Core app config
+      UPLOADS_DIR: /app/uploads
+      DENO_DEPLOYMENT_ID: ${GIT_REVISION:-dev}
+      
+      # Database connection (use service name for Docker networking)
+      PG_CONNECTION: postgresql://${DB_USER:-root}:${DB_PASSWORD:-password}@passport-postgres:5432/${DB_NAME:-passport}
+      
+      # Auth configuration
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-c94a90989040561858f261455d0e7fde0d905f7a2c39633d17d68b3712edf756}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8000}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:8000}
     volumes:
-      - passport_uploads:/app/uploads
-
+      - passport-uploads:/app/uploads
     depends_on:
-      postgres:
+      passport-postgres:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - passport-network
+    ports:
+      - '${APP_PORT:-8000}:8000'
 
 volumes:
-  passport_uploads:
-  pgdata:
-  drizzle-store:
+  passport-postgres-data:
+    driver: local
+  passport-drizzle-gateway-data:
+    driver: local
+  passport-uploads:
+    driver: local
+
+networks:
+  passport-network:
+    driver: bridge

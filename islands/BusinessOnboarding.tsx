@@ -11,9 +11,9 @@ interface Step {
 const STEPS: Step[] = [
   {
     targetSelector: null,
-    title: 'Bem-vindo ao Novo Painel!',
+    title: 'Bem-vindo ao Painel do Parceiro!',
     description:
-      'Redesignamos o painel do lojista para você gerenciar cupons, validar descontos e acompanhar métricas — tudo em um só lugar. Vamos te mostrar as novidades.',
+      'Desenhamos o painel do parceiro para você gerenciar seus cupons e campanhas, validar descontos e acompanhar métricas tudo em um só lugar. Vamos te mostrar as novidades.',
     position: 'center',
   },
   {
@@ -30,13 +30,13 @@ const STEPS: Step[] = [
       'Valide cupons dos clientes no checkout. Digite o código ou use o leitor de QR code para aplicar o desconto na hora.',
     position: 'bottom',
   },
-  {
-    targetSelector: 'a[href="/business/analytics"]',
-    title: 'Analytics',
-    description:
-      'Acompanhe o desempenho dos seus cupons: visualizações, resgates, validações e histórico completo de transações.',
-    position: 'bottom',
-  },
+  // {
+  //   targetSelector: 'a[href="/business/analytics"]',
+  //   title: 'Analytics',
+  //   description:
+  //     'Acompanhe o desempenho dos seus cupons: visualizações, resgates, validações e histórico completo de transações.',
+  //   position: 'bottom',
+  // },
   {
     targetSelector: 'a[href="/business/profile"]',
     title: 'Meu Perfil',
@@ -308,7 +308,8 @@ export default function BusinessOnboarding({ business, businessId }: Props) {
             : <div />}
 
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button
+            {
+              /* <button
               onClick={handleDismiss}
               style={{
                 padding: '8px 16px',
@@ -321,7 +322,8 @@ export default function BusinessOnboarding({ business, businessId }: Props) {
               }}
             >
               Pular
-            </button>
+            </button> */
+            }
 
             {isLast
               ? (
