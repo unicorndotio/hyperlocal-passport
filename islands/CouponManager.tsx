@@ -106,9 +106,10 @@ function inputToTs(str: string): number | undefined {
 interface Props {
   businessId: string
   initialCoupons: Coupon[]
+  isBusinessActive?: boolean
 }
 
-export default function CouponManager({ businessId, initialCoupons }: Props) {
+export default function CouponManager({ businessId, initialCoupons, isBusinessActive = true }: Props) {
   const coupons = useSignal<Coupon[]>(initialCoupons)
   const showForm = useSignal(false)
   const editingId = useSignal<string | null>(null)
@@ -607,6 +608,8 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
             }
           }}
           variant={showForm.value ? 'outline' : 'default'}
+          disabled={!isBusinessActive}
+          title={!isBusinessActive ? 'Conta inativa' : undefined}
         >
           {showForm.value ? 'Cancelar' : 'Novo Cupom'}
         </Button>
@@ -1102,9 +1105,12 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                       <button
                         type='button'
                         onClick={() => handleToggleActive(coupon)}
+                        disabled={!isBusinessActive}
+                        title={!isBusinessActive ? 'Conta inativa' : undefined}
                         class={cn(
                           'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                           coupon.isActive ? 'bg-green-500' : 'bg-slate-300',
+                          !isBusinessActive && 'cursor-not-allowed opacity-50'
                         )}
                       >
                         <span
@@ -1121,6 +1127,8 @@ export default function CouponManager({ businessId, initialCoupons }: Props) {
                       <Button
                         variant='outline'
                         size='xs'
+                        disabled={!isBusinessActive}
+                        title={!isBusinessActive ? 'Conta inativa' : undefined}
                         onClick={() => {
                           populateCouponForm(coupon)
                           openForm()

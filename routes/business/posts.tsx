@@ -59,7 +59,7 @@ export default define.page(async function BusinessPostsPage(ctx) {
   return (
     <div className='min-h-screen bg-slate-50'>
       <BusinessOnboarding business={business} businessId={business.id} />
-      <BusinessHeader active='posts' businessName={business.name} />
+      <BusinessHeader active='posts' businessName={business.name} isActiveBusiness={business.isActive} />
 
       <main className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <Card>
@@ -67,7 +67,7 @@ export default define.page(async function BusinessPostsPage(ctx) {
             <CardTitle>Publicações</CardTitle>
           </CardHeader>
           <CardContent>
-            <MerchantPostForm businessId={business.id} initialPosts={posts} />
+            <MerchantPostForm businessId={business.id} initialPosts={posts} isBusinessActive={business.isActive} />
           </CardContent>
         </Card>
       </main>

@@ -20,10 +20,11 @@ interface MerchantPost {
 interface Props {
   businessId: string
   initialPosts: MerchantPost[]
+  isBusinessActive?: boolean
 }
 
 export default function MerchantPostForm(
-  { businessId: _businessId, initialPosts }: Props,
+  { businessId: _businessId, initialPosts, isBusinessActive = true }: Props,
 ) {
   const posts = useSignal<MerchantPost[]>(initialPosts)
   const showForm = useSignal(false)
@@ -136,6 +137,8 @@ export default function MerchantPostForm(
             if (showForm.value) resetForm()
           }}
           variant={showForm.value ? 'outline' : 'default'}
+          disabled={!isBusinessActive}
+          title={!isBusinessActive ? 'Conta inativa' : undefined}
         >
           {showForm.value ? 'Cancelar' : 'Nova Publicação'}
         </Button>
@@ -247,7 +250,9 @@ export default function MerchantPostForm(
                       <button
                         type='button'
                         onClick={() => handleDelete(post.id)}
-                        class='text-red-500 hover:text-red-700 text-sm font-medium'
+                        disabled={!isBusinessActive}
+                        title={!isBusinessActive ? 'Conta inativa' : undefined}
+                        class={`text-sm font-medium ${!isBusinessActive ? 'text-slate-400 cursor-not-allowed' : 'text-red-500 hover:text-red-700'}`}
                       >
                         Excluir
                       </button>

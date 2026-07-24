@@ -10,6 +10,8 @@ Task 02 (Business Profile API Updates): COMPLETE. Schema migrated with new addre
 
 Task 04 (Partner Profile Frontend Updates & Categories): COMPLETE. `BUSINESS_CATEGORIES` updated to 14-category taxonomy in `lib/business.ts`. `BusinessProfileEditor` island now includes read-only company info section, category dropdown, CEP/street/number/neighborhood/mapsUrl inputs. Form submits all fields to API. Test coverage at 15 tests passing.
 
+Task 07 (Inactive Dashboard State & Hide Analytics): COMPLETE. Added `isBusinessActive` prop to `BusinessHeader`, `MerchantPostForm`, and `CouponManager`. Inactive businesses see a read-only state with actions disabled and a warning banner. Analytics tab was removed.
+
 ## Shared Decisions
 
 - `BUSINESS_CATEGORIES` in `lib/business.ts` is the source of truth for business category validation (14 categories: Gastronomia, Moda, Casa & Decor, Corpo & Fitness, Beleza, Saúde & Farmácia, Educação, Mercado & Conveniência, Serviços, Eventos & Experiências, Hotelaria, Comércio Geral & Outros, Pet & Veterinária, Automotivo).

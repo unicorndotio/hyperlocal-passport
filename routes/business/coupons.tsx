@@ -64,7 +64,7 @@ export default define.page(async function BusinessCouponsPage(ctx) {
   return (
     <div className='min-h-screen bg-slate-50'>
       <BusinessOnboarding business={business} businessId={business.id} />
-      <BusinessHeader active='coupons' businessName={business.name} />
+      <BusinessHeader active='coupons' businessName={business.name} isActiveBusiness={business.isActive} />
 
       <main className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <Card>
@@ -72,7 +72,7 @@ export default define.page(async function BusinessCouponsPage(ctx) {
             <CardTitle>Gerenciamento de Cupons</CardTitle>
           </CardHeader>
           <CardContent>
-            <CouponManager businessId={business.id} initialCoupons={coupons} />
+            <CouponManager businessId={business.id} initialCoupons={coupons} isBusinessActive={business.isActive} />
           </CardContent>
         </Card>
       </main>
