@@ -1,7 +1,7 @@
 import { define } from '../utils.ts'
 import { Head } from 'fresh/runtime'
 
-export default define.page(function LojistasLandingPage() {
+export default define.page(function PartnersLandingPage() {
   return (
     <div class='min-h-screen bg-[#FFF5E6] font-sans selection:bg-[#FAD4C0] selection:text-[#111827]'>
       <Head>
@@ -19,7 +19,7 @@ export default define.page(function LojistasLandingPage() {
             Passaporte Jurerê
           </p>
           <h1 class='text-4xl md:text-5xl font-bold text-[#111827] tracking-tight'>
-            Portal do Lojista
+            Portal do Parceiro
           </h1>
           <p class='text-[#80A1C1] text-lg mt-4 max-w-xl mx-auto leading-relaxed'>
             Faça parte da rede exclusiva que conecta os melhores
@@ -60,7 +60,7 @@ export default define.page(function LojistasLandingPage() {
               href='/business/register'
               class='inline-flex px-8 py-4 rounded-xl bg-[#111827] text-[#FFF5E6] font-medium font-mono text-sm uppercase tracking-wider text-center hover:bg-[#111827]/90 transition-all transform hover:-translate-y-0.5 shadow-lg focus:ring-2 focus:ring-offset-2 focus:ring-[#111827] outline-none'
             >
-              Iniciar Cadastro da Loja
+              Iniciar Cadastro
             </a>
           </div>
 
