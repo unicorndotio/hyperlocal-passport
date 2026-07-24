@@ -5,3 +5,15 @@ cov_task04
 .git
 uploads
 data
+.env
+.env.*
+!.env.example
+.vscode
+.agents
+.compozy
+.kiro
+docs
+tests
+logs
+skills
+*.md

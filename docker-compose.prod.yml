@@ -1,0 +1,4 @@
+services:
+  passport-web:
+    build: !reset null
+    image: ghcr.io/unicorndotio/passport-web:latest

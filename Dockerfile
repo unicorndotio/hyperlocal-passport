@@ -1,4 +1,5 @@
-FROM denoland/deno:latest
+# ── Stage 1: build ────────────────────────────────────────────────────────────
+FROM denoland/deno:latest AS builder
 
 ARG GIT_REVISION
 ENV DENO_DEPLOYMENT_ID=${GIT_REVISION}
@@ -8,12 +9,27 @@ WORKDIR /app
 COPY . .
 RUN deno install --allow-scripts
 RUN deno task build
-# Cache all remote imports as root so the deno user can access them at runtime
-RUN deno cache routes/**/*.ts lib/*.ts
+
+# ── Stage 2: runtime ──────────────────────────────────────────────────────────
+FROM denoland/deno:latest
+
+ARG GIT_REVISION
+ENV DENO_DEPLOYMENT_ID=${GIT_REVISION}
+ENV UPLOADS_DIR=/app/uploads
+
+WORKDIR /app
+
+# Copy only what the server needs at runtime
+COPY --from=builder /app/_fresh ./_fresh
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/deno.json .
+COPY --from=builder /app/deno.lock .
+
+# Cache server-side imports using the built entry point
+RUN deno cache _fresh/server.js
 
 EXPOSE 8000
 
-# Create persistence directories
 RUN mkdir -p /app/uploads /app/data && chown -R deno:deno /app
 
 USER deno

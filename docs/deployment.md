@@ -175,13 +175,64 @@ passport-uploads              # User uploads (persisted)
 passport-drizzle-gateway-data # Drizzle metadata (optional)
 ```
 
-### Starting the Containers
+### Build & Deploy Strategy
+
+The app is **built locally and pushed to GitHub Container Registry (GHCR)**. The production droplet only pulls and runs the pre-built image — it never builds from source. This avoids OOM issues on small droplets and makes deploys fast and reproducible.
+
+**Registry:** `ghcr.io/unicorndotio`  
+**Compose override:** `docker-compose.prod.yml` swaps the `build:` block for the registry `image:` on production, keeping `docker-compose.yml` identical to local.
+
+#### First-time authentication
+
+Generate a GitHub Personal Access Token at github.com → Settings → Developer settings → Personal access tokens with scopes:
+- `write:packages` — needed on your Mac to push
+- `read:packages` — needed on the droplet to pull
 
 ```bash
-# Build and start all services
+# On your Mac
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u unicorndotio --password-stdin
+
+# On the droplet
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u unicorndotio --password-stdin
+```
+
+#### From your Mac — ship a new version
+
+```bash
+deno task deploy
+```
+
+Individual steps if needed:
+```bash
+deno task deploy:build   # docker build --platform linux/amd64 ...
+deno task deploy:push    # docker push ghcr.io/unicorndotio/passport-web:latest
+```
+
+#### On the droplet — pull and restart
+
+```bash
+# Pull the new image
+deno task deploy:pull
+
+# Restart the web container with the new image
+deno task deploy:up
+```
+
+`deploy:up` uses `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`, which merges the production override (pre-built image, no build step) on top of the base config.
+
+#### Local development (unchanged)
+
+```bash
+# Build from source and start everything
 docker compose up -d --build
 
-# Verify containers are running
+# Or just start if already built
+docker compose up -d
+```
+
+### Verify containers are running
+
+```bash
 docker ps | grep passport-
 
 # View logs
@@ -290,15 +341,19 @@ sudo certbot renew --dry-run
 
 ## Production Deployment Checklist
 
-- [ ] Domain `passaporte.my` purchased and registered
-- [ ] DNS A record pointing to DigitalOcean droplet IP
-- [ ] DNS wildcard CNAME (`*.passaporte.my`) configured
+- [x] Domain `passaporte.my` purchased and registered
+- [x] DNS A record pointing to DigitalOcean droplet IP
+- [x] DNS wildcard CNAME (`*.passaporte.my`) configured
 - [ ] Nginx installed and configured at `/etc/nginx/sites-available/passaporte.my`
 - [ ] Nginx config enabled (symlink in `/etc/nginx/sites-enabled/`)
 - [ ] Let's Encrypt wildcard SSL certificate installed via certbot
-- [ ] Docker containers built and running: `docker ps | grep passport-`
+- [ ] GitHub Personal Access Token created with `write:packages` (Mac) and `read:packages` (droplet) scopes
+- [ ] `docker login ghcr.io` run on both Mac and droplet
+- [ ] Image built and pushed from Mac: `deno task deploy`
+- [ ] Image pulled on droplet: `deno task deploy:pull`
+- [ ] Containers started on droplet: `deno task deploy:up`
 - [ ] Environment variables set in `.env` (strong passwords, HTTPS URLs)
-- [ ] Database seeded: `deno task db:seed`
+- [ ] Database migrations applied: `deno task db:migrate`
 - [ ] Nginx logs checked: `sudo tail -f /var/log/nginx/error.log`
 - [ ] App logs checked: `docker logs passport-web`
 - [ ] Test neighborhood URL works: `https://jurere.passaporte.my`
