@@ -12,9 +12,11 @@ Task 03 (Admin Ledger API Endpoints): COMPLETE. Ledger and toggle API endpoints 
 
 Task 04 (Partner Profile Frontend Updates & Categories): COMPLETE. `BUSINESS_CATEGORIES` updated to 14-category taxonomy in `lib/business.ts`. `BusinessProfileEditor` island now includes read-only company info section, category dropdown, CEP/street/number/neighborhood/mapsUrl inputs. Form submits all fields to API. Test coverage at 15 tests passing.
 
-Task 07 (Inactive Dashboard State & Hide Analytics): COMPLETE. Added `isBusinessActive` prop to `BusinessHeader`, `MerchantPostForm`, and `CouponManager`. Inactive businesses see a read-only state with actions disabled and a warning banner. Analytics tab was removed.
+Task 05 (Partner Campaign Form Simplification): COMPLETE. Campaign form simplified with presets, currency mask, and inactive restrictions.
 
-## Shared Decisions
+Task 06 (Admin Ledger UI Integration): COMPLETE. `BusinessManager.tsx` updated with `expirationDate` column, "Registrar Pgto" button per row, Log Payment modal (BRL currency mask via `formatCurrencyInput`/`parseCurrencyToCents` helpers, months integer, date picker). Modal calls `POST /api/admin/businesses/:id/ledger` and updates in-memory list on success. Tests in `tests/admin_ledger_ui.test.ts` (8 currency unit tests pass, 5 integration + 1 fetch-mock tests require Docker DB). `deno task check` exits 0.
+
+Task 07 (Inactive Dashboard State & Hide Analytics): COMPLETE. Added `isBusinessActive` prop to `BusinessHeader`, `MerchantPostForm`, and `CouponManager`. Inactive businesses see a read-only state with actions disabled and a warning banner. Analytics tab was removed.
 
 - `BUSINESS_CATEGORIES` in `lib/business.ts` is the source of truth for business category validation (14 categories: Gastronomia, Moda, Casa & Decor, Corpo & Fitness, Beleza, Saúde & Farmácia, Educação, Mercado & Conveniência, Serviços, Eventos & Experiências, Hotelaria, Comércio Geral & Outros, Pet & Veterinária, Automotivo).
 - CEP is normalized to 8 digits on save (no dash stored).

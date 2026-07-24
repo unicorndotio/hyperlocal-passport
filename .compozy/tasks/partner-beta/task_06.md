@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Admin Ledger UI Integration
 type: frontend
 complexity: medium
@@ -27,9 +27,9 @@ Adds the UI components to the Admin Dashboard to allow administrators to log man
 </requirements>
 
 ## Subtasks
-- [ ] 06.1 Add a "Log Payment" button or modal to the BusinessManager list/detail view.
-- [ ] 06.2 Create the payment form with currency mask for the amount and integer input for months.
-- [ ] 06.3 Display the `expirationDate` on the admin business list.
+- [x] 06.1 Add a "Log Payment" button or modal to the BusinessManager list/detail view.
+- [x] 06.2 Create the payment form with currency mask for the amount and integer input for months.
+- [x] 06.3 Display the `expirationDate` on the admin business list.
 
 ## Implementation Details
 Reference the TechSpec for admin UI modifications.
@@ -47,7 +47,7 @@ Reference the TechSpec for admin UI modifications.
 
 ## Tests
 - Unit tests:
-  - [ ] Form submission: triggers API call with correct payload.
+  - [x] Form submission: triggers API call with correct payload.
 - Integration tests:
   - [ ] None required.
 - Test coverage target: >=80%

@@ -19,6 +19,7 @@ interface Business {
   description?: string
   userId: string
   isActive: boolean
+  expirationDate?: string | null
   createdAt?: string
 }
 
@@ -39,13 +40,37 @@ const CATEGORIES = [
   'Outro',
 ]
 
+// ── Currency helpers ──────────────────────────────────────────────────────────
+
+/** Parses a Brazilian Real display string (e.g. "R$ 1.500,00") to integer cents. */
+function parseCurrencyToCents(display: string): number {
+  // Strip everything except digits and the last comma/dot separator
+  const digits = display.replace(/\D/g, '')
+  return parseInt(digits || '0', 10)
+}
+
+/**
+ * Formats an input value as Brazilian Real currency while the user types.
+ * Always keeps two decimal places and separates thousands with dots.
+ * e.g. typing "15000" → "R$ 150,00"
+ */
+function formatCurrencyInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').replace(/^0+/, '') || '0'
+  const padded = digits.padStart(3, '0')
+  const intPart = padded.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const decPart = padded.slice(-2)
+  return `R$ ${intPart || '0'},${decPart}`
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function BusinessManager() {
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Modal state
+  // Business create/edit modal state
   const [isOpen, setIsOpen] = useState(false)
   const [isEdit, setIsEdit] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -63,6 +88,17 @@ export default function BusinessManager() {
   const [formErrors, setFormErrors] = useState<BusinessFormErrors>({})
   const [saving, setSaving] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
+
+  // Log Payment modal state
+  const [ledgerOpen, setLedgerOpen] = useState(false)
+  const [ledgerBusiness, setLedgerBusiness] = useState<Business | null>(null)
+  const [ledgerAmount, setLedgerAmount] = useState('R$ 0,00')
+  const [ledgerMonths, setLedgerMonths] = useState(1)
+  const [ledgerDate, setLedgerDate] = useState(
+    () => new Date().toISOString().slice(0, 10),
+  )
+  const [ledgerSaving, setLedgerSaving] = useState(false)
+  const [ledgerError, setLedgerError] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([fetchBusinesses(), fetchUsers()]).finally(() =>
@@ -145,6 +181,69 @@ export default function BusinessManager() {
       alert(err instanceof Error ? err.message : 'Erro ao atualizar status')
     } finally {
       setActionLoadingId(null)
+    }
+  }
+
+  function handleOpenLedger(b: Business) {
+    setLedgerBusiness(b)
+    setLedgerAmount('R$ 0,00')
+    setLedgerMonths(1)
+    setLedgerDate(new Date().toISOString().slice(0, 10))
+    setLedgerError(null)
+    setLedgerOpen(true)
+  }
+
+  async function handleLedgerSubmit(e: Event) {
+    e.preventDefault()
+    if (!ledgerBusiness) return
+
+    const amountCents = parseCurrencyToCents(ledgerAmount)
+    if (amountCents <= 0) {
+      setLedgerError('Informe um valor maior que zero.')
+      return
+    }
+    if (!Number.isInteger(ledgerMonths) || ledgerMonths < 1) {
+      setLedgerError('Informe ao menos 1 mês.')
+      return
+    }
+    if (!ledgerDate) {
+      setLedgerError('Informe a data do pagamento.')
+      return
+    }
+
+    setLedgerSaving(true)
+    setLedgerError(null)
+
+    try {
+      const res = await fetch(
+        `/api/admin/businesses/${ledgerBusiness.id}/ledger`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amountCents,
+            months: ledgerMonths,
+            paymentDate: new Date(ledgerDate).toISOString(),
+          }),
+        },
+      )
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Falha ao registrar pagamento')
+      }
+
+      const updated = await res.json()
+      setBusinesses((prev) =>
+        prev.map((item) => item.id === updated.id ? updated : item)
+      )
+      setLedgerOpen(false)
+    } catch (err) {
+      setLedgerError(
+        err instanceof Error ? err.message : 'Erro ao registrar pagamento',
+      )
+    } finally {
+      setLedgerSaving(false)
     }
   }
 
@@ -288,6 +387,9 @@ export default function BusinessManager() {
                   <th className='px-6 py-4 font-semibold text-slate-700'>
                     Status
                   </th>
+                  <th className='px-6 py-4 font-semibold text-slate-700'>
+                    Validade
+                  </th>
                   <th className='px-6 py-4 font-semibold text-slate-700 text-right'>
                     Ações
                   </th>
@@ -370,6 +472,17 @@ export default function BusinessManager() {
                             </Badge>
                           )}
                       </td>
+                      <td className='px-6 py-4 text-slate-600 text-xs whitespace-nowrap'>
+                        {b.expirationDate
+                          ? new Date(b.expirationDate).toLocaleDateString(
+                            'pt-BR',
+                          )
+                          : (
+                            <span className='text-slate-400 italic'>
+                              Sem validade
+                            </span>
+                          )}
+                      </td>
                       <td className='px-6 py-4 text-right space-x-2 whitespace-nowrap'>
                         <Button
                           variant='outline'
@@ -378,6 +491,15 @@ export default function BusinessManager() {
                           disabled={actionLoadingId === b.id}
                         >
                           Editar
+                        </Button>
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          className='border-emerald-300 text-emerald-700 hover:bg-emerald-50'
+                          onClick={() => handleOpenLedger(b)}
+                          disabled={actionLoadingId === b.id}
+                        >
+                          Registrar Pgto
                         </Button>
                         <Button
                           variant={b.isActive !== false
@@ -621,6 +743,119 @@ export default function BusinessManager() {
                   className='bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm transition-colors border-none'
                 >
                   {saving ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Log Payment Modal */}
+      {ledgerOpen && ledgerBusiness && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'>
+          <div className='bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl'>
+            <button
+              type='button'
+              onClick={() => setLedgerOpen(false)}
+              className='absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl transition-colors'
+              disabled={ledgerSaving}
+            >
+              ×
+            </button>
+
+            <h3 className='text-xl font-bold text-slate-900 mb-1'>
+              Registrar Pagamento
+            </h3>
+            <p className='text-sm text-slate-500 mb-6'>
+              {ledgerBusiness.companyName || ledgerBusiness.name}
+            </p>
+
+            {ledgerBusiness.expirationDate && (
+              <div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700'>
+                Validade atual:{' '}
+                <span className='font-semibold'>
+                  {new Date(ledgerBusiness.expirationDate).toLocaleDateString(
+                    'pt-BR',
+                  )}
+                </span>{' '}
+                — o novo pagamento será somado a esta data.
+              </div>
+            )}
+
+            {ledgerError && (
+              <div className='mb-4 p-3 bg-red-50 text-red-700 text-xs rounded border border-red-200'>
+                {ledgerError}
+              </div>
+            )}
+
+            <form onSubmit={handleLedgerSubmit} className='space-y-4'>
+              <div>
+                <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
+                  Valor Pago *
+                </label>
+                <input
+                  type='text'
+                  inputMode='numeric'
+                  value={ledgerAmount}
+                  onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => {
+                    setLedgerAmount(
+                      formatCurrencyInput(e.currentTarget.value),
+                    )
+                  }}
+                  className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono'
+                  disabled={ledgerSaving}
+                  aria-label='Valor pago em reais'
+                />
+              </div>
+
+              <div>
+                <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
+                  Duração (meses) *
+                </label>
+                <input
+                  type='number'
+                  min={1}
+                  max={24}
+                  value={ledgerMonths}
+                  onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setLedgerMonths(
+                      parseInt(e.currentTarget.value || '1', 10),
+                    )}
+                  className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm'
+                  disabled={ledgerSaving}
+                  aria-label='Duração em meses'
+                />
+              </div>
+
+              <div>
+                <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
+                  Data do Pagamento *
+                </label>
+                <input
+                  type='date'
+                  value={ledgerDate}
+                  onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setLedgerDate(e.currentTarget.value)}
+                  className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm'
+                  disabled={ledgerSaving}
+                  aria-label='Data do pagamento'
+                />
+              </div>
+
+              <div className='flex justify-end gap-3 pt-4 border-t border-slate-100'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => setLedgerOpen(false)}
+                  disabled={ledgerSaving}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type='submit'
+                  disabled={ledgerSaving}
+                  className='bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm transition-colors border-none'
+                >
+                  {ledgerSaving ? 'Salvando...' : 'Confirmar Pagamento'}
                 </Button>
               </div>
             </form>

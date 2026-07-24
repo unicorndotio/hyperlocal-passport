@@ -181,7 +181,6 @@ Deno.test('CouponManager UI Integration (Mocked)', async (t) => {
   globalThis.fetch = originalFetch
 })
 
-
 // --- Task 05 Unit Tests ---
 import { formatCurrencyMask } from '../lib/utils.ts'
 
@@ -199,7 +198,11 @@ Deno.test('Task 05: Currency masking — number input 1500 formats as "R$ 15,00"
 
 Deno.test('Task 05: Preset selection — "Benefício Fidelidade" sets correct internal constraints', () => {
   // Mirror the getDefaultsForPreset logic from CouponManager
-  type BehaviorTypeName = 'percentage_discount' | 'fixed_amount' | 'bogo' | 'item_specific'
+  type BehaviorTypeName =
+    | 'percentage_discount'
+    | 'fixed_amount'
+    | 'bogo'
+    | 'item_specific'
   interface PresetDefaults {
     behaviorType: BehaviorTypeName
     behaviorFields: Record<string, number>
