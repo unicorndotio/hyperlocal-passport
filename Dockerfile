@@ -24,6 +24,8 @@ COPY --from=builder /app/_fresh ./_fresh
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/deno.json .
 COPY --from=builder /app/deno.lock .
+COPY --from=builder /app/drizzle.config.ts .
+COPY --from=builder /app/db ./db
 
 # Cache server-side imports using the built entry point
 RUN deno cache _fresh/server.js
