@@ -50,7 +50,9 @@ Environment variables required: `PG_CONNECTION`, `BETTER_AUTH_SECRET`, `APP_BASE
 
 ## Status
 
-Resident Frontend V1 and Core Database Migration completed (June 2026). The app now features a hybrid resident home feed (merchant posts + system events + personal savings), a persistent bottom navigation system, a premium Bento-style digital passport with hardware-accelerated transitions, and server-side image compression. All features are live, tested, and audited.
+Partner Beta completed (July 2026). The platform now supports full business partner onboarding with expanded profile fields (address, Google Maps link), a simplified campaign creation flow with four preset models (Benefício Fidelidade, Promoção Relâmpago, Promoção de Evento, Liquidação de Item), and an admin partner ledger for tracking payments and managing subscription status. Inactive businesses are placed in a read-only mode with a contact-us banner. The onboarding wizard overlay and positioning issues are resolved. All features are live, tested, and audited.
+
+Previous milestone: Resident Frontend V1 completed (June 2026) — hybrid resident home feed, persistent bottom navigation, premium Bento-style digital passport with hardware-accelerated transitions, and server-side image compression.
 
 ## Docs
 

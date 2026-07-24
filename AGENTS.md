@@ -131,14 +131,17 @@ All entities are in PostgreSQL via Drizzle. Key tables:
 | Table | Purpose |
 |-------|---------|
 | `users` | All user accounts (residents, businesses, admins) |
-| `businesses` | Business profiles linked to a user |
+| `businesses` | Business profiles linked to a user (includes address fields, `expirationDate`, `isActive`) |
 | `coupons` | Coupon offers created by businesses |
 | `redemptions` | Active codes generated when a resident redeems a coupon |
 | `transactions` | Completed checkouts recorded by the business cashier |
 | `merchant_posts` | Post announcements published by merchants to the feed |
 | `file_metadata` | Metadata for uploaded documents and logos |
+| `partner_ledger` | Admin-recorded payment entries (amount, months, date) linked to a business |
 
 Coupon behavior is stored as a discriminated union (`behavior` field) supporting: `percentage_discount`, `fixed_amount`, `buy_x_get_y`, `item_specific`.
+
+**Inactive businesses** (`isActive = false`) have UI-level read-only restrictions: they can view existing coupons and posts but all create/edit actions are disabled and a contact-us banner is shown. API-level enforcement is deferred to post-beta.
 
 ---
 
@@ -171,6 +174,8 @@ Coupon behavior is stored as a discriminated union (`behavior` field) supporting
 |--------|------|-------------|
 | GET | `/api/admin/approvals/pending` | Pending resident verifications |
 | POST | `/api/admin/approvals/:userId` | Approve or reject a resident |
+| POST | `/api/admin/businesses/:id/ledger` | Record a payment entry (`amountCents`, `months`, `paymentDate`); sets `isActive = true` and advances `expirationDate` |
+| POST | `/api/admin/businesses/:id/toggle` | Manually toggle `isActive` and optionally override `expirationDate` |
 
 ---
 

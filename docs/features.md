@@ -64,15 +64,33 @@ Dispatches by coupon behavior type:
 
 ### Coupon Management
 - Business or admin creates coupons with: title, behavior type, restrictions
-- Restrictions: global cap, per-user monthly cap, valid from/until, minimum purchase value
-- Template presets for common promotions (Simple Discount, Flash Sale, Loyalty Perk, Event Promo, Item Clearance)
-- Custom mode for power users who want to configure every restriction field
+- Simplified creation flow: four preset campaign models auto-configure the underlying rules
+  - *Benefício Fidelidade*: percentage discount, unlimited redemptions, no expiration — the default "always-on" partner benefit
+  - *Promoção Relâmpago*: percentage discount valid for 7 days
+  - *Promoção de Evento*: time-boxed event offer
+  - *Liquidação de Item*: item-specific discount with a global unit limit
+- Frequency and per-user limit fields are hidden during creation (global defaults apply)
+- `maxUnits` field is shown only for BOGO and item-specific types
+- Monetary inputs are formatted in BRL (R$ 15,00) — converted to/from integer cents at the API boundary
 - Edit (PATCH) existing coupons: update restrictions, discount value, active status
-- Basic and special coupon types (special = limited-time / limited-quantity event offers)
+- Custom mode for power users who want to configure every restriction field
 
 ### Opening Hours
 - Per-day open/close hours stored on business profile
 - Individual days can be removed (marked as closed)
+
+### Partner Profile
+- Expanded profile editor with address fields: CEP (8-digit, normalized), street, number, neighborhood
+- Google Maps link field for in-app deep-link to business location
+- Category selector with the 14-category taxonomy: Gastronomia, Moda, Casa & Decor, Corpo & Fitness, Beleza, Saúde & Farmácia, Educação, Mercado & Conveniência, Serviços, Eventos & Experiências, Hotelaria, Comércio Geral & Outros, Pet & Veterinária, Automotivo
+- Read-only display for registration-time fields (Nome Fantasia, Razão Social, CNPJ)
+
+### Inactive Business State
+- Businesses with `isActive = false` enter a read-only mode across the dashboard
+- Warning banner on all pages instructs the partner to contact `passaporte@nodolabs.xyz` to reactivate
+- Create and edit buttons on the Coupons and Posts pages are visually disabled and unclickable
+- Existing coupons and posts remain viewable (no data is hidden)
+- Enforcement is client-side for the beta phase; API-level checks are deferred to post-beta
 
 ### Post Publishing
 - Simplified publisher UI form for businesses to write text updates and upload promotional images.
@@ -93,6 +111,12 @@ Dispatches by coupon behavior type:
 - Create, read, update, deactivate business profiles
 - Assign business profile to a user account
 - Manage logo upload, category, discount offer, CNPJ
+
+### Partner Ledger
+- Per-business payment log in the admin dashboard — records date, value (BRL), and months covered
+- Recording a payment automatically sets `isActive = true` and advances `expirationDate` by the paid months
+- Manual toggle to override `isActive` and set an arbitrary `expirationDate` for edge cases
+- Expiration date visible per row in the business management table
 
 ### User Auditing
 - System-wide visibility into all users by role and status

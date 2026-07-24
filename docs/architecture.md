@@ -66,9 +66,15 @@ Schema source of truth: `db/schema.ts`.
 | userId | string | FK → users |
 | companyName | string | |
 | cnpj | string | |
-| category | string | e.g. `casa`, `corpo`, `alimentacao`, `esporte` |
+| category | string | one of 14 categories (see `BUSINESS_CATEGORIES` in `lib/business.ts`) |
 | logoUrl | string | path served via `/api/uploads/:filename` |
-| isActive | boolean | controls catalog visibility |
+| isActive | boolean | controls catalog visibility and partner status |
+| expirationDate | timestamp | end date of current subscription; advanced on ledger payment |
+| cep | string | 8-digit zip code (normalized, no dash) |
+| street | string | nullable |
+| number | string | nullable |
+| neighborhood | string | nullable |
+| mapsUrl | string | Google Maps link; nullable |
 | openingHours | jsonb | nullable per-day entries |
 
 ### `coupons`
@@ -120,6 +126,16 @@ type CouponBehavior =
 
 ### `file_metadata`
 Tracks uploaded files (resident documents, business logos). Actual bytes on disk at Docker volume mount.
+
+### `partner_ledger`
+| Field | Type | Notes |
+|-------|------|-------|
+| id | string (uuid) | PK |
+| businessId | string | FK → businesses (cascade delete) |
+| amountCents | integer | payment amount in cents |
+| months | integer | subscription months covered by this payment |
+| paymentDate | timestamp | recorded date of payment |
+| createdAt | timestamp | row creation time |
 
 ### `merchant_posts`
 | Field | Type | Notes |

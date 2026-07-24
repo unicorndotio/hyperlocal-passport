@@ -162,6 +162,73 @@ Deno KV's `findMany` falls back to O(N) full-table scans with no secondary index
 
 ---
 
+## Workflow 5 — Partner Beta
+
+**Status:** Completed (July 2026)
+**Scope:** Finalised the business-facing product for a soft launch with initial business partners. Introduced expanded partner profiles, a simplified campaign creation flow, an admin partner ledger, inactive-business restrictions, and onboarding wizard fixes.
+
+### Problems Fixed
+- The onboarding wizard rendered behind page content due to missing `position: fixed` and z-index on center-positioned tooltip steps; background clicks dismissed it prematurely.
+- Business profiles lacked physical address fields and a Google Maps link, making it impossible to populate the catalog with location data residents need.
+- The coupon creation form exposed confusing configuration options (frequency caps, per-user limits) irrelevant to typical micro-entrepreneur workflows.
+- Monetary inputs required raw cent values (e.g. `1500`) instead of natural BRL strings (`R$ 15,00`).
+- Inactive (non-paying) businesses had no clear signal that they were restricted, and no path to reactivation.
+- Admins had no structured way to record payments or track subscription expiration per business.
+
+### What Was Built
+
+**Task 01 — Database Schema Updates**
+- Added `partner_ledger` table (`id`, `businessId` FK, `amountCents`, `months`, `paymentDate`, `createdAt`) with cascade-delete and an index on `businessId`.
+- Added address columns to `businesses`: `cep`, `street`, `number`, `neighborhood`, `mapsUrl`, `expirationDate`.
+- Generated migrations `0001_add_business_address_fields.sql` and `0002_add_partner_ledger.sql`; applied to dev DB.
+
+**Task 02 — Business Profile API Updates**
+- Extended `PUT /api/businesses/:id/profile` to validate and persist address fields and `mapsUrl`.
+- Added `BUSINESS_CATEGORIES` constant (14 categories) to `lib/business.ts` as source of truth for category validation.
+- CEP normalised to 8 digits on save; `mapsUrl` validated with `new URL()`.
+
+**Task 03 — Admin Ledger API Endpoints**
+- `POST /api/admin/businesses/:id/ledger` — inserts a `partner_ledger` row, sets `isActive = true`, and advances `expirationDate`.
+- `POST /api/admin/businesses/:id/toggle` — manually overrides `isActive` and optionally `expirationDate`.
+
+**Task 04 — Partner Profile Frontend Updates & Categories**
+- `BusinessProfileEditor` island updated with read-only company info section, category dropdown, and all address/maps inputs.
+- Category list replaced with the 14-category taxonomy.
+
+**Task 05 — Partner Campaign Form Simplification**
+- Four preset campaign models replace the previous five-preset set: Benefício Fidelidade, Promoção Relâmpago, Promoção de Evento, Liquidação de Item.
+- Frequency and user-limit fields hidden; `maxUnits` shown only for BOGO and item-specific types.
+- BRL currency mask (`Intl.NumberFormat`) applied to all monetary inputs; converted to/from integer cents at the API boundary.
+
+**Task 06 — Admin Ledger UI Integration**
+- `BusinessManager.tsx` updated with `expirationDate` column and a "Registrar Pgto" button per row.
+- Log Payment modal includes BRL currency input, months field, and date picker; POSTs to ledger endpoint and updates the in-memory list on success.
+
+**Task 07 — Inactive Dashboard State & Hide Analytics**
+- `isBusinessActive` prop threaded from SSR routes into `BusinessHeader`, `MerchantPostForm`, and `CouponManager`.
+- Inactive partners see a contact-us warning banner; create/edit actions are disabled across Coupons and Posts pages.
+- Analytics navigation link removed from `BusinessHeader`; the analytics page remains accessible by direct URL. `BusinessHeaderTab` type union exported to keep `analytics.tsx` type-safe.
+
+**Task 08 — Onboarding Wizard Fixes**
+- Center-positioned steps now correctly apply `position: fixed` + `z-index: 1001` to the tooltip (previously `tooltipStyle` was `{}`).
+- `onClick={handleDismiss}` removed from the backdrop div so background clicks no longer close the wizard.
+
+### Architecture Changes
+- New `partner_ledger` table; two new DB migrations.
+- New admin API routes for ledger and toggle.
+- `BUSINESS_CATEGORIES` in `lib/business.ts` is the canonical category list.
+- No new services or external dependencies introduced.
+
+### Key Decisions
+- Inactive restrictions enforced via client-side UI disablement for beta speed (ADR-001); API-level checks deferred to post-beta.
+- `partner_ledger` FK uses `onDelete: cascade` consistent with the project's ownership-chain pattern (ADR-002).
+- Currency masking uses native `Intl.NumberFormat` (no extra library) to minimise bundle size.
+
+### Open Questions at Completion
+- API-level enforcement for inactive businesses should be fast-tracked if any beta partner attempts to bypass the UI restrictions.
+
+---
+
 ## Open Questions (Across All Workflows)
 
 These have not been resolved and should be addressed before or during the relevant future workflow:
