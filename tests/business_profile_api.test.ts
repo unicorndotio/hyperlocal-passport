@@ -125,7 +125,7 @@ Deno.test('Business Profile API — integration: full update with new fields', a
     name: 'Original Business',
     companyName: 'Original Business Ltda',
     cnpj: `${Date.now()}11222333000181`,
-    category: 'Alimentação',
+    category: 'Gastronomia',
     logoUrl: 'http://localhost/logo.png',
     userId,
     isActive: true,
@@ -168,7 +168,7 @@ Deno.test('Business Profile API — integration: clear address fields', async ()
     name: 'Clear Test Biz',
     companyName: 'Clear Test Biz Ltda',
     cnpj: `${Date.now()}99888777000181`,
-    category: 'Outro',
+    category: 'Comércio Geral & Outros',
     logoUrl: 'http://localhost/logo.png',
     userId,
     cep: '88000000',
@@ -214,7 +214,7 @@ Deno.test('Business Profile API — integration: reject invalid category via DB 
     name: 'Cat Reject Biz',
     companyName: 'Cat Reject Biz Ltda',
     cnpj: `${Date.now()}77666555000181`,
-    category: 'Alimentação',
+    category: 'Gastronomia',
     logoUrl: 'http://localhost/logo.png',
     userId,
     isActive: true,
@@ -223,10 +223,10 @@ Deno.test('Business Profile API — integration: reject invalid category via DB 
   // Category validation happens at API level, not DB level.
   // Verify that the valid category update works, and note the API handles validation.
   const [updated] = await db.update(schema.businesses).set({
-    category: 'Esporte',
+    category: 'Corpo & Fitness',
   }).where(eq(schema.businesses.id, businessId)).returning()
 
-  assertEquals(updated.category, 'Esporte')
+  assertEquals(updated.category, 'Corpo & Fitness')
 
   await db.delete(schema.businesses).where(eq(schema.businesses.id, businessId))
   await db.delete(schema.users).where(eq(schema.users.id, userId))
@@ -247,7 +247,7 @@ Deno.test('Business Profile API — integration: validateCep rejects invalid via
     name: 'Handler CEP Biz',
     companyName: 'Handler CEP Biz Ltda',
     cnpj: `${Date.now()}55444333000181`,
-    category: 'Alimentação',
+    category: 'Gastronomia',
     logoUrl: 'http://localhost/logo.png',
     userId,
     isActive: true,
@@ -297,7 +297,7 @@ Deno.test('Business Profile API — integration: validateMapsUrl rejects invalid
     name: 'Handler Map Biz',
     companyName: 'Handler Map Biz Ltda',
     cnpj: `${Date.now()}44333222000181`,
-    category: 'Alimentação',
+    category: 'Gastronomia',
     logoUrl: 'http://localhost/logo.png',
     userId,
     isActive: true,
@@ -346,7 +346,7 @@ Deno.test('Business Profile API — integration: validateCategory rejects invali
     name: 'Handler Cat Biz',
     companyName: 'Handler Cat Biz Ltda',
     cnpj: `${Date.now()}33222111000181`,
-    category: 'Alimentação',
+    category: 'Gastronomia',
     logoUrl: 'http://localhost/logo.png',
     userId,
     isActive: true,
@@ -395,7 +395,7 @@ Deno.test('Business Profile API — integration: handler saves all new fields', 
     name: 'Handler Save Biz',
     companyName: 'Handler Save Biz Ltda',
     cnpj: `${Date.now()}22111000999000181`,
-    category: 'Alimentação',
+    category: 'Gastronomia',
     logoUrl: 'http://localhost/logo.png',
     userId,
     isActive: true,
@@ -456,7 +456,7 @@ Deno.test('Business Profile API — integration: handler clears fields with null
     name: 'Handler Clear Biz',
     companyName: 'Handler Clear Biz Ltda',
     cnpj: `${Date.now()}11999000888000181`,
-    category: 'Outro',
+    category: 'Comércio Geral & Outros',
     logoUrl: 'http://localhost/logo.png',
     userId,
     cep: '88000000',
@@ -520,7 +520,7 @@ Deno.test('Business Profile API — integration: handler clears fields with empt
     name: 'Handler Empty Biz',
     companyName: 'Handler Empty Biz Ltda',
     cnpj: `${Date.now()}88777666555000181`,
-    category: 'Casa',
+    category: 'Casa & Decor',
     logoUrl: 'http://localhost/logo.png',
     userId,
     cep: '88000000',

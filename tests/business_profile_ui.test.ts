@@ -79,7 +79,7 @@ const TEST_BUSINESS = {
   name: 'Restaurante Teste',
   companyName: 'Restaurante Teste Ltda',
   cnpj: '12.345.678/0001-90',
-  category: 'Alimentação',
+  category: 'Gastronomia',
   description: 'Melhor restaurante da região',
   logoUrl: 'http://localhost:8000/api/uploads/logo.png',
   socialLinks: {
@@ -90,6 +90,11 @@ const TEST_BUSINESS = {
     monday: { open: '09:00', close: '18:00' },
     friday: { open: '09:00', close: '22:00' },
   },
+  cep: '88000-000',
+  street: 'Rua Teste',
+  number: '123',
+  neighborhood: 'Centro',
+  mapsUrl: 'https://maps.google.com/?q=-23.5,-46.6',
   isActive: false,
   createdAt: new Date().toISOString(),
 }
@@ -115,6 +120,20 @@ Deno.test('BusinessProfileEditor - renders all expected form fields', async () =
 
   assertStringIncludes(html, 'Logotipo')
   assertStringIncludes(html, 'Descrição')
+  assertStringIncludes(html, 'Nome Fantasia')
+  assertStringIncludes(html, 'Razão Social')
+  assertStringIncludes(html, 'CNPJ')
+  assertStringIncludes(html, 'Restaurante Teste')
+  assertStringIncludes(html, 'Restaurante Teste Ltda')
+  assertStringIncludes(html, '12.345.678/0001-90')
+  assertStringIncludes(html, 'Categoria')
+  assertStringIncludes(html, 'Gastronomia')
+  assertStringIncludes(html, 'Endereço')
+  assertStringIncludes(html, 'CEP')
+  assertStringIncludes(html, 'Rua')
+  assertStringIncludes(html, 'Número')
+  assertStringIncludes(html, 'Bairro')
+  assertStringIncludes(html, 'Google Maps')
   assertStringIncludes(html, 'Redes Sociais')
   assertStringIncludes(html, 'Instagram')
   assertStringIncludes(html, 'Facebook')
@@ -185,6 +204,11 @@ Deno.test(
     assertStringIncludes(html, '09:00')
     assertStringIncludes(html, '18:00')
     assertStringIncludes(html, '22:00')
+    assertStringIncludes(html, '88000-000')
+    assertStringIncludes(html, 'Rua Teste')
+    assertStringIncludes(html, '123')
+    assertStringIncludes(html, 'Centro')
+    assertStringIncludes(html, 'https://maps.google.com/?q=-23.5,-46.6')
   },
 )
 
@@ -318,6 +342,12 @@ Deno.test('BusinessProfileEditor - API submission logic', async (t) => {
 
       const formData = new FormData()
       formData.append('description', 'Updated description')
+      formData.append('category', 'Gastronomia')
+      formData.append('cep', '88000000')
+      formData.append('street', 'Rua Nova')
+      formData.append('number', '456')
+      formData.append('neighborhood', 'Centro')
+      formData.append('mapsUrl', 'https://maps.google.com/?q=-23.5,-46.6')
       formData.append(
         'socialLinks',
         JSON.stringify({ instagram: 'https://instagram.com/test' }),

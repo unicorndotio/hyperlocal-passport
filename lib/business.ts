@@ -1,12 +1,18 @@
 export const BUSINESS_CATEGORIES = [
-  'Alimentação',
-  'Casa',
-  'Corpo',
-  'Esporte',
+  'Gastronomia',
+  'Moda',
+  'Casa & Decor',
+  'Corpo & Fitness',
+  'Beleza',
+  'Saúde & Farmácia',
+  'Educação',
+  'Mercado & Conveniência',
   'Serviços',
-  'Náutica',
-  'Entretenimento',
-  'Outro',
+  'Eventos & Experiências',
+  'Hotelaria',
+  'Comércio Geral & Outros',
+  'Pet & Veterinária',
+  'Automotivo',
 ] as const
 
 export type BusinessCategory = typeof BUSINESS_CATEGORIES[number]

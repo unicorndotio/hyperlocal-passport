@@ -1,10 +1,10 @@
 import { useState } from 'preact/hooks'
 import type { JSX } from 'preact'
-import type {
-  Business,
-  OpeningHours,
-  OpeningHoursEntry,
-  SocialLinks,
+import type { Business, OpeningHours, SocialLinks } from '@/lib/business.ts'
+import {
+  BUSINESS_CATEGORIES,
+  formatCnpjDisplay,
+  normalizeCep,
 } from '@/lib/business.ts'
 import { Button } from '@/components/ui/button.tsx'
 
@@ -82,6 +82,12 @@ export default function BusinessProfileEditor({ business }: Props) {
   const [openingHours, setOpeningHours] = useState<OpeningHours>(
     business.openingHours || {},
   )
+  const [category, setCategory] = useState(business.category || '')
+  const [cep, setCep] = useState(business.cep || '')
+  const [street, setStreet] = useState(business.street || '')
+  const [number, setNumber] = useState(business.number || '')
+  const [neighborhood, setNeighborhood] = useState(business.neighborhood || '')
+  const [mapsUrl, setMapsUrl] = useState(business.mapsUrl || '')
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [removedDays, setRemovedDays] = useState<Set<string>>(new Set())
 
@@ -127,6 +133,21 @@ export default function BusinessProfileEditor({ business }: Props) {
   function validate(): boolean {
     const errors: Record<string, string> = {}
 
+    if (cep) {
+      const clean = cep.replace(/\D/g, '')
+      if (clean.length !== 8) {
+        errors.cep = 'CEP inválido. Use 00000-000.'
+      }
+    }
+
+    if (mapsUrl) {
+      try {
+        new URL(mapsUrl)
+      } catch {
+        errors.mapsUrl = 'URL do Google Maps inválida.'
+      }
+    }
+
     for (const [key, value] of Object.entries(socialLinks)) {
       if (value && !validateSocialLinkURL(value)) {
         errors[`social_${key}`] = `URL inválida`
@@ -170,6 +191,18 @@ export default function BusinessProfileEditor({ business }: Props) {
     try {
       const formData = new FormData()
       formData.append('description', description)
+
+      formData.append('category', category)
+
+      if (cep) {
+        formData.append('cep', normalizeCep(cep))
+      } else {
+        formData.append('cep', '')
+      }
+      formData.append('street', street)
+      formData.append('number', number)
+      formData.append('neighborhood', neighborhood)
+      formData.append('mapsUrl', mapsUrl)
 
       const sl: Record<string, string> = {}
       for (const [key, value] of Object.entries(socialLinks)) {
@@ -259,6 +292,33 @@ export default function BusinessProfileEditor({ business }: Props) {
         )}
 
         <form onSubmit={handleSubmit} className='p-6 space-y-6'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg'>
+            <div>
+              <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
+                Nome Fantasia
+              </label>
+              <p className='text-sm text-slate-900 font-medium'>
+                {business.name}
+              </p>
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
+                Razão Social
+              </label>
+              <p className='text-sm text-slate-900 font-medium'>
+                {business.companyName}
+              </p>
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
+                CNPJ
+              </label>
+              <p className='text-sm text-slate-900 font-medium font-mono'>
+                {formatCnpjDisplay(business.cnpj)}
+              </p>
+            </div>
+          </div>
+
           <div>
             <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
               Logotipo
@@ -298,6 +358,123 @@ export default function BusinessProfileEditor({ business }: Props) {
               placeholder='Descreva seu negócio e principais ofertas...'
               disabled={saving}
             />
+          </div>
+
+          <div>
+            <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
+              Categoria
+            </label>
+            <select
+              value={category}
+              onInput={(e: JSX.TargetedEvent<HTMLSelectElement, Event>) =>
+                setCategory(e.currentTarget.value)}
+              className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
+              disabled={saving}
+            >
+              <option value=''>Selecione uma categoria</option>
+              {BUSINESS_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className='block text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wider'>
+              Endereço
+            </label>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div>
+                <label className='block text-xs font-medium text-slate-600 mb-1'>
+                  CEP
+                </label>
+                <input
+                  type='text'
+                  value={cep}
+                  onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setCep(e.currentTarget.value)}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                    formErrors.cep
+                      ? 'border-red-500 ring-1 ring-red-500'
+                      : 'border-slate-300'
+                  }`}
+                  placeholder='00000-000'
+                  disabled={saving}
+                />
+                {formErrors.cep && (
+                  <p className='mt-1 text-xs text-red-500'>
+                    {formErrors.cep}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className='block text-xs font-medium text-slate-600 mb-1'>
+                  Rua
+                </label>
+                <input
+                  type='text'
+                  value={street}
+                  onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setStreet(e.currentTarget.value)}
+                  className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
+                  placeholder='Nome da rua / logradouro'
+                  disabled={saving}
+                />
+              </div>
+              <div>
+                <label className='block text-xs font-medium text-slate-600 mb-1'>
+                  Número
+                </label>
+                <input
+                  type='text'
+                  value={number}
+                  onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setNumber(e.currentTarget.value)}
+                  className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
+                  placeholder='Número'
+                  disabled={saving}
+                />
+              </div>
+              <div>
+                <label className='block text-xs font-medium text-slate-600 mb-1'>
+                  Bairro
+                </label>
+                <input
+                  type='text'
+                  value={neighborhood}
+                  onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                    setNeighborhood(e.currentTarget.value)}
+                  className='w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
+                  placeholder='Bairro'
+                  disabled={saving}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className='block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wider'>
+              Google Maps
+            </label>
+            <input
+              type='url'
+              value={mapsUrl}
+              onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) =>
+                setMapsUrl(e.currentTarget.value)}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                formErrors.mapsUrl
+                  ? 'border-red-500 ring-1 ring-red-500'
+                  : 'border-slate-300'
+              }`}
+              placeholder='https://maps.google.com/?q=...'
+              disabled={saving}
+            />
+            {formErrors.mapsUrl && (
+              <p className='mt-1 text-xs text-red-500'>
+                {formErrors.mapsUrl}
+              </p>
+            )}
           </div>
 
           <div>
