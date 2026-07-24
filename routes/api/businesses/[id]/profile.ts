@@ -7,6 +7,10 @@ import { uploadFile } from '../../../../lib/storage.ts'
 import {
   validateOpeningHours,
   validateSocialLinks,
+  validateCep,
+  validateMapsUrl,
+  validateBusinessCategory,
+  normalizeCep,
 } from '../../../../lib/business.ts'
 import { json } from '../../../../lib/utils.ts'
 
@@ -72,6 +76,57 @@ export async function handleProfileUpdate(
       updateData.socialLinks = socialLinks
     }
 
+    const cep = formData.get('cep')
+    if (cep !== null && typeof cep === 'string') {
+      const trimmed = cep.trim()
+      if (trimmed) {
+        const err = validateCep(trimmed)
+        if (err) return json({ error: err }, 400)
+        updateData.cep = normalizeCep(trimmed)
+      } else {
+        updateData.cep = null
+      }
+    }
+
+    const street = formData.get('street')
+    if (street !== null && typeof street === 'string') {
+      updateData.street = street.trim() || null
+    }
+
+    const number = formData.get('number')
+    if (number !== null && typeof number === 'string') {
+      updateData.number = number.trim() || null
+    }
+
+    const neighborhood = formData.get('neighborhood')
+    if (neighborhood !== null && typeof neighborhood === 'string') {
+      updateData.neighborhood = neighborhood.trim() || null
+    }
+
+    const mapsUrl = formData.get('mapsUrl')
+    if (mapsUrl !== null && typeof mapsUrl === 'string') {
+      const trimmed = mapsUrl.trim()
+      if (trimmed) {
+        const err = validateMapsUrl(trimmed)
+        if (err) return json({ error: err }, 400)
+        updateData.mapsUrl = trimmed
+      } else {
+        updateData.mapsUrl = null
+      }
+    }
+
+    const category = formData.get('category')
+    if (category !== null && typeof category === 'string') {
+      const trimmed = category.trim()
+      if (trimmed) {
+        const err = validateBusinessCategory(trimmed)
+        if (err) return json({ error: err }, 400)
+        updateData.category = trimmed
+      } else {
+        updateData.category = null
+      }
+    }
+
     if (openingHours !== undefined) {
       const err = validateOpeningHours(openingHours)
       if (err) return json({ error: err }, 400)
@@ -127,6 +182,78 @@ export async function handleProfileUpdate(
       const err = validateOpeningHours(body.openingHours)
       if (err) return json({ error: err }, 400)
       updateData.openingHours = body.openingHours
+    }
+
+    if ('cep' in body) {
+      if (body.cep === null || body.cep === '') {
+        updateData.cep = null
+      } else {
+        if (typeof body.cep !== 'string') {
+          return json({ error: 'cep must be a string' }, 400)
+        }
+        const err = validateCep(body.cep)
+        if (err) return json({ error: err }, 400)
+        updateData.cep = normalizeCep(body.cep)
+      }
+    }
+
+    if ('street' in body) {
+      if (body.street === null || body.street === '') {
+        updateData.street = null
+      } else {
+        if (typeof body.street !== 'string') {
+          return json({ error: 'street must be a string' }, 400)
+        }
+        updateData.street = body.street.trim()
+      }
+    }
+
+    if ('number' in body) {
+      if (body.number === null || body.number === '') {
+        updateData.number = null
+      } else {
+        if (typeof body.number !== 'string') {
+          return json({ error: 'number must be a string' }, 400)
+        }
+        updateData.number = body.number.trim()
+      }
+    }
+
+    if ('neighborhood' in body) {
+      if (body.neighborhood === null || body.neighborhood === '') {
+        updateData.neighborhood = null
+      } else {
+        if (typeof body.neighborhood !== 'string') {
+          return json({ error: 'neighborhood must be a string' }, 400)
+        }
+        updateData.neighborhood = body.neighborhood.trim()
+      }
+    }
+
+    if ('mapsUrl' in body) {
+      if (body.mapsUrl === null || body.mapsUrl === '') {
+        updateData.mapsUrl = null
+      } else {
+        if (typeof body.mapsUrl !== 'string') {
+          return json({ error: 'mapsUrl must be a string' }, 400)
+        }
+        const err = validateMapsUrl(body.mapsUrl)
+        if (err) return json({ error: err }, 400)
+        updateData.mapsUrl = body.mapsUrl.trim()
+      }
+    }
+
+    if ('category' in body) {
+      if (body.category === null || body.category === '') {
+        updateData.category = null
+      } else {
+        if (typeof body.category !== 'string') {
+          return json({ error: 'category must be a string' }, 400)
+        }
+        const err = validateBusinessCategory(body.category)
+        if (err) return json({ error: err }, 400)
+        updateData.category = body.category.trim()
+      }
     }
 
     if ('hasSeenMerchantOnboarding' in body) {

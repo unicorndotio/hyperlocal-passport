@@ -1,3 +1,57 @@
+export const BUSINESS_CATEGORIES = [
+  'Alimentação',
+  'Casa',
+  'Corpo',
+  'Esporte',
+  'Serviços',
+  'Náutica',
+  'Entretenimento',
+  'Outro',
+] as const
+
+export type BusinessCategory = typeof BUSINESS_CATEGORIES[number]
+
+const CEP_PATTERN = /^\d{5}-?\d{3}$/
+
+export function normalizeCep(value: string): string {
+  return value.replace(/\D/g, '')
+}
+
+export function validateCep(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value !== 'string') return 'CEP deve ser um texto.'
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  if (!CEP_PATTERN.test(trimmed)) return 'CEP inválido. Use 00000-000.'
+  return undefined
+}
+
+export function validateMapsUrl(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value !== 'string') return 'URL do Google Maps deve ser um texto.'
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  try {
+    new URL(trimmed)
+    return undefined
+  } catch {
+    return 'URL do Google Maps inválida.'
+  }
+}
+
+export function validateBusinessCategory(
+  value: unknown,
+): string | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value !== 'string') return 'Categoria deve ser um texto.'
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  if (!BUSINESS_CATEGORIES.includes(trimmed as BusinessCategory)) {
+    return `Categoria inválida. Use uma das: ${BUSINESS_CATEGORIES.join(', ')}.`
+  }
+  return undefined
+}
+
 export function normalizeCnpj(value: string): string {
   return value.replace(/\D/g, '')
 }
@@ -71,6 +125,12 @@ export interface Business {
   category: string
   description?: string
   logoUrl: string
+  cep?: string
+  street?: string
+  number?: string
+  neighborhood?: string
+  mapsUrl?: string
+  expirationDate?: string
   socialLinks?: SocialLinks
   openingHours?: OpeningHours
   isActive: boolean

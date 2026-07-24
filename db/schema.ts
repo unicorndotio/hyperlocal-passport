@@ -44,6 +44,12 @@ export const businesses = pgTable('businesses', {
   logoUrl: text('logo_url').notNull(),
   socialLinks: jsonb('social_links'),
   openingHours: jsonb('opening_hours'),
+  cep: text('cep'),
+  street: text('street'),
+  number: text('number'),
+  neighborhood: text('neighborhood'),
+  mapsUrl: text('maps_url'),
+  expirationDate: timestamp('expiration_date', { withTimezone: true }),
   isActive: boolean('is_active').notNull().default(false),
   hasSeenMerchantOnboarding: boolean('has_seen_merchant_onboarding').default(
     false,

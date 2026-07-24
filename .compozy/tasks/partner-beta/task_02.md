@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Business Profile API Updates
 type: backend
 complexity: low
@@ -26,8 +26,8 @@ Updates the existing business update API to accept and validate the new address 
 </requirements>
 
 ## Subtasks
-- [ ] 02.1 Update the validation schema in the Business profile API.
-- [ ] 02.2 Ensure the database update operation persists the new fields.
+- [x] 02.1 Update the validation schema in the Business profile API.
+- [x] 02.2 Ensure the database update operation persists the new fields.
 
 ## Implementation Details
 Reference API Design section of the TechSpec.

@@ -5,7 +5,7 @@
 | # | Title | Status | Complexity | Dependencies |
 |---|-------|--------|------------|--------------|
 | 01 | Database Schema Updates | pending | low | — |
-| 02 | Business Profile API Updates | pending | low | task_01 |
+| 02 | Business Profile API Updates | completed | low | task_01 |
 | 03 | Admin Ledger API Endpoints | pending | medium | task_01 |
 | 04 | Partner Profile Frontend Updates & Categories | pending | medium | task_02 |
 | 05 | Partner Campaign Form Simplification | pending | medium | — |
