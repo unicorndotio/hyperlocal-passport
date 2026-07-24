@@ -21,15 +21,6 @@ function makeCoupon(overrides: Partial<Coupon> = {}): Coupon {
   }
 }
 
-const PRESET_NAMES = [
-  'Desconto Simples',
-  'Promoção Relâmpago',
-  'Benefício Fidelidade',
-  'Promoção de Evento',
-  'Liquidação de Item',
-  'Personalizado',
-]
-
 const ALL_COUPON_TYPES: Coupon[] = [
   makeCoupon({
     id: 'c1',
@@ -225,12 +216,10 @@ Deno.test(
     const mod = await import('../../islands/CouponManager.tsx')
     const src = mod.default.toString()
     const presetIds = [
-      'simple-discount',
-      'flash-sale',
       'loyalty-perk',
+      'flash-sale',
       'event-promo',
       'item-clearance',
-      'custom',
     ]
     for (const id of presetIds) {
       assertEquals(
@@ -244,6 +233,28 @@ Deno.test(
 
 // BEHAVIOR-TYPE-SPECIFIC VALIDATION TESTS
 // Testing validation logic by simulating what the component validates
+
+Deno.test('Currency masking utility - formatCurrencyMask', async () => {
+  const { formatCurrencyMask } = await import('../../lib/utils.ts')
+  const res1 = formatCurrencyMask('1500')
+  assertEquals(res1.formatted, 'R$\u00a015,00')
+  assertEquals(res1.cents, 1500)
+
+  const res2 = formatCurrencyMask(1500)
+  assertEquals(res2.formatted, 'R$\u00a015,00')
+  assertEquals(res2.cents, 1500)
+
+  const res3 = formatCurrencyMask('')
+  assertEquals(res3.formatted, 'R$\u00a00,00')
+  assertEquals(res3.cents, 0)
+})
+
+Deno.test('CouponManager - preset logic contains loyalty-perk weekly frequency constraint', async () => {
+  const mod = await import('../../islands/CouponManager.tsx')
+  const src = mod.default.toString()
+  assertEquals(src.includes('loyalty-perk'), true)
+  assertEquals(src.includes('weekly'), true)
+})
 
 Deno.test(
   'CouponManager - client-side validation: title is required',

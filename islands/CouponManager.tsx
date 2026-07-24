@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card.tsx'
-import { cn, formatBRL } from '@/lib/utils.ts'
+import { cn, formatBRL, formatCurrencyMask } from '@/lib/utils.ts'
 
 type BehaviorTypeName =
   | 'percentage_discount'
@@ -25,19 +25,6 @@ interface TemplatePreset {
 
 const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
-    id: 'simple-discount',
-    name: 'Desconto Simples',
-    description: 'Desconto percentual, resgates ilimitados, sempre ativo',
-    icon: '%',
-  },
-  {
-    id: 'flash-sale',
-    name: 'Promoção Relâmpago',
-    description:
-      'Desconto percentual, uma vez por usuário, validade de 7 dias. Para ofertas por tempo limitado.',
-    icon: '\u26A1',
-  },
-  {
     id: 'loyalty-perk',
     name: 'Benefício Fidelidade',
     description:
@@ -45,24 +32,24 @@ const TEMPLATE_PRESETS: TemplatePreset[] = [
     icon: '\u2B50',
   },
   {
+    id: 'flash-sale',
+    name: 'Promoção Relâmpago',
+    description:
+      'Desconto percentual, uso único por morador, validade de 7 dias.',
+    icon: '\u26A1',
+  },
+  {
     id: 'event-promo',
     name: 'Promoção de Evento',
     description:
-      'Desconto em valor fixo, uma vez, validade de 1 dia. Para eventos e feriados.',
+      'Desconto em valor fixo (R$), uso único por morador, validade de 1 dia.',
     icon: '\uD83C\uDF89',
   },
   {
     id: 'item-clearance',
     name: 'Liquidação de Item',
-    description:
-      'Desconto por item, uma vez, limite global. Para liquidar produtos específicos.',
+    description: 'Desconto em item específico com limite total de unidades.',
     icon: '\uD83C\uDFF7\uFE0F',
-  },
-  {
-    id: 'custom',
-    name: 'Personalizado',
-    description: 'Comece do zero — configure tudo manualmente.',
-    icon: '\u2699\uFE0F',
   },
 ]
 
@@ -78,14 +65,6 @@ const BEHAVIOR_OPTIONS: { value: BehaviorTypeName; label: string }[] = [
   { value: 'fixed_amount', label: 'Valor Fixo (R$)' },
   { value: 'bogo', label: 'Compre X Leve Y Grátis (BOGO)' },
   { value: 'item_specific', label: 'Desconto por Item' },
-]
-
-const FREQUENCY_OPTIONS = [
-  { value: '', label: 'Ilimitado' },
-  { value: 'one_time', label: 'Uma vez' },
-  { value: 'daily', label: 'Diário' },
-  { value: 'weekly', label: 'Semanal' },
-  { value: 'monthly', label: 'Mensal' },
 ]
 
 function tsToInput(ts: number | undefined): string {
@@ -109,7 +88,9 @@ interface Props {
   isBusinessActive?: boolean
 }
 
-export default function CouponManager({ businessId, initialCoupons, isBusinessActive = true }: Props) {
+export default function CouponManager(
+  { businessId, initialCoupons, isBusinessActive = true }: Props,
+) {
   const coupons = useSignal<Coupon[]>(initialCoupons)
   const showForm = useSignal(false)
   const editingId = useSignal<string | null>(null)
@@ -185,12 +166,6 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
     selectedTemplate.value = preset.id
     error.value = null
 
-    if (preset.id === 'custom') {
-      resetBehaviorFields('percentage_discount')
-      resetRestrictions()
-      return
-    }
-
     const now = Date.now()
     const defaults = getDefaultsForPreset(preset.id, now)
     behaviorType.value = defaults.behaviorType
@@ -207,11 +182,13 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
     restrictions: Partial<CouponRestrictions>
   } {
     switch (id) {
-      case 'simple-discount':
+      case 'loyalty-perk':
         return {
           behaviorType: 'percentage_discount',
           behaviorFields: { percent: 10 },
-          restrictions: {},
+          restrictions: {
+            usageFrequency: 'weekly' as const,
+          },
         }
       case 'flash-sale':
         return {
@@ -221,14 +198,6 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
             userCap: 1,
             usageFrequency: 'one_time' as const,
             validUntil: now + 7 * 86400000,
-          },
-        }
-      case 'loyalty-perk':
-        return {
-          behaviorType: 'percentage_discount',
-          behaviorFields: { percent: 5 },
-          restrictions: {
-            usageFrequency: 'weekly' as const,
           },
         }
       case 'event-promo':
@@ -267,7 +236,7 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
     resetBehaviorFields(type)
     if (fields.percent !== undefined) percent.value = String(fields.percent)
     if (fields.amountCents !== undefined) {
-      amountCents.value = String(fields.amountCents)
+      amountCents.value = formatCurrencyMask(fields.amountCents).formatted
     }
     if (fields.buyQuantity !== undefined) {
       buyQuantity.value = String(fields.buyQuantity)
@@ -276,10 +245,11 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
       freeQuantity.value = String(fields.freeQuantity)
     }
     if (fields.unitPriceCents !== undefined) {
-      unitPriceCents.value = String(fields.unitPriceCents)
+      unitPriceCents.value = formatCurrencyMask(fields.unitPriceCents).formatted
     }
     if (fields.discountPerUnitCents !== undefined) {
-      discountPerUnitCents.value = String(fields.discountPerUnitCents)
+      discountPerUnitCents.value =
+        formatCurrencyMask(fields.discountPerUnitCents).formatted
     }
   }
 
@@ -302,41 +272,57 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
       maxUnitsPerRedemption.value = String(res.maxUnitsPerRedemption)
     }
     if (res.minimumPurchaseValueCents !== undefined) {
-      minimumPurchaseValueCents.value = String(
+      minimumPurchaseValueCents.value = formatCurrencyMask(
         res.minimumPurchaseValueCents,
-      )
+      ).formatted
     }
+  }
+
+  function parseCents(val: string): number {
+    return formatCurrencyMask(val).cents
   }
 
   function getBehaviorFromForm(): Record<string, unknown> {
     switch (behaviorType.value) {
       case 'percentage_discount':
-        return { type: 'percentage_discount', percent: parseInt(percent.value) }
+        return {
+          type: 'percentage_discount',
+          percent: parseInt(percent.value, 10),
+        }
       case 'fixed_amount':
         return {
           type: 'fixed_amount',
-          amountCents: parseInt(amountCents.value),
+          amountCents: parseCents(amountCents.value),
         }
       case 'bogo':
         return {
           type: 'bogo',
-          buyQuantity: parseInt(buyQuantity.value),
-          freeQuantity: parseInt(freeQuantity.value),
-          unitPriceCents: parseInt(unitPriceCents.value),
+          buyQuantity: parseInt(buyQuantity.value, 10),
+          freeQuantity: parseInt(freeQuantity.value, 10),
+          unitPriceCents: parseCents(unitPriceCents.value),
         }
       case 'item_specific':
         return {
           type: 'item_specific',
-          unitPriceCents: parseInt(unitPriceCents.value),
-          discountPerUnitCents: parseInt(discountPerUnitCents.value),
+          unitPriceCents: parseCents(unitPriceCents.value),
+          discountPerUnitCents: parseCents(discountPerUnitCents.value),
         }
     }
   }
 
   function getRestrictionsFromForm(): CouponRestrictions {
+    let derivedMaxUnits: number | undefined = undefined
+    if (maxUnitsPerRedemption.value) {
+      derivedMaxUnits = parseInt(maxUnitsPerRedemption.value, 10)
+    } else if (behaviorType.value === 'bogo' && freeQuantity.value) {
+      derivedMaxUnits = parseInt(freeQuantity.value, 10)
+    } else if (behaviorType.value === 'item_specific') {
+      derivedMaxUnits = 1
+    }
+
     return {
-      ...(globalCap.value ? { globalCap: parseInt(globalCap.value) } : {}),
-      ...(userCap.value ? { userCap: parseInt(userCap.value) } : {}),
+      ...(globalCap.value ? { globalCap: parseInt(globalCap.value, 10) } : {}),
+      ...(userCap.value ? { userCap: parseInt(userCap.value, 10) } : {}),
       ...(validFrom.value ? { validFrom: inputToTs(validFrom.value) } : {}),
       ...(validUntil.value ? { validUntil: inputToTs(validUntil.value) } : {}),
       ...(usageFrequency.value
@@ -345,14 +331,14 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
             .value as CouponRestrictions['usageFrequency'],
         }
         : {}),
-      ...(maxUnitsPerRedemption.value
+      ...(derivedMaxUnits !== undefined
         ? {
-          maxUnitsPerRedemption: parseInt(maxUnitsPerRedemption.value),
+          maxUnitsPerRedemption: derivedMaxUnits,
         }
         : {}),
       ...(minimumPurchaseValueCents.value
         ? {
-          minimumPurchaseValueCents: parseInt(
+          minimumPurchaseValueCents: parseCents(
             minimumPurchaseValueCents.value,
           ),
         }
@@ -365,23 +351,23 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
 
     switch (behaviorType.value) {
       case 'percentage_discount': {
-        const p = parseInt(percent.value)
+        const p = parseInt(percent.value, 10)
         if (isNaN(p) || p < 1 || p > 100) {
           return 'Percentual deve estar entre 1 e 100.'
         }
         break
       }
       case 'fixed_amount': {
-        const a = parseInt(amountCents.value)
+        const a = parseCents(amountCents.value)
         if (isNaN(a) || a <= 0) {
           return 'Valor deve ser maior que 0.'
         }
         break
       }
       case 'bogo': {
-        const bq = parseInt(buyQuantity.value)
-        const fq = parseInt(freeQuantity.value)
-        const up = parseInt(unitPriceCents.value)
+        const bq = parseInt(buyQuantity.value, 10)
+        const fq = parseInt(freeQuantity.value, 10)
+        const up = parseCents(unitPriceCents.value)
         if (isNaN(bq) || bq < 1) {
           return 'Quantidade para comprar deve ser no mínimo 1.'
         }
@@ -392,8 +378,8 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
         break
       }
       case 'item_specific': {
-        const up = parseInt(unitPriceCents.value)
-        const dp = parseInt(discountPerUnitCents.value)
+        const up = parseCents(unitPriceCents.value)
+        const dp = parseCents(discountPerUnitCents.value)
         if (isNaN(up) || up <= 0) return 'Preço unitário deve ser maior que 0.'
         if (isNaN(dp) || dp <= 0) {
           return 'Desconto por unidade deve ser maior que 0.'
@@ -427,7 +413,8 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
         discountPerUnitCents.value = ''
         break
       case 'fixed_amount':
-        amountCents.value = String(coupon.behavior.amountCents)
+        amountCents.value =
+          formatCurrencyMask(coupon.behavior.amountCents).formatted
         percent.value = ''
         buyQuantity.value = ''
         freeQuantity.value = ''
@@ -437,16 +424,18 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
       case 'bogo':
         buyQuantity.value = String(coupon.behavior.buyQuantity)
         freeQuantity.value = String(coupon.behavior.freeQuantity)
-        unitPriceCents.value = String(coupon.behavior.unitPriceCents)
+        unitPriceCents.value =
+          formatCurrencyMask(coupon.behavior.unitPriceCents).formatted
         percent.value = ''
         amountCents.value = ''
         discountPerUnitCents.value = ''
         break
       case 'item_specific':
-        unitPriceCents.value = String(coupon.behavior.unitPriceCents)
-        discountPerUnitCents.value = String(
+        unitPriceCents.value =
+          formatCurrencyMask(coupon.behavior.unitPriceCents).formatted
+        discountPerUnitCents.value = formatCurrencyMask(
           coupon.behavior.discountPerUnitCents,
-        )
+        ).formatted
         percent.value = ''
         amountCents.value = ''
         buyQuantity.value = ''
@@ -464,9 +453,9 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
       maxUnitsPerRedemption.value = String(r.maxUnitsPerRedemption)
     }
     if (r.minimumPurchaseValueCents) {
-      minimumPurchaseValueCents.value = String(
+      minimumPurchaseValueCents.value = formatCurrencyMask(
         r.minimumPurchaseValueCents,
-      )
+      ).formatted
     }
 
     openForm()
@@ -723,23 +712,19 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
           {behaviorType.value === 'fixed_amount' && (
             <div class='space-y-1'>
               <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                Valor de Desconto (centavos)
+                Valor de Desconto
               </label>
-              <div class='relative'>
-                <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
-                  R$
-                </span>
-                <input
-                  type='number'
-                  value={amountCents.value}
-                  onInput={(e) =>
-                    amountCents.value = (e.target as HTMLInputElement).value}
-                  placeholder='ex: 500 para R$5,00 de desconto'
-                  min='1'
-                  class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
-                  required
-                />
-              </div>
+              <input
+                type='text'
+                value={amountCents.value}
+                onInput={(e) => {
+                  const val = (e.target as HTMLInputElement).value
+                  amountCents.value = formatCurrencyMask(val).formatted
+                }}
+                placeholder='R$ 15,00'
+                class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
+                required
+              />
             </div>
           )}
 
@@ -777,24 +762,19 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
               </div>
               <div class='space-y-1'>
                 <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                  Preço Unitário (centavos)
+                  Preço Unitário
                 </label>
-                <div class='relative'>
-                  <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
-                    R$
-                  </span>
-                  <input
-                    type='number'
-                    value={unitPriceCents.value}
-                    onInput={(e) =>
-                      unitPriceCents.value =
-                        (e.target as HTMLInputElement).value}
-                    placeholder='ex: 1000'
-                    min='1'
-                    class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
-                    required
-                  />
-                </div>
+                <input
+                  type='text'
+                  value={unitPriceCents.value}
+                  onInput={(e) => {
+                    const val = (e.target as HTMLInputElement).value
+                    unitPriceCents.value = formatCurrencyMask(val).formatted
+                  }}
+                  placeholder='R$ 10,00'
+                  class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
+                  required
+                />
               </div>
             </div>
           )}
@@ -803,45 +783,36 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
             <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div class='space-y-1'>
                 <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                  Preço Unitário (centavos)
+                  Preço Unitário
                 </label>
-                <div class='relative'>
-                  <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
-                    R$
-                  </span>
-                  <input
-                    type='number'
-                    value={unitPriceCents.value}
-                    onInput={(e) =>
-                      unitPriceCents.value =
-                        (e.target as HTMLInputElement).value}
-                    placeholder='ex: 2000'
-                    min='1'
-                    class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
-                    required
-                  />
-                </div>
+                <input
+                  type='text'
+                  value={unitPriceCents.value}
+                  onInput={(e) => {
+                    const val = (e.target as HTMLInputElement).value
+                    unitPriceCents.value = formatCurrencyMask(val).formatted
+                  }}
+                  placeholder='R$ 20,00'
+                  class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
+                  required
+                />
               </div>
               <div class='space-y-1'>
                 <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                  Desconto por Unidade (centavos)
+                  Desconto por Unidade
                 </label>
-                <div class='relative'>
-                  <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
-                    R$
-                  </span>
-                  <input
-                    type='number'
-                    value={discountPerUnitCents.value}
-                    onInput={(e) =>
-                      discountPerUnitCents.value =
-                        (e.target as HTMLInputElement).value}
-                    placeholder='ex: 1000'
-                    min='1'
-                    class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
-                    required
-                  />
-                </div>
+                <input
+                  type='text'
+                  value={discountPerUnitCents.value}
+                  onInput={(e) => {
+                    const val = (e.target as HTMLInputElement).value
+                    discountPerUnitCents.value =
+                      formatCurrencyMask(val).formatted
+                  }}
+                  placeholder='R$ 10,00'
+                  class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
+                  required
+                />
               </div>
             </div>
           )}
@@ -866,7 +837,7 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
               onClick={() => restrictionsOpen.value = !restrictionsOpen.value}
               class='w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors'
             >
-              <span>Restrições (todas opcionais)</span>
+              <span>Restrições (opcionais)</span>
               <svg
                 class={cn(
                   'w-4 h-4 transition-transform',
@@ -889,7 +860,7 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
                 <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <div class='space-y-1'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Limite Global
+                      Limite Global de Resgates
                     </label>
                     <input
                       type='number'
@@ -897,20 +868,6 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
                       onInput={(e) =>
                         globalCap.value = (e.target as HTMLInputElement).value}
                       placeholder='Máx. total de resgates'
-                      min='1'
-                      class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
-                    />
-                  </div>
-                  <div class='space-y-1'>
-                    <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Limite por Usuário
-                    </label>
-                    <input
-                      type='number'
-                      value={userCap.value}
-                      onInput={(e) =>
-                        userCap.value = (e.target as HTMLInputElement).value}
-                      placeholder='Máx. por usuário'
                       min='1'
                       class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     />
@@ -927,7 +884,7 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
                       class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     />
                   </div>
-                  <div class='space-y-1'>
+                  <div class='space-y-1 md:col-span-2'>
                     <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
                       Válido Até
                     </label>
@@ -938,59 +895,6 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
                         validUntil.value = (e.target as HTMLInputElement).value}
                       class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
                     />
-                  </div>
-                  <div class='space-y-1'>
-                    <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Frequência de Uso
-                    </label>
-                    <select
-                      value={usageFrequency.value}
-                      onChange={(e) =>
-                        usageFrequency.value =
-                          (e.target as HTMLSelectElement).value}
-                      class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
-                    >
-                      {FREQUENCY_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div class='space-y-1'>
-                    <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Máx. Unidades por Resgate
-                    </label>
-                    <input
-                      type='number'
-                      value={maxUnitsPerRedemption.value}
-                      onInput={(e) =>
-                        maxUnitsPerRedemption.value =
-                          (e.target as HTMLInputElement).value}
-                      placeholder='Máx. por uso'
-                      min='1'
-                      class='w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
-                    />
-                  </div>
-                  <div class='space-y-1'>
-                    <label class='text-[10px] font-bold text-slate-500 uppercase tracking-wider'>
-                      Valor Mínimo de Compra (centavos)
-                    </label>
-                    <div class='relative'>
-                      <span class='absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm'>
-                        R$
-                      </span>
-                      <input
-                        type='number'
-                        value={minimumPurchaseValueCents.value}
-                        onInput={(e) =>
-                          minimumPurchaseValueCents.value =
-                            (e.target as HTMLInputElement).value}
-                        placeholder='ex: 3000 para mínimo de R$30'
-                        min='1'
-                        class='w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white'
-                      />
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1110,7 +1014,7 @@ export default function CouponManager({ businessId, initialCoupons, isBusinessAc
                         class={cn(
                           'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                           coupon.isActive ? 'bg-green-500' : 'bg-slate-300',
-                          !isBusinessActive && 'cursor-not-allowed opacity-50'
+                          !isBusinessActive && 'cursor-not-allowed opacity-50',
                         )}
                       >
                         <span

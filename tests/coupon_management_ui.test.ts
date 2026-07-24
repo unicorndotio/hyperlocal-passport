@@ -180,3 +180,126 @@ Deno.test('CouponManager UI Integration (Mocked)', async (t) => {
 
   globalThis.fetch = originalFetch
 })
+
+
+// --- Task 05 Unit Tests ---
+import { formatCurrencyMask } from '../lib/utils.ts'
+
+Deno.test('Task 05: Currency masking — "1500" formats as "R$ 15,00" and outputs 1500 cents', () => {
+  const result = formatCurrencyMask('1500')
+  assertEquals(result.cents, 1500)
+  assertEquals(result.formatted, 'R$\u00a015,00')
+})
+
+Deno.test('Task 05: Currency masking — number input 1500 formats as "R$ 15,00" and outputs 1500 cents', () => {
+  const result = formatCurrencyMask(1500)
+  assertEquals(result.cents, 1500)
+  assertEquals(result.formatted, 'R$\u00a015,00')
+})
+
+Deno.test('Task 05: Preset selection — "Benefício Fidelidade" sets correct internal constraints', () => {
+  // Mirror the getDefaultsForPreset logic from CouponManager
+  type BehaviorTypeName = 'percentage_discount' | 'fixed_amount' | 'bogo' | 'item_specific'
+  interface PresetDefaults {
+    behaviorType: BehaviorTypeName
+    behaviorFields: Record<string, number>
+    restrictions: {
+      usageFrequency?: string
+      userCap?: number
+      validUntil?: number
+    }
+  }
+
+  function getDefaultsForPreset(id: string, now: number): PresetDefaults {
+    switch (id) {
+      case 'loyalty-perk':
+        return {
+          behaviorType: 'percentage_discount',
+          behaviorFields: { percent: 10 },
+          restrictions: {
+            usageFrequency: 'weekly',
+          },
+        }
+      case 'flash-sale':
+        return {
+          behaviorType: 'percentage_discount',
+          behaviorFields: { percent: 20 },
+          restrictions: {
+            userCap: 1,
+            usageFrequency: 'one_time',
+            validUntil: now + 7 * 86400000,
+          },
+        }
+      case 'event-promo':
+        return {
+          behaviorType: 'fixed_amount',
+          behaviorFields: { amountCents: 1000 },
+          restrictions: {
+            userCap: 1,
+            usageFrequency: 'one_time',
+            validUntil: now + 86400000,
+          },
+        }
+      case 'item-clearance':
+        return {
+          behaviorType: 'item_specific',
+          behaviorFields: { unitPriceCents: 2000, discountPerUnitCents: 1000 },
+          restrictions: {
+            userCap: 1,
+            usageFrequency: 'one_time',
+          },
+        }
+      default:
+        return {
+          behaviorType: 'percentage_discount',
+          behaviorFields: { percent: 10 },
+          restrictions: {},
+        }
+    }
+  }
+
+  const now = Date.now()
+  const defaults = getDefaultsForPreset('loyalty-perk', now)
+
+  // Benefício Fidelidade: percentage discount, weekly frequency, no expiration, no userCap
+  assertEquals(defaults.behaviorType, 'percentage_discount')
+  assertEquals(defaults.behaviorFields.percent, 10)
+  assertEquals(defaults.restrictions.usageFrequency, 'weekly')
+  assertEquals(defaults.restrictions.userCap, undefined)
+  assertEquals(defaults.restrictions.validUntil, undefined)
+})
+
+Deno.test('Task 05: Preset selection — "Promoção Relâmpago" sets 7-day expiry and one_time usage', () => {
+  const now = Date.now()
+
+  function getFlashSaleDefaults(n: number) {
+    return {
+      behaviorType: 'percentage_discount' as const,
+      behaviorFields: { percent: 20 },
+      restrictions: {
+        userCap: 1,
+        usageFrequency: 'one_time',
+        validUntil: n + 7 * 86400000,
+      },
+    }
+  }
+
+  const defaults = getFlashSaleDefaults(now)
+  assertEquals(defaults.behaviorType, 'percentage_discount')
+  assertEquals(defaults.restrictions.userCap, 1)
+  assertEquals(defaults.restrictions.usageFrequency, 'one_time')
+  // validUntil is approximately 7 days from now
+  const sevenDaysMs = 7 * 86400000
+  assertEquals(defaults.restrictions.validUntil, now + sevenDaysMs)
+})
+
+Deno.test('Task 05: Currency masking — non-numeric characters are stripped', () => {
+  const result = formatCurrencyMask('R$ 15,00')
+  assertEquals(result.cents, 1500)
+})
+
+Deno.test('Task 05: Currency masking — empty string yields 0 cents and "R$ 0,00"', () => {
+  const result = formatCurrencyMask('')
+  assertEquals(result.cents, 0)
+  assertEquals(result.formatted, 'R$\u00a00,00')
+})

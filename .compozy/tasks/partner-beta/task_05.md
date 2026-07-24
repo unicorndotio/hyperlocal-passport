@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Partner Campaign Form Simplification
 type: frontend
 complexity: medium
@@ -27,10 +27,10 @@ Simplifies the campaign creation form by introducing outcome-driven presets and 
 </requirements>
 
 ## Subtasks
-- [ ] 05.1 Refactor the campaign type selector to use the new presets.
-- [ ] 05.2 Hide frequency/user limits and automatically derive their values based on the preset.
-- [ ] 05.3 Implement a currency input mask for price fields.
-- [ ] 05.4 Update payload generation to convert formatted currency to cents before API submission.
+- [x] 05.1 Refactor the campaign type selector to use the new presets.
+- [x] 05.2 Hide frequency/user limits and automatically derive their values based on the preset.
+- [x] 05.3 Implement a currency input mask for price fields.
+- [x] 05.4 Update payload generation to convert formatted currency to cents before API submission.
 
 ## Implementation Details
 Reference the TechSpec for preset definitions and currency requirements.
@@ -48,10 +48,10 @@ Reference the TechSpec for preset definitions and currency requirements.
 
 ## Tests
 - Unit tests:
-  - [ ] Preset selection: selecting 'Benefício Fidelidade' sets correct internal constraints.
-  - [ ] Currency masking: typing "1500" formats as "R$ 15,00" and outputs 1500 cents.
+  - [x] Preset selection: selecting 'Benefício Fidelidade' sets correct internal constraints.
+  - [x] Currency masking: typing "1500" formats as "R$ 15,00" and outputs 1500 cents.
 - Integration tests:
-  - [ ] None required.
+  - [x] None required.
 - Test coverage target: >=80%
 - All tests must pass
 

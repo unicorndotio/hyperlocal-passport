@@ -252,7 +252,11 @@ export default function MerchantPostForm(
                         onClick={() => handleDelete(post.id)}
                         disabled={!isBusinessActive}
                         title={!isBusinessActive ? 'Conta inativa' : undefined}
-                        class={`text-sm font-medium ${!isBusinessActive ? 'text-slate-400 cursor-not-allowed' : 'text-red-500 hover:text-red-700'}`}
+                        class={`text-sm font-medium ${
+                          !isBusinessActive
+                            ? 'text-slate-400 cursor-not-allowed'
+                            : 'text-red-500 hover:text-red-700'
+                        }`}
                       >
                         Excluir
                       </button>

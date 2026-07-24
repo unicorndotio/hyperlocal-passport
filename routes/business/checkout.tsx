@@ -62,7 +62,11 @@ export default define.page(async function BusinessCheckoutPage(ctx) {
   return (
     <div className='min-h-screen bg-slate-50'>
       <BusinessOnboarding business={business} businessId={business.id} />
-      <BusinessHeader active='checkout' businessName={business.name} isActiveBusiness={business.isActive} />
+      <BusinessHeader
+        active='checkout'
+        businessName={business.name}
+        isActiveBusiness={business.isActive}
+      />
 
       <main className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <div class='max-w-2xl mx-auto'>
