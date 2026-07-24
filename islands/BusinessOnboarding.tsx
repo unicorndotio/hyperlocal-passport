@@ -77,7 +77,14 @@ export default function BusinessOnboarding({ business, businessId }: Props) {
     const step = STEPS[currentStep]
     if (!step.targetSelector) {
       setTargetRect(null)
-      setTooltipStyle({})
+      // Center the tooltip on the viewport for steps with no target element
+      setTooltipStyle({
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: '1001',
+      })
       return
     }
 
@@ -177,7 +184,7 @@ export default function BusinessOnboarding({ business, businessId }: Props) {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — intentionally no onClick; wizard must not close on background click */}
       <div
         style={{
           position: 'fixed',
@@ -185,7 +192,6 @@ export default function BusinessOnboarding({ business, businessId }: Props) {
           zIndex: '999',
           backgroundColor: 'rgba(0,0,0,0.5)',
         }}
-        onClick={handleDismiss}
       />
 
       {/* Spotlight hole */}

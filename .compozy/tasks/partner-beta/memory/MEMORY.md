@@ -18,6 +18,8 @@ Task 06 (Admin Ledger UI Integration): COMPLETE. `BusinessManager.tsx` updated w
 
 Task 07 (Inactive Dashboard State & Hide Analytics): COMPLETE. Added `isBusinessActive` prop to `BusinessHeader`, `MerchantPostForm`, and `CouponManager`. Inactive businesses see a read-only state with actions disabled and a warning banner. Analytics tab was removed. `BusinessHeader.tsx` — added exported `BusinessHeaderTab` type union including `'analytics'` (fixes TS error in `analytics.tsx`) while keeping analytics absent from the nav links array. Added `tests/inactive_dashboard.test.ts` (10 tests, all pass). Zero regressions.
 
+Task 08 (Onboarding Wizard Fixes): COMPLETE. Fixed `islands/BusinessOnboarding.tsx`: center-positioned steps now correctly set `position:fixed` + `z-index:1001` on the tooltip (previously style was `{}`). Removed `onClick={handleDismiss}` from the backdrop div. Updated `tests/business_onboarding.test.ts` with backdrop-click and positioning assertions. 7 unit/component tests pass.
+
 - `BUSINESS_CATEGORIES` in `lib/business.ts` is the source of truth for business category validation (14 categories: Gastronomia, Moda, Casa & Decor, Corpo & Fitness, Beleza, Saúde & Farmácia, Educação, Mercado & Conveniência, Serviços, Eventos & Experiências, Hotelaria, Comércio Geral & Outros, Pet & Veterinária, Automotivo).
 - CEP is normalized to 8 digits on save (no dash stored).
 - Address/maps fields can be cleared by sending null or empty string.

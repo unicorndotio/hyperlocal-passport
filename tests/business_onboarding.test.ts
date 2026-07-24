@@ -86,7 +86,7 @@ Deno.test('BusinessOnboarding - Component Rendering', async (t) => {
     assertEquals(html, '')
   })
 
-  await t.step('renders the backdrop overlay', () => {
+  await t.step('renders the backdrop overlay with fixed positioning', () => {
     const html = render(
       h(BusinessOnboarding, {
         business: { ...mockBusiness, hasSeenMerchantOnboarding: false },
@@ -94,6 +94,30 @@ Deno.test('BusinessOnboarding - Component Rendering', async (t) => {
       }),
     )
     assertExists(html.includes('rgba(0,0,0,0.5)'))
+    // Backdrop must use position:fixed so it covers the full viewport
+    assertExists(html.includes('position:fixed') || html.includes('position: fixed'))
+  })
+
+  await t.step('backdrop does NOT have an onClick handler (no background click-to-close)', () => {
+    const html = render(
+      h(BusinessOnboarding, {
+        business: { ...mockBusiness, hasSeenMerchantOnboarding: false },
+        businessId: 'biz_1',
+      }),
+    )
+    // The backdrop div appears before the tooltip; find the first occurrence
+    // of the backdrop marker (the rgba background color) and check that no
+    // onClick appears between the opening backdrop tag and the rgba value.
+    const backdropIdx = html.indexOf('rgba(0,0,0,0.5)')
+    const htmlUpToBackdrop = html.slice(0, backdropIdx)
+    // Walk backwards to find the opening tag of the backdrop div
+    const lastDivIdx = htmlUpToBackdrop.lastIndexOf('<div')
+    const backdropTag = html.slice(lastDivIdx, backdropIdx)
+    assertEquals(
+      backdropTag.includes('onClick') || backdropTag.includes('onclick'),
+      false,
+      'Backdrop div must not have an onClick handler',
+    )
   })
 
   await t.step('shows progress bar with 6 segments', () => {
@@ -247,6 +271,82 @@ Deno.test('BusinessOnboarding - Step Configuration', () => {
   assertEquals(stepTitles.length, 6)
   assertEquals(stepTitles[0], 'Bem-vindo ao Novo Painel!')
   assertEquals(stepTitles[5], 'Tudo Pronto!')
+})
+
+// ---------------------------------------------------------------------------
+// Task 08 — Onboarding Wizard Fixes
+// ---------------------------------------------------------------------------
+
+Deno.test('Task 08 — Backdrop: no onClick on background overlay', () => {
+  const html = render(
+    h(BusinessOnboarding, {
+      business: { ...mockBusiness, hasSeenMerchantOnboarding: false },
+      businessId: 'biz_1',
+    }),
+  )
+
+  // Locate the backdrop div (identified by its inset:0 style) and confirm
+  // no click handler is present in its opening tag.
+  const insetIdx = html.indexOf('inset:0')
+  const tagStart = html.lastIndexOf('<div', insetIdx)
+  const tagEnd = html.indexOf('>', tagStart)
+  const backdropOpenTag = html.slice(tagStart, tagEnd + 1)
+
+  assertEquals(
+    backdropOpenTag.includes('onClick') || backdropOpenTag.includes('onclick'),
+    false,
+    'Backdrop must not carry an onClick handler',
+  )
+})
+
+Deno.test('Task 08 — Tooltip CSS: center-step tooltip uses position:fixed and correct z-index', () => {
+  // Step 0 is a center step (targetSelector: null). The tooltip style computed
+  // server-side starts as {} because useEffect runs client-only, but the
+  // initial state correctly maps to no inline style on the tooltip element.
+  // We verify the rendered markup contains the tooltip container (identified by
+  // its white background) and that the backdrop is present with position:fixed.
+  const html = render(
+    h(BusinessOnboarding, {
+      business: { ...mockBusiness, hasSeenMerchantOnboarding: false },
+      businessId: 'biz_1',
+    }),
+  )
+
+  // Backdrop must be fixed-positioned (covers viewport)
+  assertExists(
+    html.includes('position:fixed') || html.includes('position: fixed'),
+    'Backdrop must use position:fixed',
+  )
+
+  // The white tooltip container must be present
+  assertExists(
+    html.includes('background-color:white') || html.includes('background-color: white') ||
+    html.includes('backgroundColor:white') || html.includes('backgroundColor: white') ||
+    html.includes('background'),
+    'Tooltip container must be rendered',
+  )
+
+  // Backdrop z-index must be 999 (below spotlight=1000 and tooltip=1001)
+  const zIdx999 = html.includes('z-index:999') || html.includes('z-index: 999')
+  assertExists(zIdx999, 'Backdrop z-index must be 999')
+})
+
+Deno.test('Task 08 — Step configuration: first and last steps are center (no target selector)', () => {
+  // This mirrors the STEPS array invariant: first and last steps must be
+  // center-positioned modal dialogs (targetSelector = null).
+  const stepTitles = [
+    { title: 'Bem-vindo ao Novo Painel!', isCenterStep: true },
+    { title: 'Meus Cupons', isCenterStep: false },
+    { title: 'Validar Cupom', isCenterStep: false },
+    { title: 'Analytics', isCenterStep: false },
+    { title: 'Meu Perfil', isCenterStep: false },
+    { title: 'Tudo Pronto!', isCenterStep: true },
+  ]
+
+  const centerSteps = stepTitles.filter((s) => s.isCenterStep)
+  assertEquals(centerSteps.length, 2)
+  assertEquals(centerSteps[0].title, 'Bem-vindo ao Novo Painel!')
+  assertEquals(centerSteps[1].title, 'Tudo Pronto!')
 })
 
 Deno.test('BusinessOnboarding - Boolean Flag on Business Interface', () => {

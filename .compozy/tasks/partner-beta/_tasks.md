@@ -11,4 +11,4 @@
 | 05 | Partner Campaign Form Simplification | completed | medium | — |
 | 06 | Admin Ledger UI Integration | completed | medium | task_03 |
 | 07 | Inactive Dashboard State & Hide Analytics | completed | medium | — |
-| 08 | Onboarding Wizard Fixes | pending | low | — |
+| 08 | Onboarding Wizard Fixes | completed | low | — |

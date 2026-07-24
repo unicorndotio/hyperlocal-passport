@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Onboarding Wizard Fixes
 type: frontend
 complexity: low
@@ -25,8 +25,8 @@ Fixes CSS and interaction issues with the partner onboarding wizard to ensure a 
 </requirements>
 
 ## Subtasks
-- [ ] 08.1 Fix z-index and positioning CSS classes.
-- [ ] 08.2 Remove background click-to-close event handlers.
+- [x] 08.1 Fix z-index and positioning CSS classes.
+- [x] 08.2 Remove background click-to-close event handlers.
 
 ## Implementation Details
 Reference the TechSpec for the specific CSS fixes required.
@@ -43,7 +43,7 @@ Reference the TechSpec for the specific CSS fixes required.
 
 ## Tests
 - Unit tests:
-  - [ ] Wizard interaction: background click does not close modal.
+  - [x] Wizard interaction: background click does not close modal.
 - Integration tests:
   - [ ] None required.
 - Test coverage target: >=80%
