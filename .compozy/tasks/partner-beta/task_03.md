@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Admin Ledger API Endpoints
 type: backend
 complexity: medium
@@ -27,9 +27,9 @@ Creates the administrative APIs to record payments in the ledger and manually ma
 </requirements>
 
 ## Subtasks
-- [ ] 03.1 Create the POST ledger endpoint.
-- [ ] 03.2 Implement a database transaction to insert into the ledger and update the business profile simultaneously.
-- [ ] 03.3 Modify the existing admin toggle endpoint to accept an optional `expirationDate`.
+- [x] 03.1 Create the POST ledger endpoint.
+- [x] 03.2 Implement a database transaction to insert into the ledger and update the business profile simultaneously.
+- [x] 03.3 Modify the existing admin toggle endpoint to accept an optional `expirationDate`.
 
 ## Implementation Details
 Reference API Design section of the TechSpec.
@@ -48,10 +48,10 @@ Reference API Design section of the TechSpec.
 
 ## Tests
 - Unit tests:
-  - [ ] Payment logging: inserting valid payment updates business active status and expiration date.
-  - [ ] Toggle logic: manual toggle correctly sets active status and expiration date.
+  - [x] Payment logging: inserting valid payment updates business active status and expiration date.
+  - [x] Toggle logic: manual toggle correctly sets active status and expiration date.
 - Integration tests:
-  - [ ] End-to-end API call creates ledger row and updates business.
+  - [x] End-to-end API call creates ledger row and updates business.
 - Test coverage target: >=80%
 - All tests must pass
 
