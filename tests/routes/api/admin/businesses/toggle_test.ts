@@ -9,15 +9,13 @@ import { db } from '../../../../../lib/db.ts'
 import * as schema from '../../../../../db/schema.ts'
 import { eq } from 'drizzle-orm'
 
-const testBusinessId = 'biz-toggle-test-1'
-
 function makeBusiness(overrides: Record<string, unknown> = {}) {
   return {
-    id: testBusinessId,
-    userId: 'owner-1',
+    id: crypto.randomUUID(),
+    userId: 'owner-' + crypto.randomUUID(),
     name: 'Empresa Toggle Test',
     companyName: 'Empresa Toggle Test Ltda',
-    cnpj: '11222333000181',
+    cnpj: crypto.randomUUID().slice(0, 14),
     category: 'Alimentação',
     description: 'Uma empresa para teste de toggle',
     logoUrl: 'http://localhost:8000/api/uploads/logo.png',
@@ -30,7 +28,6 @@ async function seedBusiness(
   data: Record<string, unknown> = {},
 ): Promise<Record<string, unknown>> {
   const biz = makeBusiness(data)
-  // Ensure parent user exists
   const [existing] = await db
     .select()
     .from(schema.users)
@@ -48,21 +45,23 @@ async function seedBusiness(
 }
 
 async function cleanupBusiness(id: string) {
-  const [biz] = await db
-    .select()
-    .from(schema.businesses)
-    .where(eq(schema.businesses.id, id))
-    .limit(1)
-  if (biz) {
-    await db.delete(schema.businesses).where(eq(schema.businesses.id, id))
-  }
-}
-
-async function cleanupAll() {
+  await db.delete(schema.partnerLedger)
   await db.delete(schema.couponAnalytics)
   await db.delete(schema.transactions)
   await db.delete(schema.redemptions)
   await db.delete(schema.coupons)
+  await db.delete(schema.businesses).where(eq(schema.businesses.id, id))
+}
+
+async function cleanupAll() {
+  await db.delete(schema.partnerLedger)
+  await db.delete(schema.couponAnalytics)
+  await db.delete(schema.transactions)
+  await db.delete(schema.redemptions)
+  await db.delete(schema.coupons)
+  await db.delete(schema.merchantPosts)
+  await db.delete(schema.fileMetadata)
+  await db.delete(schema.signals)
   await db.delete(schema.businesses)
   await db.delete(schema.users)
 }
@@ -99,7 +98,7 @@ Deno.test({
     })
 
     await t.step('returns 404 for non-existent business', async () => {
-      const res = await handleToggle('non-existent-id', true)
+      const res = await handleToggle(crypto.randomUUID(), true)
       assertEquals(res.status, 404)
       const body = await res.json()
       assertEquals(body.error, 'Business not found')
@@ -171,6 +170,79 @@ Deno.test({
             .where(eq(schema.businesses.id, biz.id as string))
             .limit(1)
           assertEquals(stored.isActive, false)
+        } finally {
+          await cleanupBusiness(biz.id as string)
+        }
+      },
+    )
+
+    await t.step(
+      'toggles isActive with an expirationDate',
+      async () => {
+        const biz = await seedBusiness({ isActive: false })
+        try {
+          const expDate = new Date('2027-01-01')
+          const res = await handleToggle(
+            biz.id as string,
+            true,
+            expDate,
+          )
+          assertEquals(res.status, 200)
+          const body = await res.json()
+          assertEquals(body.isActive, true)
+          assertEquals(
+            new Date(body.expirationDate).toISOString().slice(0, 10),
+            '2027-01-01',
+          )
+        } finally {
+          await cleanupBusiness(biz.id as string)
+        }
+      },
+    )
+
+    await t.step(
+      'toggles isActive clearing expirationDate with null',
+      async () => {
+        const biz = await seedBusiness({
+          isActive: true,
+          expirationDate: new Date('2027-06-01'),
+        })
+        try {
+          const res = await handleToggle(
+            biz.id as string,
+            false,
+            null,
+          )
+          assertEquals(res.status, 200)
+          const body = await res.json()
+          assertEquals(body.isActive, false)
+          assertEquals(body.expirationDate, null)
+        } finally {
+          await cleanupBusiness(biz.id as string)
+        }
+      },
+    )
+
+    await t.step(
+      'sets expirationDate with isActive toggle when isActive is undefined',
+      async () => {
+        const biz = await seedBusiness({
+          isActive: true,
+        })
+        try {
+          const expDate = new Date('2027-12-01')
+          const res = await handleToggle(
+            biz.id as string,
+            undefined,
+            expDate,
+          )
+          assertEquals(res.status, 200)
+          const body = await res.json()
+          assertEquals(body.isActive, false)
+          assertEquals(
+            new Date(body.expirationDate).toISOString().slice(0, 10),
+            '2027-12-01',
+          )
         } finally {
           await cleanupBusiness(biz.id as string)
         }

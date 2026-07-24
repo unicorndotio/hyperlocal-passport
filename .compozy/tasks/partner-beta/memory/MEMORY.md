@@ -8,9 +8,11 @@ Task 01 (Database Schema Updates): COMPLETE. `partner_ledger` table added to sch
 
 Task 02 (Business Profile API Updates): COMPLETE. Schema migrated with new address + expirationDate columns. Validation functions in `lib/business.ts`. API handler updated.
 
+Task 04 (Partner Profile Frontend Updates & Categories): COMPLETE. `BUSINESS_CATEGORIES` updated to 14-category taxonomy in `lib/business.ts`. `BusinessProfileEditor` island now includes read-only company info section, category dropdown, CEP/street/number/neighborhood/mapsUrl inputs. Form submits all fields to API. Test coverage at 15 tests passing.
+
 ## Shared Decisions
 
-- `BUSINESS_CATEGORIES` in `lib/business.ts` is the source of truth for business category validation (8 categories: Alimentação, Casa, Corpo, Esporte, Serviços, Náutica, Entretenimento, Outro).
+- `BUSINESS_CATEGORIES` in `lib/business.ts` is the source of truth for business category validation (14 categories: Gastronomia, Moda, Casa & Decor, Corpo & Fitness, Beleza, Saúde & Farmácia, Educação, Mercado & Conveniência, Serviços, Eventos & Experiências, Hotelaria, Comércio Geral & Outros, Pet & Veterinária, Automotivo).
 - CEP is normalized to 8 digits on save (no dash stored).
 - Address/maps fields can be cleared by sending null or empty string.
 - `partner_ledger` FK uses `onDelete: cascade` (ownership-chain pattern).

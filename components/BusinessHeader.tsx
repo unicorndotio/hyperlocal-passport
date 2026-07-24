@@ -12,11 +12,6 @@ export default function BusinessHeader(
       id: 'checkout' as const,
     },
     { href: '/business/posts', label: 'Publicações', id: 'posts' as const },
-    {
-      href: '/business/analytics',
-      label: 'Analytics',
-      id: 'analytics' as const,
-    },
     { href: '/business/profile', label: 'Meu Perfil', id: 'profile' as const },
   ]
 

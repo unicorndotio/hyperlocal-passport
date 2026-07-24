@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Partner Profile Frontend Updates & Categories
 type: frontend
 complexity: medium
@@ -27,10 +27,10 @@ Updates the Partner Profile settings UI to collect new address information and e
 </requirements>
 
 ## Subtasks
-- [ ] 04.1 Update the global category list/constants.
-- [ ] 04.2 Add new address and maps URL inputs to the profile form component.
-- [ ] 04.3 Make account creation fields read-only.
-- [ ] 04.4 Ensure form submits the updated payload to the API.
+- [x] 04.1 Update the global category list/constants.
+- [x] 04.2 Add new address and maps URL inputs to the profile form component.
+- [x] 04.3 Make account creation fields read-only.
+- [x] 04.4 Ensure form submits the updated payload to the API.
 
 ## Implementation Details
 Reference the TechSpec for the list of categories and new fields.
