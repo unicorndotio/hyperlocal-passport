@@ -1,21 +1,27 @@
 import InactiveBanner from './InactiveBanner.tsx'
 
+// 'analytics' is accepted in the type so existing analytics.tsx compiles,
+// but deliberately omitted from the links array (hidden per task 07).
+export type BusinessHeaderTab =
+  | 'coupons'
+  | 'checkout'
+  | 'profile'
+  | 'posts'
+  | 'analytics'
+
 export default function BusinessHeader(
   { active, businessName, isActiveBusiness = true }: {
-    active: 'coupons' | 'checkout' | 'profile' | 'posts'
+    active: BusinessHeaderTab
     businessName: string
     isActiveBusiness?: boolean
   },
 ) {
-  const links = [
-    { href: '/business/coupons', label: 'Meus Cupons', id: 'coupons' as const },
-    {
-      href: '/business/checkout',
-      label: 'Validar Cupom',
-      id: 'checkout' as const,
-    },
-    { href: '/business/posts', label: 'Publicações', id: 'posts' as const },
-    { href: '/business/profile', label: 'Meu Perfil', id: 'profile' as const },
+  const links: { href: string; label: string; id: BusinessHeaderTab }[] = [
+    { href: '/business/coupons', label: 'Meus Cupons', id: 'coupons' },
+    { href: '/business/checkout', label: 'Validar Cupom', id: 'checkout' },
+    { href: '/business/posts', label: 'Publicações', id: 'posts' },
+    { href: '/business/profile', label: 'Meu Perfil', id: 'profile' },
+    // Analytics is intentionally excluded — hidden from nav per task 07.
   ]
 
   return (

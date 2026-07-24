@@ -16,7 +16,7 @@ Task 05 (Partner Campaign Form Simplification): COMPLETE. Campaign form simplifi
 
 Task 06 (Admin Ledger UI Integration): COMPLETE. `BusinessManager.tsx` updated with `expirationDate` column, "Registrar Pgto" button per row, Log Payment modal (BRL currency mask via `formatCurrencyInput`/`parseCurrencyToCents` helpers, months integer, date picker). Modal calls `POST /api/admin/businesses/:id/ledger` and updates in-memory list on success. Tests in `tests/admin_ledger_ui.test.ts` (8 currency unit tests pass, 5 integration + 1 fetch-mock tests require Docker DB). `deno task check` exits 0.
 
-Task 07 (Inactive Dashboard State & Hide Analytics): COMPLETE. Added `isBusinessActive` prop to `BusinessHeader`, `MerchantPostForm`, and `CouponManager`. Inactive businesses see a read-only state with actions disabled and a warning banner. Analytics tab was removed.
+Task 07 (Inactive Dashboard State & Hide Analytics): COMPLETE. Added `isBusinessActive` prop to `BusinessHeader`, `MerchantPostForm`, and `CouponManager`. Inactive businesses see a read-only state with actions disabled and a warning banner. Analytics tab was removed. `BusinessHeader.tsx` — added exported `BusinessHeaderTab` type union including `'analytics'` (fixes TS error in `analytics.tsx`) while keeping analytics absent from the nav links array. Added `tests/inactive_dashboard.test.ts` (10 tests, all pass). Zero regressions.
 
 - `BUSINESS_CATEGORIES` in `lib/business.ts` is the source of truth for business category validation (14 categories: Gastronomia, Moda, Casa & Decor, Corpo & Fitness, Beleza, Saúde & Farmácia, Educação, Mercado & Conveniência, Serviços, Eventos & Experiências, Hotelaria, Comércio Geral & Outros, Pet & Veterinária, Automotivo).
 - CEP is normalized to 8 digits on save (no dash stored).
@@ -27,6 +27,7 @@ Task 07 (Inactive Dashboard State & Hide Analytics): COMPLETE. Added `isBusiness
 ## Shared Learnings
 
 - Pre-existing profile tests (`tests/routes/api/businesses/profile_test.ts`) use hardcoded IDs that fail with uuid-typed columns. Not caused by this task but will affect integration test runs.
+- `tests/feed_page.test.ts` has a pre-existing TS error (`handler` not exported from `routes/index.tsx`) — causes `deno task check` to fail type-checking for all tests. Baseline: 194 passed / 119 failed. This is an existing debt, not caused by partner-beta work.
 - DB migrations must be applied manually via `docker compose exec postgres psql` if `drizzle-kit` is not available in the local env.
 - Docker `web` service does not mount source code — only the `passport_uploads` volume. Run `drizzle-kit generate` on the host with `PG_CONNECTION=postgresql://root:password@localhost:5432/pg`.
 

@@ -10,5 +10,5 @@
 | 04 | Partner Profile Frontend Updates & Categories | completed | medium | task_02 |
 | 05 | Partner Campaign Form Simplification | completed | medium | — |
 | 06 | Admin Ledger UI Integration | completed | medium | task_03 |
-| 07 | Inactive Dashboard State & Hide Analytics | pending | medium | — |
+| 07 | Inactive Dashboard State & Hide Analytics | completed | medium | — |
 | 08 | Onboarding Wizard Fixes | pending | low | — |

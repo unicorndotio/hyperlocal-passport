@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Inactive Dashboard State & Hide Analytics
 type: frontend
 complexity: medium
@@ -26,9 +26,9 @@ Restricts the UI for inactive businesses to a read-only mode and temporarily hid
 </requirements>
 
 ## Subtasks
-- [ ] 07.1 Create a warning banner component.
-- [ ] 07.2 Update the Coupon and Posts island components to accept an `isActive` prop and disable mutation actions accordingly.
-- [ ] 07.3 Remove or hide the Analytics link from the main layout navigation.
+- [x] 07.1 Create a warning banner component.
+- [x] 07.2 Update the Coupon and Posts island components to accept an `isActive` prop and disable mutation actions accordingly.
+- [x] 07.3 Remove or hide the Analytics link from the main layout navigation.
 
 ## Implementation Details
 Reference ADR-001 for the decision to use client-side UI disablement.
@@ -50,8 +50,8 @@ Reference ADR-001 for the decision to use client-side UI disablement.
 
 ## Tests
 - Unit tests:
-  - [ ] Read-only state: if `isActive` is false, create button is disabled.
-  - [ ] Layout rendering: Analytics link is not present.
+  - [x] Read-only state: if `isActive` is false, create button is disabled.
+  - [x] Layout rendering: Analytics link is not present.
 - Integration tests:
   - [ ] None required.
 - Test coverage target: >=80%
