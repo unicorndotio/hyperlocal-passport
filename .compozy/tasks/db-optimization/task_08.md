@@ -1,13 +1,13 @@
 ---
-status: pending
+status: completed
 title: Migration generation — `drizzle-kit generate`, review SQL
 type: chore
 complexity: low
 dependencies:
-  - task_04
-  - task_05
-  - task_06
-  - task_07
+    - task_04
+    - task_05
+    - task_06
+    - task_07
 ---
 
 # Task 08: Migration generation — `drizzle-kit generate`, review SQL

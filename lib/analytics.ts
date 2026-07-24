@@ -12,11 +12,10 @@ export function getCouponAnalytics(couponId: string) {
 }
 
 export async function incrementViewCount(couponId: string) {
-  const analyticsId = crypto.randomUUID()
-  await db.execute(
-    sql`INSERT INTO coupon_analytics (id, coupon_id, views)
-        VALUES (${analyticsId}, ${couponId}, 1)
-        ON CONFLICT (coupon_id)
-        DO UPDATE SET views = coupon_analytics.views + 1`,
-  )
+  await db.insert(schema.couponAnalytics)
+    .values({ id: crypto.randomUUID(), couponId, views: 1 })
+    .onConflictDoUpdate({
+      target: schema.couponAnalytics.couponId,
+      set: { views: sql`coupon_analytics.views + 1` },
+    })
 }

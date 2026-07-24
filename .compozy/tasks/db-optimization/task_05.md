@@ -1,11 +1,11 @@
 ---
-status: pending
+status: completed
 title: Analytics query — typed Drizzle UPSERT for `incrementViewCount`
 type: refactor
 complexity: low
 dependencies:
-  - task_02
-  - task_03
+    - task_02
+    - task_03
 ---
 
 # Task 05: Analytics query — typed Drizzle UPSERT for `incrementViewCount`

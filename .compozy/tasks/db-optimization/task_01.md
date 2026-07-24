@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: PK type migration — 8 app tables `text` to `uuid`
 type: refactor
 complexity: high
@@ -37,14 +37,14 @@ with the standard `uuid('id').defaultRandom()`.
 
 ## Subtasks
 
-- [ ] 01.1 Add `uuid` import from `drizzle-orm/pg-core` to `db/schema.ts`
-- [ ] 01.2 Change `businesses.id` from `text('id')` to `uuid('id').defaultRandom()`
-- [ ] 01.3 Change `coupons.id` from `text('id')` to `uuid('id').defaultRandom()`
-- [ ] 01.4 Change `redemptions.id` from `text('id')` to `uuid('id').defaultRandom()`
-- [ ] 01.5 Change `transactions.id` from `text('id')` to `uuid('id').defaultRandom()`
-- [ ] 01.6 Change `signals.id`, `coupon_analytics.id`, `file_metadata.id` to `uuid('id').defaultRandom()`
-- [ ] 01.7 Change `merchant_posts.id` — replace `$defaultFn(() => crypto.randomUUID())` with `uuid('id').defaultRandom()`
-- [ ] 01.8 Run `deno task test` and fix any test failures caused by PK type changes
+- [x] 01.1 Add `uuid` import from `drizzle-orm/pg-core` to `db/schema.ts`
+- [x] 01.2 Change `businesses.id` from `text('id')` to `uuid('id').defaultRandom()`
+- [x] 01.3 Change `coupons.id` from `text('id')` to `uuid('id').defaultRandom()`
+- [x] 01.4 Change `redemptions.id` from `text('id')` to `uuid('id').defaultRandom()`
+- [x] 01.5 Change `transactions.id` from `text('id')` to `uuid('id').defaultRandom()`
+- [x] 01.6 Change `signals.id`, `coupon_analytics.id`, `file_metadata.id` to `uuid('id').defaultRandom()`
+- [x] 01.7 Change `merchant_posts.id` — replace `$defaultFn(() => crypto.randomUUID())` with `uuid('id').defaultRandom()`
+- [x] 01.8 Run `deno task test` and fix any test failures caused by PK type changes
 
 ## Implementation Details
 
@@ -93,13 +93,13 @@ references deterministic within test scope).
 ## Tests
 
 - Unit tests:
-  - [ ] Drizzle query builder can reference new `uuid` PK columns without type errors
-  - [ ] `db.insert(table).values({ ... }).returning({ id: table.id })` returns a UUID string
+  - [x] Drizzle query builder can reference new `uuid` PK columns without type errors
+  - [x] `db.insert(table).values({ ... }).returning({ id: table.id })` returns a UUID string
 - Integration tests:
-  - [ ] Insert a record on each app-owned table without specifying `id` — verifies `defaultRandom()` fires
-  - [ ] Insert a record with an explicit `crypto.randomUUID()` `id` — verifies explicit IDs still work
-  - [ ] Join across app-owned tables using FK references works with uuid PKs
-  - [ ] Join from app-owned table to Better Auth `user` table (text PK) works across types
+  - [x] Insert a record on each app-owned table without specifying `id` — verifies `defaultRandom()` fires
+  - [x] Insert a record with an explicit `crypto.randomUUID()` `id` — verifies explicit IDs still work
+  - [x] Join across app-owned tables using FK references works with uuid PKs
+  - [x] Join from app-owned table to Better Auth `user` table (text PK) works across types
 - Test coverage target: >=80%
 - All tests must pass
 

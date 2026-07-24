@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Test DB utility — `lib/test-db.ts` with `useDatabase()`
 type: backend
 complexity: medium
@@ -36,12 +36,12 @@ incrementally.
 
 ## Subtasks
 
-- [ ] 07.1 Create `lib/test-db.ts` with `useDatabase()` wrapper
-- [ ] 07.2 Implement PG_CONNECTION guard — skip test when env var is not set, with a console.info message
-- [ ] 07.3 Apply `sanitizeOps: false, sanitizeResources: false` automatically
-- [ ] 07.4 Implement `cleanupDatabase()` — truncate app tables in dependency order
-- [ ] 07.5 Write unit tests for the test utility itself
-- [ ] 07.6 Migrate one existing test file to use `useDatabase()` as a proof of pattern
+- [x] 07.1 Create `lib/test-db.ts` with `useDatabase()` wrapper
+- [x] 07.2 Implement PG_CONNECTION guard — skip test when env var is not set, with a console.info message
+- [x] 07.3 Apply `sanitizeOps: false, sanitizeResources: false` automatically
+- [x] 07.4 Implement `cleanupDatabase()` — truncate app tables in dependency order
+- [x] 07.5 Write unit tests for the test utility itself
+- [x] 07.6 Migrate one existing test file to use `useDatabase()` as a proof of pattern
 
 ## Implementation Details
 

@@ -1,7 +1,7 @@
 {
   "nodeModulesDir": "auto",
   "tasks": {
-    "check": "deno fmt --check . && deno lint . && deno check",
+    "check": "deno run -A scripts/check-schema-conventions.ts && deno fmt --check . && deno lint . && deno check",
     "lint": "deno lint",
     "dev": "deno run -A npm:vite",
     "build": "vite build",

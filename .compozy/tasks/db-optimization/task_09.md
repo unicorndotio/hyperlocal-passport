@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: CI + Conventions guide — `check-schema-conventions.ts` + `DB_CONVENTIONS.md`
 type: docs
 complexity: medium
@@ -41,15 +41,15 @@ and future contributors.
 
 ## Subtasks
 
-- [ ] 09.1 Create `scripts/check-schema-conventions.ts` with regex-based checks
-- [ ] 09.2 Implement PK type check — ensure app tables use `uuid('id').defaultRandom()`
-- [ ] 09.3 Implement timestamp check — ensure all `timestamp(` includes `withTimezone: true`
-- [ ] 09.4 Implement FK check — ensure all `.references()` includes `{ onDelete:`
-- [ ] 09.5 Add exclusion lists for Better Auth tables and feedEvents
-- [ ] 09.6 Wire the script into `deno.json` `check` task
-- [ ] 09.7 Create `docs/DB_CONVENTIONS.md` with full conventions documentation
-- [ ] 09.8 Run `deno task check` — verify it passes with 0 violations
-- [ ] 09.9 Test the script against an intentional violation to verify it fails correctly
+- [x] 09.1 Create `scripts/check-schema-conventions.ts` with regex-based checks
+- [x] 09.2 Implement PK type check — ensure app tables use `uuid('id').defaultRandom()`
+- [x] 09.3 Implement timestamp check — ensure all `timestamp(` includes `withTimezone: true`
+- [x] 09.4 Implement FK check — ensure all `.references()` includes `{ onDelete:`
+- [x] 09.5 Add exclusion lists for Better Auth tables and feedEvents
+- [x] 09.6 Wire the script into `deno.json` `check` task
+- [x] 09.7 Create `docs/DB_CONVENTIONS.md` with full conventions documentation
+- [x] 09.8 Run `deno task check` — verify it passes with 0 violations
+- [x] 09.9 Test the script against an intentional violation to verify it fails correctly
 
 ## Implementation Details
 

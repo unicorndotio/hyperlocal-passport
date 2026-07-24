@@ -1,11 +1,11 @@
 ---
-status: pending
+status: completed
 title: Feed query + MV — `feedEvents` pgTable + typed Drizzle in `queryFeed`
 type: backend
 complexity: medium
 dependencies:
-  - task_02
-  - task_03
+    - task_02
+    - task_03
 ---
 
 # Task 06: Feed query + MV — `feedEvents` pgTable + typed Drizzle in `queryFeed`
@@ -38,12 +38,12 @@ Drizzle, removing `::timestamptz` casts and manual row mapping. The
 
 ## Subtasks
 
-- [ ] 06.1 Add `feedEvents` pgTable definition to `db/schema.ts` — read-only mapping, no insert/update
-- [ ] 06.2 Export `feedEvents` from `db/schema.ts` so `lib/feed.ts` can import it
-- [ ] 06.3 Convert MV query (`SELECT * FROM feed_events`) to typed `db.select().from(feedEvents)` with `.where()`, `.orderBy()`, `.limit()`
-- [ ] 06.4 Convert transaction query to typed `db.select().from(transactions).innerJoin(businesses)` with typed columns
-- [ ] 06.5 Remove `::timestamptz` casts and manual row mapping (`String(row.id)`, etc.)
-- [ ] 06.6 Run `deno task test` — focus on `tests/feed.test.ts` and related tests
+- [x] 06.1 Add `feedEvents` pgTable definition to `db/schema.ts` — read-only mapping, no insert/update
+- [x] 06.2 Export `feedEvents` from `db/schema.ts` so `lib/feed.ts` can import it
+- [x] 06.3 Convert MV query (`SELECT * FROM feed_events`) to typed `db.select().from(feedEvents)` with `.where()`, `.orderBy()`, `.limit()`
+- [x] 06.4 Convert transaction query to typed `db.select().from(transactions).innerJoin(businesses)` with typed columns
+- [x] 06.5 Remove `::timestamptz` casts and manual row mapping (`String(row.id)`, etc.)
+- [x] 06.6 Run `deno task test` — focus on `tests/feed.test.ts` and related tests
 
 ## Implementation Details
 
